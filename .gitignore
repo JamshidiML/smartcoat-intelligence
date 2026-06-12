@@ -216,3 +216,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.env
+.env.*
+data/
+raw/
+private/
+secrets/
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.tiff
+*.db
+*.sqlite
+__pycache__/
+.ipynb_checkpoints/
