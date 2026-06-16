@@ -1,0 +1,15 @@
+pandas
+numpy
+scipy
+matplotlib
+plotly
+jupyter
+sqlalchemy
+psycopg2-binary
+openpyxl
+pdfplumber
+pymupdf
+python-dotenv
+networkx
+scikit-learn
+tqdm
