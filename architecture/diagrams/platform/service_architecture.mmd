@@ -1,0 +1,27 @@
+flowchart TD
+    Identity[Identity Service]
+    Object[Enterprise Object Service]
+    Knowledge[Knowledge Object Service]
+    Relationship[Relationship Service]
+    Event[Event Service]
+    Graph[Knowledge Graph Service]
+    Search[Search Service]
+    AI[AI Service]
+    Agent[Agent Service]
+    Decision[Decision Service]
+    Integration[Integration Service]
+    Governance[Governance Service]
+
+    Identity --> Governance
+    Object --> Graph
+    Knowledge --> Graph
+    Relationship --> Graph
+    Event --> Graph
+    Graph --> Search
+    Search --> AI
+    AI --> Agent
+    Agent --> Decision
+    Integration --> Event
+    Governance --> Object
+    Governance --> Knowledge
+    Governance --> Decision

@@ -1,0 +1,37 @@
+flowchart TD
+    UI[User and Agent Interfaces]
+    Apps[Application Services]
+    Agents[Agent Orchestration]
+    AI[AI and Reasoning Services]
+    Decision[Decision Services]
+    Search[Search Services]
+    KG[Knowledge Graph]
+    Data[Data Platform]
+    Events[Event Platform]
+    Integrations[Integration Layer]
+    Security[Security and Governance]
+    Observability[Observability]
+    Infra[Infrastructure]
+
+    UI --> Apps
+    Apps --> Agents
+    Apps --> Decision
+    Agents --> AI
+    Agents --> Search
+    AI --> Search
+    Search --> KG
+    Decision --> KG
+    KG --> Data
+    Events --> Data
+    Integrations --> Events
+    Integrations --> Data
+    Security --> UI
+    Security --> Apps
+    Security --> Agents
+    Security --> AI
+    Observability --> Apps
+    Observability --> Agents
+    Observability --> AI
+    Infra --> Data
+    Infra --> Events
+    Infra --> KG
