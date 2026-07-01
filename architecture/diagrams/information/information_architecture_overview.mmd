@@ -1,0 +1,23 @@
+flowchart TD
+    Source[Source Systems]
+    Canonical[Canonical Data Model]
+    Entities[Entity Model]
+    Relationships[Relationship Model]
+    Events[Event Model]
+    Provenance[Provenance Model]
+    Governance[Governance]
+    KG[Knowledge Graph]
+    AI[AI and Reasoning]
+    Decisions[Enterprise Decisions]
+
+    Source --> Canonical
+    Canonical --> Entities
+    Canonical --> Relationships
+    Canonical --> Events
+    Entities --> KG
+    Relationships --> KG
+    Events --> KG
+    Provenance --> KG
+    Governance --> Canonical
+    KG --> AI
+    AI --> Decisions
