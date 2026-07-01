@@ -1,0 +1,25 @@
+flowchart TD
+    Materials[Materials]
+    Formulations[Formulations]
+    Fabrics[Fabrics]
+    Manufacturing[Manufacturing]
+    Quality[Quality Control]
+    Suppliers[Suppliers]
+    Customers[Customers]
+    Regulations[Regulations]
+    RnD[R&D]
+    Decisions[Enterprise Decisions]
+
+    Materials --> Formulations
+    Fabrics --> Formulations
+    Formulations --> Manufacturing
+    Manufacturing --> Quality
+    Suppliers --> Materials
+    Customers --> Formulations
+    Regulations --> Materials
+    Regulations --> Products
+    RnD --> Formulations
+    Quality --> Decisions
+    Manufacturing --> Decisions
+    Suppliers --> Decisions
+    Customers --> Decisions
