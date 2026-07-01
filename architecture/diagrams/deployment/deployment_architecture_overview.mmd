@@ -1,0 +1,33 @@
+flowchart TD
+    Users[Users and Agents]
+    App[Application Services]
+    AI[AI Services]
+    KG[Knowledge Graph]
+    DB[Databases]
+    Events[Event Platform]
+    Integrations[Integrations]
+    Security[Security and IAM]
+    Observability[Observability]
+    Backup[Backup and Recovery]
+    Infra[Infrastructure]
+    Governance[Deployment Governance]
+
+    Users --> App
+    App --> AI
+    App --> KG
+    App --> Events
+    KG --> DB
+    Events --> DB
+    Integrations --> Events
+    Security --> Users
+    Security --> App
+    Observability --> App
+    Observability --> AI
+    Observability --> KG
+    Backup --> DB
+    Backup --> KG
+    Infra --> App
+    Infra --> DB
+    Governance --> Security
+    Governance --> Backup
+    Governance --> Observability

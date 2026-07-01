@@ -1,0 +1,14 @@
+flowchart LR
+    Local[Local]
+    Dev[Development]
+    Test[Test]
+    Staging[Staging]
+    Prod[Production]
+    Sandbox[Sandbox]
+
+    Local --> Dev
+    Dev --> Test
+    Test --> Staging
+    Staging --> Prod
+    Dev --> Sandbox
+    Sandbox --> Test
