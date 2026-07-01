@@ -1,0 +1,23 @@
+flowchart TD
+    Trigger[Human/System Trigger]
+    Agent[Specialized Agent]
+    Access[Access Control]
+    Context[Context Retrieval]
+    Tools[Approved Tools]
+    KG[Knowledge Graph]
+    Decision[Decision Architecture]
+    Human[Human Review]
+    Memory[Agent Memory]
+    Learning[Learning Capture]
+
+    Trigger --> Agent
+    Agent --> Access
+    Access --> Context
+    Context --> KG
+    Agent --> Tools
+    Tools --> KG
+    Tools --> Decision
+    Agent --> Human
+    Agent --> Memory
+    Human --> Learning
+    Learning --> KG

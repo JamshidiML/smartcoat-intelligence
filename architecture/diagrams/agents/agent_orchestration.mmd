@@ -1,0 +1,29 @@
+flowchart TD
+    User[User]
+    Orchestrator[Agent Orchestrator]
+    Memory[Memory Agent]
+    Lab[Lab Agent]
+    Production[Production Agent]
+    QC[QC Agent]
+    Supplier[Supplier Agent]
+    Warehouse[Warehouse Agent]
+    Executive[Executive Agent]
+    Governance[Governance Layer]
+    KG[Knowledge Graph]
+
+    User --> Orchestrator
+    Orchestrator --> Governance
+    Governance --> Memory
+    Governance --> Lab
+    Governance --> Production
+    Governance --> QC
+    Governance --> Supplier
+    Governance --> Warehouse
+    Governance --> Executive
+    Memory --> KG
+    Lab --> KG
+    Production --> KG
+    QC --> KG
+    Supplier --> KG
+    Warehouse --> KG
+    Executive --> KG
