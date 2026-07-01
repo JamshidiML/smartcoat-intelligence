@@ -4,7 +4,7 @@ Version: 1.0 Draft
 
 This directory contains the official SmartCoat Reference Models.
 
-Reference Models define the stable conceptual contracts used across all architecture, data, knowledge, AI, agent, platform, and software components.
+Reference Models define stable conceptual contracts used across all architecture, data, knowledge, AI, agent, platform, and software components.
 
 All future architecture must derive from these models.
 

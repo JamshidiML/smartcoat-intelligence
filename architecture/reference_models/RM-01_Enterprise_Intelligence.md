@@ -18,7 +18,7 @@ All SmartCoat architecture, software, data models, AI systems, agents, knowledge
 
 Enterprise Intelligence is the organizational capability to continuously transform enterprise knowledge into better enterprise decisions and long-term organizational capability.
 
-It is not the same as artificial intelligence.
+It is not the same as Artificial Intelligence.
 
 Artificial Intelligence is an implementation capability.
 
