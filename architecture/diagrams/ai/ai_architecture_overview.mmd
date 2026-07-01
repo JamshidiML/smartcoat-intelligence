@@ -1,0 +1,22 @@
+flowchart TD
+    EK[Enterprise Knowledge]
+    EC[Enterprise Context]
+    Retrieval[Retrieval]
+    Models[Foundation and ML Models]
+    Reasoning[AI Reasoning Support]
+    Recommendation[Recommendations]
+    Decision[Enterprise Decisions]
+    Learning[Learning Feedback]
+    Governance[AI Governance]
+
+    EK --> Retrieval
+    EC --> Retrieval
+    Retrieval --> Models
+    Models --> Reasoning
+    Reasoning --> Recommendation
+    Recommendation --> Decision
+    Decision --> Learning
+    Learning --> EK
+    Governance --> Retrieval
+    Governance --> Models
+    Governance --> Recommendation

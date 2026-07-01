@@ -1,0 +1,28 @@
+flowchart TD
+    Query[User or Agent Query]
+    Access[Access Control]
+    Retrieval[Retrieval Layer]
+    Docs[Documents]
+    KG[Knowledge Graph]
+    KO[Knowledge Objects]
+    DO[Decision Objects]
+    Context[Context Construction]
+    LLM[Language Model]
+    Answer[Grounded Response]
+    Citation[Sources and Provenance]
+    Review[Human Review When Needed]
+
+    Query --> Access
+    Access --> Retrieval
+    Retrieval --> Docs
+    Retrieval --> KG
+    Retrieval --> KO
+    Retrieval --> DO
+    Docs --> Context
+    KG --> Context
+    KO --> Context
+    DO --> Context
+    Context --> LLM
+    LLM --> Answer
+    Answer --> Citation
+    Answer --> Review
