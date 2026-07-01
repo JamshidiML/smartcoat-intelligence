@@ -1,0 +1,23 @@
+flowchart TD
+    Problem[Problem Recognition]
+    Context[Context Retrieval]
+    Evidence[Evidence Collection]
+    Reasoning[Reasoning]
+    Alternatives[Alternative Generation]
+    Risk[Risk Evaluation]
+    Recommendation[Recommendation]
+    Decision[Decision]
+    Execution[Execution]
+    Outcome[Outcome Observation]
+    Learning[Learning]
+
+    Problem --> Context
+    Context --> Evidence
+    Evidence --> Reasoning
+    Reasoning --> Alternatives
+    Alternatives --> Risk
+    Risk --> Recommendation
+    Recommendation --> Decision
+    Decision --> Execution
+    Execution --> Outcome
+    Outcome --> Learning
