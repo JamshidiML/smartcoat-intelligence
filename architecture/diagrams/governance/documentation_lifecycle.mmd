@@ -1,0 +1,13 @@
+flowchart TD
+    Draft[Draft]
+    Reviewed[Reviewed]
+    Approved[Approved]
+    Published[Published]
+    Maintained[Maintained]
+    Deprecated[Deprecated]
+
+    Draft --> Reviewed
+    Reviewed --> Approved
+    Approved --> Published
+    Published --> Maintained
+    Maintained --> Deprecated

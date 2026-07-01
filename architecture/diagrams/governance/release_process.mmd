@@ -1,0 +1,21 @@
+flowchart TD
+    Idea[Architecture Change]
+    Draft[Draft Release Package]
+    Review[Architecture Review]
+    Terminology[Terminology Review]
+    ADR[ADR if Needed]
+    Package[Create Release Package]
+    Install[Install with rsync]
+    Commit[Git Commit]
+    Push[Push to GitHub]
+    Index[Update Indexes]
+
+    Idea --> Draft
+    Draft --> Review
+    Review --> Terminology
+    Terminology --> ADR
+    ADR --> Package
+    Package --> Install
+    Install --> Commit
+    Commit --> Push
+    Push --> Index
