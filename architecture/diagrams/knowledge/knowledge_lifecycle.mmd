@@ -1,0 +1,20 @@
+flowchart TD
+    Capture[Capture]
+    Normalize[Normalize]
+    Classify[Classify]
+    Validate[Validate]
+    Connect[Connect]
+    Enrich[Enrich]
+    Reuse[Reuse]
+    Learn[Learn]
+    Evolve[Evolve]
+
+    Capture --> Normalize
+    Normalize --> Classify
+    Classify --> Validate
+    Validate --> Connect
+    Connect --> Enrich
+    Enrich --> Reuse
+    Reuse --> Learn
+    Learn --> Evolve
+    Evolve --> Connect

@@ -1,0 +1,21 @@
+flowchart TD
+    Sources[Enterprise Sources]
+    Capture[Knowledge Capture]
+    Objects[Knowledge Objects]
+    Validate[Knowledge Validation]
+    Graph[Knowledge Graph]
+    Search[Semantic Search]
+    Reasoning[Reasoning]
+    Decisions[Enterprise Decisions]
+    Learning[Organizational Learning]
+
+    Sources --> Capture
+    Capture --> Objects
+    Objects --> Validate
+    Validate --> Graph
+    Graph --> Search
+    Graph --> Reasoning
+    Search --> Decisions
+    Reasoning --> Decisions
+    Decisions --> Learning
+    Learning --> Graph
