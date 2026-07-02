@@ -1,0 +1,20 @@
+flowchart TD
+    Client[Client or Agent]
+    Route[FastAPI Route]
+    Dependency[DB Session Dependency]
+    Repository[Repository]
+    Service[Application Service]
+    Domain[Domain Model]
+    DB[(PostgreSQL)]
+    FutureEvent[Future Event Publisher]
+    FutureGraph[Future Knowledge Graph Sync]
+
+    Client --> Route
+    Route --> Dependency
+    Dependency --> Repository
+    Route --> Service
+    Service --> Repository
+    Repository --> Domain
+    Repository --> DB
+    Service --> FutureEvent
+    DB --> FutureGraph
