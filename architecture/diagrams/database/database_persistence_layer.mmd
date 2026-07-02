@@ -1,0 +1,15 @@
+flowchart TD
+    API[API Routes]
+    Services[Application Services]
+    Repos[Repositories]
+    ORM[SQLAlchemy ORM Models]
+    DB[(PostgreSQL)]
+    Migration[SQL Migrations]
+    FutureKG[Future Knowledge Graph Sync]
+
+    API --> Services
+    Services --> Repos
+    Repos --> ORM
+    ORM --> DB
+    Migration --> DB
+    DB --> FutureKG

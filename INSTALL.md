@@ -1,46 +1,35 @@
-# Install SmartCoat Release 1.4 — Implementation Scaffold
-
-This release introduces the first implementation scaffold for the SmartCoat Knowledge Capture MVP.
-
-It adds source code, tests, database migrations, Docker Compose, `.env.example`, and implementation architecture notes.
-
-Because this release may add or update root-level files such as `pyproject.toml` and `docker-compose.yml`, review the diff before committing.
+# Install SmartCoat Release 1.5 — Database & Persistence Layer
 
 Use `rsync` to merge safely.
-
-From the root of your existing repository:
 
 ```bash
 cd ~/smartcoat/smartcoat-intelligence
 
-rm -rf /tmp/smartcoat_release_1_4
-mkdir -p /tmp/smartcoat_release_1_4
-unzip ~/Downloads/smartcoat_release_1_4_implementation_scaffold.zip -d /tmp/smartcoat_release_1_4
+rm -rf /tmp/smartcoat_release_1_5
+mkdir -p /tmp/smartcoat_release_1_5
+unzip ~/Downloads/smartcoat_release_1_5_database_persistence_layer.zip -d /tmp/smartcoat_release_1_5
 
-rsync -av /tmp/smartcoat_release_1_4/ ./
+rsync -av /tmp/smartcoat_release_1_5/ ./
 
 git status
 git diff --stat
 git add -A
-git commit -m "Add Implementation Scaffold release 1.4"
+git commit -m "Add Database Persistence Layer release 1.5"
 git push origin main
 ```
 
-After installation, create or update your conda environment:
+After installation:
 
 ```bash
 conda activate smartcoat
 pip install -e ".[dev]"
-```
-
-Run tests:
-
-```bash
 pytest
 ```
 
-Run the API locally:
+Optional local database:
 
 ```bash
+docker compose up -d postgres
+python scripts/init_db.py
 uvicorn smartcoat.api.main:app --reload
 ```
