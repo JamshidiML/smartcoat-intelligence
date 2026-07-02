@@ -1,0 +1,15 @@
+flowchart TD
+    Review[Architecture Review]
+    Findings[Findings]
+    Risks[Risks]
+    Actions[Refactoring Actions]
+    Owners[Owners]
+    QualityGate[Quality Gate]
+    Implementation[Implementation Scaffold]
+
+    Review --> Findings
+    Findings --> Risks
+    Risks --> Actions
+    Actions --> Owners
+    Owners --> QualityGate
+    QualityGate --> Implementation

@@ -1,0 +1,19 @@
+flowchart TD
+    Baseline[Architecture Baseline]
+    Structure[Repository Structure Check]
+    Terminology[Terminology Audit]
+    ADR[ADR Coverage Check]
+    Index[Index Completeness Check]
+    Security[Security and Data Check]
+    Scope[Implementation Scope Lock]
+    Gate[Architecture Quality Gate]
+    Scaffold[Implementation Scaffold]
+
+    Baseline --> Structure
+    Structure --> Terminology
+    Terminology --> ADR
+    ADR --> Index
+    Index --> Security
+    Security --> Scope
+    Scope --> Gate
+    Gate --> Scaffold
