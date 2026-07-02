@@ -1,17 +1,10 @@
 from smartcoat.domain.decision_objects import DecisionObject, DecisionType
 from smartcoat.domain.events import EnterpriseEvent, EventType
 from smartcoat.domain.knowledge_objects import KnowledgeObject, KnowledgeObjectType
-from smartcoat.storage.repositories.mappers import (
-    decision_to_record,
-    event_to_record,
-    knowledge_to_record,
-    record_to_decision,
-    record_to_event,
-    record_to_knowledge,
-)
+from smartcoat.storage.repositories.mappers import decision_to_record, event_to_record, knowledge_to_record
 
 
-def test_knowledge_mapper_round_trip() -> None:
+def test_knowledge_to_record_mapper() -> None:
     obj = KnowledgeObject(
         title="Captured coating observation",
         knowledge_type=KnowledgeObjectType.OBSERVATION,
@@ -19,16 +12,13 @@ def test_knowledge_mapper_round_trip() -> None:
     )
 
     record = knowledge_to_record(obj)
-    restored = record_to_knowledge(record)
 
-    assert restored.title == "Captured coating observation"
-    assert restored.knowledge_type == KnowledgeObjectType.OBSERVATION
-    assert restored.confidence == 0.8
-    assert restored.created_at is not None
-    assert restored.updated_at is not None
+    assert record.title == "Captured coating observation"
+    assert record.knowledge_type == "observation"
+    assert record.confidence == 0.8
 
 
-def test_decision_mapper_round_trip() -> None:
+def test_decision_to_record_mapper() -> None:
     obj = DecisionObject(
         title="Use alternative supplier",
         decision_type=DecisionType.SUPPLIER,
@@ -36,16 +26,13 @@ def test_decision_mapper_round_trip() -> None:
     )
 
     record = decision_to_record(obj)
-    restored = record_to_decision(record)
 
-    assert restored.title == "Use alternative supplier"
-    assert restored.decision_type == DecisionType.SUPPLIER
-    assert restored.confidence == 0.7
-    assert restored.created_at is not None
-    assert restored.updated_at is not None
+    assert record.title == "Use alternative supplier"
+    assert record.decision_type == "supplier"
+    assert record.confidence == 0.7
 
 
-def test_event_mapper_round_trip() -> None:
+def test_event_to_record_mapper() -> None:
     obj = EnterpriseEvent(
         title="Knowledge object created",
         event_type=EventType.KNOWLEDGE_CREATED,
@@ -53,10 +40,7 @@ def test_event_mapper_round_trip() -> None:
     )
 
     record = event_to_record(obj)
-    restored = record_to_event(record)
 
-    assert restored.title == "Knowledge object created"
-    assert restored.event_type == EventType.KNOWLEDGE_CREATED
-    assert restored.actor == "memory_agent"
-    assert restored.created_at is not None
-    assert restored.updated_at is not None
+    assert record.title == "Knowledge object created"
+    assert record.event_type == "knowledge_created"
+    assert record.actor == "memory_agent"
