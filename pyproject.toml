@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smartcoat-intelligence"
+version = "0.1.0"
+description = "SmartCoat Enterprise Intelligence Architecture and Knowledge Capture MVP"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+  { name = "Mohsen Jamshidi" }
+]
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.8.0",
+  "pydantic-settings>=2.4.0",
+  "sqlalchemy>=2.0.0",
+  "psycopg[binary]>=3.2.0",
+  "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-cov>=5.0.0",
+  "ruff>=0.6.0",
+  "mypy>=1.11.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+ignore_missing_imports = true

@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: smartcoat_postgres
+    environment:
+      POSTGRES_USER: smartcoat
+      POSTGRES_PASSWORD: smartcoat
+      POSTGRES_DB: smartcoat
+    ports:
+      - "5432:5432"
+    volumes:
+      - smartcoat_postgres_data:/var/lib/postgresql/data
+      - ./database/migrations/0001_initial.sql:/docker-entrypoint-initdb.d/0001_initial.sql:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartcoat_api
+    env_file:
+      - .env.example
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./src:/app/src
+    command: uvicorn smartcoat.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  smartcoat_postgres_data:

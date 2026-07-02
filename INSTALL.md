@@ -1,31 +1,46 @@
-# Install SmartCoat Release 1.2 — Root Repository Documentation
+# Install SmartCoat Release 1.4 — Implementation Scaffold
 
-This release updates root-level repository documentation.
+This release introduces the first implementation scaffold for the SmartCoat Knowledge Capture MVP.
 
-It may overwrite root files such as `README.md`, `ROADMAP.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, and `SECURITY.md`.
+It adds source code, tests, database migrations, Docker Compose, `.env.example`, and implementation architecture notes.
 
-Use `rsync` to merge safely, then review the Git diff before committing.
+Because this release may add or update root-level files such as `pyproject.toml` and `docker-compose.yml`, review the diff before committing.
+
+Use `rsync` to merge safely.
 
 From the root of your existing repository:
 
 ```bash
 cd ~/smartcoat/smartcoat-intelligence
 
-rm -rf /tmp/smartcoat_release_1_2
-mkdir -p /tmp/smartcoat_release_1_2
-unzip ~/Downloads/smartcoat_release_1_2_root_repository_documentation.zip -d /tmp/smartcoat_release_1_2
+rm -rf /tmp/smartcoat_release_1_4
+mkdir -p /tmp/smartcoat_release_1_4
+unzip ~/Downloads/smartcoat_release_1_4_implementation_scaffold.zip -d /tmp/smartcoat_release_1_4
 
-rsync -av /tmp/smartcoat_release_1_2/ ./
+rsync -av /tmp/smartcoat_release_1_4/ ./
 
 git status
 git diff --stat
 git add -A
-git commit -m "Add Root Repository Documentation release 1.2"
+git commit -m "Add Implementation Scaffold release 1.4"
 git push origin main
 ```
 
-If you want to review files before applying:
+After installation, create or update your conda environment:
 
 ```bash
-find /tmp/smartcoat_release_1_2 -maxdepth 3 -type f | sort
+conda activate smartcoat
+pip install -e ".[dev]"
+```
+
+Run tests:
+
+```bash
+pytest
+```
+
+Run the API locally:
+
+```bash
+uvicorn smartcoat.api.main:app --reload
 ```

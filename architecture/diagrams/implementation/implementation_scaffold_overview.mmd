@@ -1,0 +1,15 @@
+flowchart TD
+    API[FastAPI API]
+    Agents[Memory and Lab Agents]
+    Services[Application Services]
+    Domain[Domain Models]
+    DB[(PostgreSQL)]
+    FutureKG[Future Knowledge Graph]
+    FutureAI[Future AI/RAG Layer]
+
+    API --> Services
+    Agents --> Services
+    Services --> Domain
+    Services --> DB
+    DB --> FutureKG
+    FutureKG --> FutureAI
