@@ -1,35 +1,27 @@
-# Install SmartCoat Release 1.5 — Database & Persistence Layer
+# Install SmartCoat Release 1.5.2 — Mapper Datetime Hotfix
+
+This hotfix fixes mapper tests where SQLAlchemy records created in memory do not yet have database-generated `created_at` and `updated_at` values.
 
 Use `rsync` to merge safely.
 
 ```bash
 cd ~/smartcoat/smartcoat-intelligence
 
-rm -rf /tmp/smartcoat_release_1_5
-mkdir -p /tmp/smartcoat_release_1_5
-unzip ~/Downloads/smartcoat_release_1_5_database_persistence_layer.zip -d /tmp/smartcoat_release_1_5
+rm -rf /tmp/smartcoat_release_1_5_2
+mkdir -p /tmp/smartcoat_release_1_5_2
+unzip ~/Downloads/smartcoat_release_1_5_2_mapper_datetime_hotfix.zip -d /tmp/smartcoat_release_1_5_2
 
-rsync -av /tmp/smartcoat_release_1_5/ ./
+rsync -av /tmp/smartcoat_release_1_5_2/ ./
 
 git status
 git diff --stat
-git add -A
-git commit -m "Add Database Persistence Layer release 1.5"
-git push origin main
-```
-
-After installation:
-
-```bash
-conda activate smartcoat
-pip install -e ".[dev]"
 pytest
 ```
 
-Optional local database:
+If tests pass:
 
 ```bash
-docker compose up -d postgres
-python scripts/init_db.py
-uvicorn smartcoat.api.main:app --reload
+git add -A
+git commit -m "Fix mapper datetime fallback"
+git push origin main
 ```
