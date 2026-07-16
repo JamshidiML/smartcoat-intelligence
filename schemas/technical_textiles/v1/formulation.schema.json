@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:smartcoat:schema:technical-textiles:v1:formulation",
+  "title": "Technical Textiles Formulation v1",
+  "allOf": [
+    {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope"},
+    {
+      "type": "object",
+      "required": ["formulation_version", "project_reference", "ingredients", "reasoning", "approval_status"],
+      "properties": {
+        "object_type": {"const": "formulation"},
+        "formulation_version": {"type": "string", "minLength": 1},
+        "supersedes_reference": {"type": ["string", "null"]},
+        "project_reference": {"type": "string", "minLength": 1},
+        "customer_requirement_references": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "ingredients": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["material_reference", "quantity", "function"],
+            "properties": {
+              "material_reference": {"type": "string", "minLength": 1},
+              "quantity": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"},
+              "function": {"type": "string", "minLength": 1},
+              "addition_order": {"type": ["integer", "null"], "minimum": 1}
+            },
+            "additionalProperties": false
+          }
+        },
+        "processing_instructions": {"type": "array", "items": {"type": "string"}},
+        "performance_targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["property_name", "target"],
+            "properties": {
+              "property_name": {"type": "string", "minLength": 1},
+              "target": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "reasoning": {"type": "string", "minLength": 1},
+        "approval_status": {"enum": ["draft", "review_required", "approved", "rejected", "superseded"]}
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "examples": [
+    {
+      "object_id": "formulation:synthetic-coating-v1",
+      "object_type": "formulation",
+      "canonical_name": "Synthetic Coating Formulation v1",
+      "description": "Fictional two-component example; not an industrial recipe.",
+      "schema_version": "1.0.0",
+      "organization_id": "org_synthetic",
+      "site_id": "site_synthetic",
+      "owner": {"owner_id": "role:rnd-owner", "role": "rnd_owner"},
+      "confidentiality": "confidential",
+      "permitted_uses": ["inventory_only", "human_review"],
+      "lifecycle_state": "draft",
+      "review": {"status": "in_review"},
+      "confidence": 0.7,
+      "provenance": {
+        "source_system": "synthetic_lab_notebook",
+        "source_reference": "synthetic://formulations/coating-v1",
+        "created_by": "synthetic_fixture",
+        "creation_method": "manual_synthetic_fixture",
+        "source_created_at": "2026-01-04T00:00:00Z",
+        "captured_at": "2026-01-04T01:00:00Z",
+        "transformation_history": []
+      },
+      "evidence_references": ["evidence:synthetic-formulation-note"],
+      "relationships": [
+        {"relationship_type": "belongs_to_project", "target_id": "project:synthetic-project-a"}
+      ],
+      "created_at": "2026-01-04T01:00:00Z",
+      "updated_at": "2026-01-04T01:00:00Z",
+      "formulation_version": "v1",
+      "supersedes_reference": null,
+      "project_reference": "project:synthetic-project-a",
+      "customer_requirement_references": ["requirement:synthetic-requirement-a"],
+      "ingredients": [
+        {"material_reference": "material:synthetic-binder-a", "quantity": {"state": "known", "value": 95, "unit": "mass_percent"}, "function": "synthetic_base", "addition_order": 1},
+        {"material_reference": "material:synthetic-additive-b", "quantity": {"state": "known", "value": 5, "unit": "mass_percent"}, "function": "synthetic_modifier", "addition_order": 2}
+      ],
+      "processing_instructions": ["Use generalized controlled mixing conditions."],
+      "performance_targets": [
+        {"property_name": "coating_mass", "target": {"state": "known", "value": 50, "unit": "g/m2"}}
+      ],
+      "reasoning": "Synthetic baseline for validating schema relationships and review workflow.",
+      "approval_status": "review_required"
+    }
+  ]
+}
