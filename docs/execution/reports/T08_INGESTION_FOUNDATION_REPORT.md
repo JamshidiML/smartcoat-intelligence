@@ -6,7 +6,7 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/22
 
 Branch: `thread/08-ingestion-foundation-prototype`
 
-Draft PR: Pending
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/27
 
 Final status: `READY FOR CHATGPT REVIEW`
 
