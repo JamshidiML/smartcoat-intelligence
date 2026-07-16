@@ -46,9 +46,28 @@ ambiguous values into services and repositories.
 ## PostgreSQL Integration Test Boundary
 
 The integration test at `tests/integration/test_persistent_api_postgres.py`
-uses `SMARTCOAT_TEST_DATABASE_URL`. It creates SQLAlchemy tables if needed,
-uses only synthetic objects, and deletes the objects it creates. It does not
-ingest real industrial data.
+uses `SMARTCOAT_TEST_DATABASE_URL` and requires one of these explicit test
+boundaries:
+
+- a dedicated database whose name ends in `_test`; or
+- an isolated schema named with the guarded `smartcoat_test_...` prefix via
+  `SMARTCOAT_TEST_SCHEMA`.
+
+The test refuses other targets before table creation. Schema-isolated runs
+create the named schema, route all test sessions through its `search_path`,
+delete registered object IDs, and drop the schema with `CASCADE` in fixture
+cleanup. Each successful POST is registered immediately, so cleanup remains
+effective after an intermediate assertion or request failure.
+
+`Base.metadata.create_all()` validates compatibility among the current ORM
+models, repositories, and API behavior. It does **not** execute or validate the
+Alembic migration history and must not be cited as migration-correctness
+evidence.
+
+The fixture temporarily mutates the process-global FastAPI dependency override
+map. It snapshots and restores the complete prior map, but integration tests
+using this app must still run serially until the application exposes a factory
+that can provide a per-test app instance.
 
 ## Deferred Design Questions
 
