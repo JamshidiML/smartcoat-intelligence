@@ -6,7 +6,7 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/20
 
 Branch: `thread/06-data-source-inventory-readiness`
 
-Draft PR: pending
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/31
 
 Final status: `READY FOR CHATGPT REVIEW`
 
