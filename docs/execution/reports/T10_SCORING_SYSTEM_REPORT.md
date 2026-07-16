@@ -6,9 +6,9 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/24
 
 Branch: `thread/10-execution-scorecards-loop`
 
-Draft PR: Pending (pre-PR)
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/34
 
-Final status: `CORRECTION IN PROGRESS`
+Final status: `READY FOR CHATGPT REVIEW`
 
 ## Objective
 
