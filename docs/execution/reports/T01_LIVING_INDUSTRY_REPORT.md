@@ -6,7 +6,7 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/15
 
 Branch: `thread/01-living-industry-north-star`
 
-Draft PR: pending
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/28
 
 Final status: `READY FOR CHATGPT REVIEW`
 
