@@ -6,7 +6,7 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/16
 
 Branch: `thread/02-documentation-synchronization`
 
-Draft PR: pending
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/29
 
 Final status: `READY FOR CHATGPT REVIEW`
 
