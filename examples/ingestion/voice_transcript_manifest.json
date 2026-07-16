@@ -1,0 +1,20 @@
+{
+  "source_type": "voice_transcript",
+  "source_format": "txt",
+  "source_system": "synthetic_meeting_capture",
+  "source_reference": "synthetic://voice/transcript-placeholder.txt",
+  "organization_id": "org_synthetic",
+  "site_id": "site_synthetic",
+  "source_owner": "Knowledge steward",
+  "confidentiality_level": "confidential",
+  "permitted_uses": ["inventory_only", "human_review"],
+  "schema_target": {
+    "name": "tacit_knowledge_capture",
+    "version": "v1"
+  },
+  "content_fingerprint": "synthetic-voice-transcript-placeholder-v1",
+  "dry_run": true,
+  "metadata": {
+    "description": "Synthetic placeholder only; no employee voice or transcript content."
+  }
+}

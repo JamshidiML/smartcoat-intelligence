@@ -1,0 +1,20 @@
+{
+  "source_type": "spreadsheet",
+  "source_format": "csv",
+  "source_system": "synthetic_lab_export",
+  "source_reference": "synthetic://lab/trial-summary.csv",
+  "organization_id": "org_synthetic",
+  "site_id": "site_synthetic",
+  "source_owner": "R&D steward",
+  "confidentiality_level": "internal",
+  "permitted_uses": ["inventory_only", "human_review"],
+  "schema_target": {
+    "name": "technical_textile_trial",
+    "version": "v1"
+  },
+  "checksum_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "dry_run": true,
+  "metadata": {
+    "description": "Synthetic spreadsheet manifest; contains no raw industrial content."
+  }
+}

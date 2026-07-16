@@ -1,0 +1,20 @@
+{
+  "source_type": "pdf",
+  "source_format": "pdf",
+  "source_system": "synthetic_document_register",
+  "source_reference": "synthetic://documents/test-method-summary.pdf",
+  "organization_id": "org_synthetic",
+  "site_id": "site_synthetic",
+  "source_owner": "Quality steward",
+  "confidentiality_level": "confidential",
+  "permitted_uses": ["inventory_only", "retrieval", "human_review"],
+  "schema_target": {
+    "name": "evidence_attachment",
+    "version": "v1"
+  },
+  "content_fingerprint": "synthetic-pdf-test-method-summary-v1",
+  "dry_run": true,
+  "metadata": {
+    "description": "Metadata-only PDF source placeholder."
+  }
+}
