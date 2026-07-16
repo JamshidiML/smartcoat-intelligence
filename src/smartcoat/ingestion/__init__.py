@@ -1,28 +1,29 @@
-"""Industry-agnostic ingestion foundation models and validation helpers."""
+"""Industry-agnostic, governed ingestion candidate workflow."""
 
 from smartcoat.ingestion.models import (
     ConfidentialityLevel,
-    IngestionCandidate,
     IngestionStatus,
+    IngestionWorkflowResult,
     ManifestValidationIssue,
     ManifestValidationResult,
     PermittedUse,
+    SchemaTarget,
     SourceFormat,
     SourceManifest,
     SourceType,
 )
-from smartcoat.ingestion.validation import ManifestRegistry, validate_manifest
+from smartcoat.ingestion.validation import ManifestRegistry
 
 __all__ = [
     "ConfidentialityLevel",
-    "IngestionCandidate",
     "IngestionStatus",
+    "IngestionWorkflowResult",
     "ManifestRegistry",
     "ManifestValidationIssue",
     "ManifestValidationResult",
     "PermittedUse",
+    "SchemaTarget",
     "SourceFormat",
     "SourceManifest",
     "SourceType",
-    "validate_manifest",
 ]

@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -57,6 +57,14 @@ class SchemaTarget(BaseModel):
     name: str = Field(min_length=1)
     version: str = Field(min_length=1)
 
+    @field_validator("name", "version")
+    @classmethod
+    def normalize_non_empty_value(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("schema target values must not be blank")
+        return normalized
+
 
 class SourceManifest(BaseModel):
     """Metadata-only source manifest for controlled ingestion preparation."""
@@ -77,8 +85,26 @@ class SourceManifest(BaseModel):
     content_fingerprint: str | None = None
     source_created_at: datetime | None = None
     manifest_created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    dry_run: bool = True
+    dry_run: Literal[True] = True
+    model_training_approval_reference: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator(
+        "source_system",
+        "source_reference",
+        "organization_id",
+        "site_id",
+        "source_owner",
+        "model_training_approval_reference",
+    )
+    @classmethod
+    def normalize_boundary_value(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("boundary and provenance values must not be blank")
+        return normalized
 
     @field_validator("checksum_sha256")
     @classmethod
@@ -89,12 +115,28 @@ class SourceManifest(BaseModel):
             raise ValueError("checksum_sha256 must be a lowercase 64-character SHA-256 hex digest")
         return value
 
+    @field_validator("content_fingerprint")
+    @classmethod
+    def fingerprint_must_be_meaningful(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        allowed = set("abcdefghijklmnopqrstuvwxyz0123456789._:-")
+        if not 16 <= len(normalized) <= 256:
+            raise ValueError("content_fingerprint must contain between 16 and 256 characters")
+        if any(character not in allowed for character in normalized):
+            raise ValueError("content_fingerprint contains unsupported characters")
+        alphanumeric_characters = {character for character in normalized if character.isalnum()}
+        if len(alphanumeric_characters) < 4:
+            raise ValueError("content_fingerprint must contain at least four distinct characters")
+        return normalized
+
     @field_validator("permitted_uses")
     @classmethod
     def permitted_uses_must_not_be_empty(cls, value: list[PermittedUse]) -> list[PermittedUse]:
         if not value:
             raise ValueError("at least one permitted use is required")
-        return value
+        return list(dict.fromkeys(value))
 
     @model_validator(mode="after")
     def require_fingerprint_or_checksum(self) -> "SourceManifest":
@@ -103,10 +145,32 @@ class SourceManifest(BaseModel):
         return self
 
     @property
+    def duplicate_source_field(self) -> str:
+        return "checksum_sha256" if self.checksum_sha256 else "content_fingerprint"
+
+    @property
+    def duplicate_source_value(self) -> str:
+        value = self.checksum_sha256 or self.content_fingerprint
+        if value is None:
+            raise ValueError("validated manifests require a duplicate source value")
+        return value
+
+    @property
     def duplicate_key(self) -> str:
-        if self.checksum_sha256:
-            return f"sha256:{self.checksum_sha256}"
-        return f"fingerprint:{self.content_fingerprint}"
+        organization = self.organization_id
+        return (
+            f"organization:{len(organization)}:{organization}|"
+            f"{self.duplicate_source_field}:{self.duplicate_source_value}"
+        )
+
+    @property
+    def candidate_identity(self) -> str:
+        schema_name = self.schema_target.name
+        schema_version = self.schema_target.version
+        return (
+            f"{self.duplicate_key}|schema:{len(schema_name)}:{schema_name}|"
+            f"version:{len(schema_version)}:{schema_version}"
+        )
 
 
 class ManifestValidationIssue(BaseModel):
@@ -124,24 +188,42 @@ class ManifestValidationResult(BaseModel):
 
     @property
     def accepted(self) -> bool:
-        return self.status in {IngestionStatus.VALIDATED, IngestionStatus.CANDIDATE_CREATED}
+        return self.status == IngestionStatus.VALIDATED
 
 
 class IngestionCandidate(BaseModel):
-    """Deterministic dry-run candidate produced after manifest validation."""
+    """Governed dry-run candidate produced only by the validated workflow."""
 
-    candidate_id: UUID = Field(default_factory=uuid4)
+    candidate_id: UUID
     manifest_id: UUID
     ingestion_job_id: UUID
-    status: IngestionStatus = IngestionStatus.CANDIDATE_CREATED
+    status: Literal[IngestionStatus.CANDIDATE_CREATED] = IngestionStatus.CANDIDATE_CREATED
     source_type: SourceType
     source_format: SourceFormat
+    source_system: str
     source_reference: str
+    source_owner: str
+    source_created_at: datetime | None
+    manifest_created_at: datetime
     organization_id: str
     site_id: str | None = None
     confidentiality_level: ConfidentialityLevel
     permitted_uses: list[PermittedUse]
+    model_training_approval_reference: str | None = None
     schema_target: SchemaTarget
+    checksum_sha256: str | None = None
+    content_fingerprint: str | None = None
     duplicate_key: str
-    dry_run: bool
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    dry_run: Literal[True] = True
+    created_at: datetime
+
+
+class IngestionWorkflowResult(BaseModel):
+    """Structured outcome from the only approved candidate workflow."""
+
+    validation: ManifestValidationResult
+    candidate: IngestionCandidate | None = None
+
+    @property
+    def accepted(self) -> bool:
+        return self.candidate is not None
