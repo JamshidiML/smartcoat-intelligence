@@ -85,6 +85,7 @@ Owned files changed:
 | `ruff check .` | Failed: 24 existing findings. |
 | `ruff format --check .` | Failed: 2 files would be reformatted. |
 | `mypy src` | Failed: 2 existing event-service return-type errors. |
+| GitHub Actions | Passed: `SmartCoat CI` run #5 completed successfully for commit `5304445`. |
 
 ## Acceptance-Criteria Evidence
 
@@ -93,6 +94,7 @@ Owned files changed:
 | Clean install documented and tested | Constraints are committed and consumed by CI and local setup. |
 | CI triggers on PRs and relevant pushes | `.github/workflows/ci.yml`. |
 | CI uses Python 3.12 | `actions/setup-python@v5` with `python-version: "3.12"`. |
+| Updated workflow passes on GitHub | `SmartCoat CI` run #5 concluded `success`. |
 | Every enabled check has honest baseline result | `pip check` and pytest are enabled in CI and passed locally. |
 | Existing failures fixed only within owned paths or documented | Only `pyproject.toml` changed; ruff/mypy failures documented. |
 | No application behavior changed | Only dependency metadata, CI, PR template, and docs changed. |
