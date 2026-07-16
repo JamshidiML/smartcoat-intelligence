@@ -6,7 +6,7 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/18
 
 Branch: `thread/04-persistence-api-contracts`
 
-Draft PR: Pending
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/26
 
 Final status: `READY FOR CHATGPT REVIEW`
 
