@@ -6,7 +6,7 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/17
 
 Branch: `thread/03-engineering-baseline-ci`
 
-Draft PR: Pending
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/25
 
 Final status: `READY FOR CHATGPT REVIEW`
 
