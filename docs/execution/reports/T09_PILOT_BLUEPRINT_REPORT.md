@@ -6,7 +6,7 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/23
 
 Branch: `thread/09-technical-textile-pilot-blueprint`
 
-Draft PR: pending
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/33
 
 Final status: `READY FOR CHATGPT REVIEW`
 
