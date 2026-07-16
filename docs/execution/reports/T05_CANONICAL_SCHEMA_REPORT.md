@@ -6,7 +6,7 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/19
 
 Branch: `thread/05-technical-textile-canonical-schema`
 
-Draft PR: pending
+Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/30
 
 Final status: `READY FOR CHATGPT REVIEW`
 
