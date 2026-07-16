@@ -1,131 +1,80 @@
 # SmartCoat Repository Structure
 
-Version: 1.0 Draft
-
----
-
-# Purpose
-
-This document explains the intended repository structure of SmartCoat Intelligence.
-
----
-
-# Root Files
-
-## README.md
-
-Main repository introduction and navigation.
-
-## ROADMAP.md
-
-High-level development roadmap.
-
-## CHANGELOG.md
-
-Human-readable release history.
-
-## CONTRIBUTING.md
-
-Contribution rules and workflow.
-
-## SECURITY.md
-
-Security policy and responsible handling of sensitive knowledge.
-
-## REPOSITORY_STRUCTURE.md
-
-Explanation of repository organization.
-
----
-
-# Architecture Directory
-
-`architecture/`
-
-The architecture directory contains the Enterprise Intelligence Architecture.
-
-## handbook/
-
-Main multi-volume architecture handbook.
-
-## reference_models/
-
-Stable reference models used across all architecture and implementation.
-
-## ADR/
-
-Architecture Decision Records.
-
-## diagrams/
-
-Mermaid diagrams for architecture visualization.
-
-## templates/
-
-Reusable templates for architecture and implementation artifacts.
-
-## glossary/
-
-Canonical enterprise language and terminology governance.
-
-## governance/
-
-Architecture governance documents.
-
-## indexes/
-
-Navigation indexes.
-
-## releases/
-
-Release records.
-
----
-
-# Implementation Directories
-
-## src/
-
-Application source code.
-
-## tests/
-
-Automated tests.
-
-## database/
-
-Database schemas, migrations, seed data, and database architecture.
-
-## data/
-
-Local data directory.
-
-Sensitive or raw data should not be committed unless explicitly allowed.
-
-## notebooks/
-
-Exploration, experiments, and research notebooks.
-
-## agents/
-
-Agent specifications, prototypes, and workflows.
-
-## ai/
-
-AI, ML, retrieval, prediction, and reasoning modules.
-
-## integrations/
-
-Integration connectors for ERP, email, Teams, supplier APIs, and other systems.
-
-## knowledge/
-
-Knowledge rules, taxonomies, standards, and ontology implementation artifacts.
-
----
-
-# Repository Rule
-
-Architecture defines implementation.
-
-Implementation must not introduce core concepts that conflict with architecture.
+This guide describes the repository as it exists in Release 1.7. Empty or
+future directories are not presented as implemented capability.
+
+## Root Entry Points
+
+| File | Purpose |
+|---|---|
+| [README.md](README.md) | Project identity, current state, navigation, and development entry point. |
+| [ROADMAP.md](ROADMAP.md) | North-Star direction and approved release execution. |
+| [CHANGELOG.md](CHANGELOG.md) | Human-readable release history. |
+| [AGENTS.md](AGENTS.md) | Repository-wide agent and engineering instructions. |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution workflow. |
+| [SECURITY.md](SECURITY.md) | Sensitive-data and security boundary. |
+
+## Architecture
+
+`architecture/` contains the conceptual, implementation, governance, and
+release architecture:
+
+- `handbook/`: foundation through deployment volumes
+- `reference_models/`: reusable conceptual contracts
+- `ADR/`: accepted architecture decisions
+- `implementation/`: Release 1.4-1.6 implementation architecture
+- `diagrams/`: Mermaid architecture diagrams
+- `templates/`: repeatable architecture and implementation templates
+- `glossary/`: canonical terminology and forbidden synonyms
+- `governance/`: documentation, release, ADR, diagram, review, and versioning rules
+- `indexes/`: navigation for releases, ADRs, diagrams, templates, and handbook assets
+- `quality/` and `refactoring/`: consistency and readiness evidence
+- `releases/`: release records through active Release 1.7
+- `legacy/`: retained historical architecture, not current source of truth
+
+Start at [Architecture Portal](architecture/ARCHITECTURE_PORTAL.md).
+
+## Project and Strategy Documents
+
+`docs/` contains curated active project context:
+
+- `strategy/SMARTCOAT_NORTH_STAR.md`: long-term strategic vision
+- `project/PROJECT_STATE.md`: verified current state
+- `project/PROJECT_HISTORY.md`: historical chronology
+- `project/MVP_STRATEGY.md`: focused product path
+- `project/DECISION_LOG.md`: accepted and open decisions
+- `execution/`: Release 1.7 control, thread instructions, and reports
+
+## Application
+
+`src/smartcoat/` contains the current implementation scaffold:
+
+- `domain/`: canonical domain models
+- `services/`: application services
+- `storage/`: database sessions, records, repositories, and mappers
+- `api/`: FastAPI application, dependencies, and routes
+- `agents/`: early Memory/Lab agent scaffolds
+- `ai/`: early retrieval/embedding placeholders
+- `core/` and `config.py`: configuration and shared support
+
+The presence of a scaffold does not imply production readiness.
+
+## Validation and Persistence
+
+- `tests/`: domain, agent, API, mapper, and repository-oriented tests
+- `database/`: SQL schema, migrations, and database notes
+- `scripts/`: development/validation scripts
+- `docker-compose.yml` and `Dockerfile`: local container setup
+- `pyproject.toml`: Python package and tool configuration
+
+## Data Safety
+
+`data/`, attachments, local databases, and environment files must not be used as
+a route for committing sensitive enterprise information. Follow
+[SECURITY.md](SECURITY.md) and use synthetic or explicitly approved fixtures.
+
+## Ownership Rule
+
+Architecture defines canonical language and constraints; implementation must
+remain traceable to approved use cases and decisions. Historical and draft
+documents provide context but do not automatically become active requirements.

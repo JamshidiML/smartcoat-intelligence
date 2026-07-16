@@ -1,169 +1,112 @@
 # SmartCoat Intelligence
 
-Version: 1.2 Draft
+SmartCoat is a horizontal Enterprise Intelligence mother platform whose North
+Star is to help industrial companies become connected, learning, adaptive
+systems under explicit human governance.
 
----
+Technical textiles and functional coatings are the first proof domain, not the
+platform boundary. The current product path begins with a focused Knowledge
+Capture MVP; it does not claim the full Living Industry vision is implemented.
 
-# Purpose
+## Current State
 
-SmartCoat Intelligence is an Enterprise Intelligence Architecture project for Advanced Materials industries.
+Active work is **Release 1.7 — Project Reset & Engineering Baseline**. It aligns
+documentation and implementation, establishes reliable development and CI
+baselines, and validates the current FastAPI-to-PostgreSQL path before Release
+1.8 Knowledge Capture Core.
 
-It is designed to transform fragmented enterprise knowledge into connected context, explainable decisions, and continuously improving organizational capability.
+The repository already contains:
 
-The initial beachhead domain is technical textiles, functional coatings, high-temperature materials, formulations, production, quality, suppliers, and industrial decision-making.
+- architecture and governance through Release 1.3
+- a Python/FastAPI implementation scaffold from Release 1.4
+- SQLAlchemy/PostgreSQL persistence and mappers from Releases 1.5-1.5.2
+- repository-backed persistent API routes from Release 1.6
+- Release 1.7 reset, validation, and controlled-pilot preparation
 
----
+See [Project State](docs/project/PROJECT_STATE.md) for verified current facts
+and [Project History](docs/project/PROJECT_HISTORY.md) for chronology.
 
-# Core Thesis
+## Strategic Boundaries
 
-SmartCoat is not only an AI platform.
+| Concept | Meaning |
+|---|---|
+| North Star | Long-term Living Industry and Enterprise Intelligence direction. |
+| Mother platform | Reusable horizontal knowledge, context, decision, event, governance, and learning capabilities. |
+| Technical-textile proof domain | First real industry context used to validate the platform thesis. |
+| Knowledge Capture MVP | First implementation slice for capture, review, retrieval, and reuse. |
+| Release 1.7 | Current coherence and engineering-baseline work, not a new autonomy claim. |
 
-SmartCoat is an Enterprise Intelligence Infrastructure specialized for Advanced Materials organizations.
+## Start Here
 
-Its architecture is built around one central transformation:
+- [SmartCoat North Star](docs/strategy/SMARTCOAT_NORTH_STAR.md)
+- [Project State](docs/project/PROJECT_STATE.md)
+- [MVP Strategy](docs/project/MVP_STRATEGY.md)
+- [Decision Log](docs/project/DECISION_LOG.md)
+- [Execution Control Center](docs/execution/EXECUTION_CONTROL_CENTER.md)
+- [Architecture Portal](architecture/ARCHITECTURE_PORTAL.md)
+- [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md)
+- [Repository Structure](REPOSITORY_STRUCTURE.md)
 
-Enterprise Knowledge
-
-↓
-
-Enterprise Context
-
-↓
-
-Enterprise Intelligence
-
-↓
-
-Enterprise Decisions
-
-↓
-
-Organizational Capability
-
-↓
-
-Learning Enterprise
-
----
-
-# Repository Status
-
-This repository currently contains the SmartCoat Enterprise Intelligence Architecture.
-
-The repository is developed release by release.
-
-Current architecture releases include:
-
-- Release 0.1 — Foundation
-- Release 0.2 — Business Architecture
-- Release 0.3 — Domain Architecture
-- Release 0.4 — Information Architecture
-- Release 0.5 — Knowledge Architecture
-- Release 0.6 — Decision Architecture
-- Release 0.7 — AI Architecture
-- Release 0.8 — Agent Architecture
-- Release 0.9 — Platform Architecture
-- Release 1.0 — Deployment Architecture
-- Release 1.1 — Repository Governance & Documentation Quality
-- Release 1.2 — Root Repository Documentation
-
----
-
-# Architecture Entry Points
-
-## Architecture Portal
-
-Start here:
-
-`architecture/ARCHITECTURE_PORTAL.md`
-
-## Foundation
-
-`architecture/handbook/01_Foundation/`
-
-## Reference Models
-
-`architecture/reference_models/`
-
-## Indexes
-
-`architecture/indexes/`
-
-## Governance
-
-`architecture/governance/`
-
-## ADRs
-
-`architecture/ADR/`
-
-## Diagrams
-
-`architecture/diagrams/`
-
-## Templates
-
-`architecture/templates/`
-
----
-
-# Repository Structure
+## Core Model
 
 ```text
-smartcoat-intelligence/
-│
-├── README.md
-├── ROADMAP.md
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── SECURITY.md
-├── REPOSITORY_STRUCTURE.md
-│
-├── architecture/
-│   ├── ARCHITECTURE_PORTAL.md
-│   ├── handbook/
-│   ├── reference_models/
-│   ├── ADR/
-│   ├── diagrams/
-│   ├── templates/
-│   ├── glossary/
-│   ├── governance/
-│   ├── indexes/
-│   └── releases/
-│
-├── data/
-├── database/
-├── src/
-├── tests/
-├── notebooks/
-├── agents/
-├── ai/
-├── integrations/
-└── knowledge/
+Enterprise Knowledge
+    -> Enterprise Context
+    -> Enterprise Intelligence
+    -> Enterprise Decisions
+    -> Execution and Outcomes
+    -> Learning and Organizational Capability
 ```
 
----
+Artificial intelligence, agents, data platforms, knowledge graphs, software,
+machines, and automation are capabilities inside this model. High-impact,
+safety-critical, legal, strategic, irreversible, or uncertain decisions require
+stronger human oversight.
 
-# Architecture Principle
+## Architecture and Implementation
 
-The architecture is knowledge-first, domain-first, decision-first, and governance-first.
+- [Architecture handbook](architecture/handbook/README.md)
+- [Reference models](architecture/reference_models/README.md)
+- [Accepted ADR index](architecture/indexes/ADR_INDEX.md)
+- [Release index](architecture/indexes/RELEASE_INDEX.md)
+- [Implementation architecture](architecture/implementation/README.md)
+- [Application source](src/smartcoat/)
+- [Automated tests](tests/)
+- [Database assets](database/README.md)
 
-Software, AI, agents, databases, APIs, and integrations must derive from the Foundation, Reference Models, Enterprise Ontology, Enterprise Language, and ADRs.
+## Development
 
----
+Python 3.12 or newer is required.
 
-# Development Rule
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+python -m pytest
+```
 
-No major capability should be implemented before its corresponding architecture, domain model, knowledge model, decision model, governance rule, and ADR are understood.
+Additional measured checks:
 
----
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy src
+```
 
-# Current Phase
+Do not report these checks as passing unless they were actually run. Current
+baseline details belong in Release 1.7 engineering reports.
 
-SmartCoat is currently in architecture engineering phase.
+## Data Boundary
 
-The next recommended phase is:
+Do not commit secrets, credentials, `.env` files, proprietary formulations,
+customer or supplier confidential information, prices, production records,
+personal data, internal communications, or unapproved industrial datasets. Use
+synthetic, anonymized, generalized, or explicitly approved data only. Read
+[SECURITY.md](SECURITY.md) before data work.
 
-Release 1.3 — Architecture Consistency Review & Refactoring Plan
+## Contribution Workflow
 
-This will validate links, terminology, numbering, volume alignment, and release consistency before moving into implementation scaffolding.
+Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), the relevant
+project decisions, architecture, and issue acceptance criteria. Use a dedicated
+branch and reviewed pull request; do not expand scope silently.

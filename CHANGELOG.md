@@ -1,150 +1,83 @@
 # Changelog
 
-All notable architecture releases for SmartCoat Intelligence are tracked here.
+Notable SmartCoat architecture and implementation releases are summarized here.
+Release records are indexed in
+[architecture/indexes/RELEASE_INDEX.md](architecture/indexes/RELEASE_INDEX.md).
 
----
+## Release 1.7 — Project Reset & Engineering Baseline
 
-# Release 1.2 — Root Repository Documentation
+Status: In progress
 
-Added:
+- established the active project-state, history, MVP, decision, and North-Star documents
+- added execution control for ten isolated review threads
+- focused work on documentation synchronization, engineering baselines, CI,
+  persistent API validation, and controlled-pilot preparation
+- prohibited real confidential industrial data in this execution wave
 
-- root README
-- repository structure guide
-- roadmap
-- contributing guide
-- security policy
-- code of conduct
-- license notice
-- root documentation index
-- repository documentation ADR
+## Release 1.6 — Persistent API Layer
 
----
+- connected FastAPI routes to repository-backed application services
+- exposed persistent Knowledge Object, Decision Object, and Enterprise Event paths
+- recorded the API persistence architecture and ADR-0019
 
-# Release 1.1 — Repository Governance & Documentation Quality
+## Release 1.5.2 — Mapper Datetime Hotfix
 
-Added:
+- added deterministic datetime fallback for unpersisted records
+- recorded ADR-0018
 
-- architecture portal
-- governance documents
-- indexes
-- glossary
-- documentation lifecycle
-- review workflow
-- repository governance ADR
+## Release 1.5.1 — Persistence Mapper Hotfix
 
----
+- added bidirectional persistence mapping
+- recorded ADR-0017
 
-# Release 1.0 — Deployment Architecture
+## Release 1.5 — Database & Persistence Layer
 
-Added:
+- added PostgreSQL/SQLAlchemy persistence infrastructure and repositories
+- added database models, migrations, mapper tests, and ADR-0016
 
-- deployment architecture handbook
-- cloud, on-premise, hybrid, Docker, Kubernetes architecture
-- backup, monitoring, incident response, governance
-- deployment trust ADR
+## Release 1.4 — Implementation Scaffold
 
----
+- added the Python package, canonical domain models, services, API scaffold,
+  agents, AI placeholders, tests, and Docker development files
+- documented the Knowledge Capture MVP architecture and ADR-0015
 
-# Release 0.9 — Platform Architecture
+## Release 1.3 — Architecture Consistency Review & Refactoring Plan
 
-Added:
+- audited terminology, numbering, links, duplicate structures, and implementation readiness
+- added architecture quality and refactoring assets
+- recorded ADR-0014
 
-- platform architecture handbook
-- services, APIs, data platform, knowledge graph platform
-- event-driven architecture, security, IAM, observability, CI/CD
-- platform infrastructure ADR
+## Release 1.2 — Root Repository Documentation
 
----
+- added root README, structure guide, roadmap, contribution/security documents,
+  root documentation index, and ADR-0013
 
-# Release 0.8 — Agent Architecture
+## Release 1.1 — Repository Governance & Documentation Quality
 
-Added:
+- added architecture portal, governance documents, indexes, glossary,
+  documentation lifecycle, review workflow, and ADR-0012
 
-- agent architecture handbook
-- Memory Agent, Lab Agent, Production Agent, QC Agent, Supplier Agent, Warehouse Agent, Executive Agent
-- agent orchestration, permissions, memory, governance, safety, evaluation
-- agents as governed enterprise workers ADR
+## Release 1.0 — Deployment Architecture
 
----
+- added cloud, on-premise, hybrid, Docker, Kubernetes, backup, monitoring,
+  incident-response, and deployment-governance architecture
+- recorded ADR-0011
 
-# Release 0.7 — AI Architecture
+## Releases 0.2-0.9 — Architecture Volumes
 
-Added:
+| Release | Architecture output | ADR |
+|---|---|---|
+| 0.2 | Business Architecture | ADR-0003 |
+| 0.3 | Domain Architecture | ADR-0004 |
+| 0.4 | Information Architecture | ADR-0005 |
+| 0.5 | Knowledge Architecture | ADR-0006 |
+| 0.6 | Decision Architecture | ADR-0007 |
+| 0.7 | AI Architecture | ADR-0008 |
+| 0.8 | Agent Architecture | ADR-0009 |
+| 0.9 | Platform Architecture | ADR-0010 |
 
-- AI architecture handbook
-- materials, formulation, supply, quality, regulatory, computer vision intelligence
-- foundation model layer, RAG, ML lifecycle, AI governance, safety, evaluation
-- AI as enterprise intelligence capability ADR
+## Release 0.1 — Foundation
 
----
-
-# Release 0.6 — Decision Architecture
-
-Added:
-
-- decision architecture handbook
-- decision lifecycle, decision objects, evidence, alternatives, recommendations, confidence, risk, execution, learning, governance, auditability
-- decisions as primary value output ADR
-
----
-
-# Release 0.5 — Knowledge Architecture
-
-Added:
-
-- knowledge architecture handbook
-- industrial memory, knowledge capture, knowledge graph, semantic search, lessons learned, lifecycle, validation, governance, security
-- knowledge graph as context backbone ADR
-
----
-
-# Release 0.4 — Information Architecture
-
-Added:
-
-- information architecture handbook
-- enterprise information model, canonical data model, entity model, relationship model, event model, governance, provenance, data quality, master data
-- canonical information model ADR
-
----
-
-# Release 0.3 — Domain Architecture
-
-Added:
-
-- domain architecture handbook
-- materials, formulations, fabrics, manufacturing, quality, suppliers, customers, regulations, R&D
-- domain-first architecture ADR
-
----
-
-# Release 0.2 — Business Architecture
-
-Added:
-
-- business architecture handbook
-- market landscape, value proposition, business model, customers, revenue model, competitive advantage, GTM, product strategy, capability map
-- reference models before implementation ADR
-
----
-
-# Release 0.1 — Foundation
-
-Added:
-
-- foundation handbook
-- problem statement
-- identity
-- theory
-- mission
-- vision
-- first principles
-- core values
-- constitution
-- strategic thesis
-- long-term goals
-- enterprise intelligence model
-- knowledge philosophy
-- decision philosophy
-- enterprise ontology
-- enterprise language
+- established identity, mission, vision, first principles, strategic thesis,
+  Enterprise Intelligence model, knowledge/decision philosophy, ontology, and
+  enterprise language
