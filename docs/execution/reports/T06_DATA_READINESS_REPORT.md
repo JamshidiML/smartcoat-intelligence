@@ -85,20 +85,21 @@ purpose blocks preparation regardless of score.
 - This framework is not legal approval or technical ingestion enforcement.
 - Real source counts, owners, permissions, and quality remain unknown.
 - Weights and bands are hypotheses requiring outcome-based calibration.
-- Independent Cycle 3 review remains pending.
+- Cycle 3 reviewer findings are closed at branch scope; controlled integration
+  and assembled report validation remain pending.
 
 ## Lost Points and Correction Items
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | PR #31 assessment-metadata correction | 2 | IN PROGRESS | Model version, timestamp, assessor, evidence, and unique assessment ID added. |
-| C02 | PR #31 sensitivity-state correction | 1 | IN PROGRESS | Five sensitivity fields use unknown, none, or present. |
-| C03 | PR #31 purpose-status correction | 1 | IN PROGRESS | Six canonical purpose decisions are stored separately. |
-| C04 | PR #31 vocabulary correction | 1 | IN PROGRESS | T07 confidentiality and decision values applied. |
-| C05 | PR #31 calibration correction | 1 | IN PROGRESS | Weights and bands labeled hypotheses with versioned recalibration. |
-| C06 | PR #31 blocked-high-score correction | 1 | IN PROGRESS | Synthetic 94.8 analytics-in-review row remains blocked. |
-| C07 | PR #31 history correction | 1 | IN PROGRESS | Prior ID/score, reason, evidence, and immutable history fields added. |
-| C08 | PR #31 report-contract correction | 1 | IN PROGRESS | Execution report migrated to schema v2 and validated locally. |
+| C01 | PR #31 assessment-metadata correction | 2 | RESOLVED | Cycle 3 reviewer confirmed version, timestamp, assessor, evidence, and unique assessment identity. |
+| C02 | PR #31 sensitivity-state correction | 1 | RESOLVED | Cycle 3 reviewer confirmed explicit unknown, none, and present sensitivity states. |
+| C03 | PR #31 purpose-status correction | 1 | RESOLVED | Cycle 3 reviewer confirmed all six purpose decisions remain independent. |
+| C04 | PR #31 vocabulary correction | 1 | RESOLVED | Cycle 3 reviewer confirmed canonical confidentiality and decision values. |
+| C05 | PR #31 calibration correction | 1 | RESOLVED | Cycle 3 reviewer confirmed hypothetical weights and versioned recalibration policy. |
+| C06 | PR #31 blocked-high-score correction | 1 | RESOLVED | Cycle 3 reviewer confirmed governance blocks the synthetic high-score example. |
+| C07 | PR #31 history correction | 1 | RESOLVED | Cycle 3 reviewer confirmed evidence-backed immutable reassessment history. |
+| C08 | PR #31 report-contract correction | 1 | RESOLVED | Cycle 3 reviewer confirmed report-v2 traceability. |
 
 ## Codex Self-Score
 
@@ -115,15 +116,15 @@ purpose blocks preparation regardless of score.
 
 ## ChatGPT Reviewer Score
 
-Reviewer total: 91
+Reviewer total: 100
 
-Reviewer evidence: GitHub PR #31 Cycle 1 independent review submitted 2026-07-16.
+Reviewer evidence: GitHub PR #31 Cycle 3 independent review submitted 2026-07-19.
 
 ## Final Score
 
-Provisional weighted score: 92.6
+Provisional weighted score: 98.0
 
-Gate-adjusted score: 92.6
+Gate-adjusted score: 98.0
 
 ## Critical-Gate Declaration
 
@@ -144,7 +145,8 @@ Critical-gate result: PASS
 |---:|---:|---|---|---:|---|---|
 | 1 | 90 | Needed permission gates, explicit weights, and reusable templates. | Added gate, 100-point matrix, CSV/assessment templates, and controlled package. | 96 | Initial CSV, score, gate, coverage, and diff checks. | CLOSED |
 | 2 | 96 | Reviewer required metadata, tri-state sensitivity, six decisions, canonical values, calibration, blocked high score, history, and T10 migration. | Recorded 91 reviewer score and nine-point correction burden. | 91 | PR #31 independent review. | CLOSED |
-| 3 | 91 | Nine reviewer points became eight correction items. | Added versioning, canonical decisions, sensitivity states, calibration policy, blocked 94.8 example, history, and v2 report. | 95 | Three rows, sixteen dimensions, exact scores, purpose gate, vocabulary, history, scope, and diff checks passed. | OPEN |
+| 3 | 91 | Nine reviewer points became eight correction items. | Added versioning, canonical decisions, sensitivity states, calibration policy, blocked 94.8 example, history, and v2 report. | 95 | Three rows, sixteen dimensions, exact scores, purpose gate, vocabulary, history, scope, and diff checks passed. | CLOSED |
+| 4 | 100 | Cycle 3 independent review closed all prior T06 branch findings; assembled validation remained pending. | Recorded reviewer authority and resolved the confirmed correction burden without claiming integration. | 100 | PR #31 Cycle 3 review and preserved CSV, score, vocabulary, history, scope, and diff evidence. | OPEN |
 
 ## Recommended Follow-up Issues
 
