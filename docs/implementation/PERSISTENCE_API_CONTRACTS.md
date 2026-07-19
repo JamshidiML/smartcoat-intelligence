@@ -46,18 +46,32 @@ ambiguous values into services and repositories.
 ## PostgreSQL Integration Test Boundary
 
 The integration test at `tests/integration/test_persistent_api_postgres.py`
-uses `SMARTCOAT_TEST_DATABASE_URL` and requires one of these explicit test
-boundaries:
+uses `SMARTCOAT_TEST_DATABASE_URL` and requires both safety signals:
 
-- a dedicated database whose name ends in `_test`; or
+- `SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true` as an exact explicit opt-in; and
 - an isolated schema named with the guarded `smartcoat_test_...` prefix via
-  `SMARTCOAT_TEST_SCHEMA`.
+  mandatory `SMARTCOAT_TEST_SCHEMA`.
 
-The test refuses other targets before table creation. Schema-isolated runs
-create the named schema, route all test sessions through its `search_path`,
-delete registered object IDs, and drop the schema with `CASCADE` in fixture
-cleanup. Each successful POST is registered immediately, so cleanup remains
-effective after an intermediate assertion or request failure.
+The test refuses a URL-only invocation, missing/invalid schema, non-PostgreSQL
+URL, or any opt-in spelling except lowercase `true` before table creation.
+Schema-isolated runs create the named schema, route all test sessions through
+its `search_path`, delete registered object IDs, drop the schema with `CASCADE`,
+and query `pg_namespace` to assert that zero matching schemas remain. A dedicated
+test exercises the same drop-and-assert helper. Each successful POST is
+registered immediately, so cleanup remains effective after an intermediate
+assertion or request failure.
+
+Exact local live command:
+
+```bash
+SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true \
+SMARTCOAT_TEST_DATABASE_URL=postgresql+psycopg://smartcoat:smartcoat@localhost:5432/smartcoat \
+SMARTCOAT_TEST_SCHEMA=smartcoat_test_t04_cycle3_20260719 \
+python -m pytest -q tests/integration/test_persistent_api_postgres.py
+```
+
+This is local live validation, not CI coverage. No current workflow provisions a
+PostgreSQL service or sets the two safety signals.
 
 `Base.metadata.create_all()` validates compatibility among the current ORM
 models, repositories, and API behavior. It does **not** execute or validate the
@@ -75,3 +89,10 @@ that can provide a per-test app instance.
 2. Whether collection endpoints should add pagination tokens for Release 1.8.
 3. Whether integration tests should provision PostgreSQL automatically in CI
    after the CI baseline is expanded.
+4. Migration-to-model alignment is tracked separately in
+   [issue #35](https://github.com/JamshidiML/smartcoat-intelligence/issues/35),
+   owned by persistence engineering. Acceptance requires creating a clean
+   database by the repository migration mechanism, comparing migrated tables and
+   constraints to current SQLAlchemy metadata, running the persistence contract
+   suite, and proving upgrade/rollback behavior without
+   `Base.metadata.create_all()`.

@@ -23,6 +23,7 @@ from smartcoat.storage.database.models import (
 )
 
 TEST_SCHEMA_PATTERN = re.compile(r"^smartcoat_test_[a-z0-9_]+$")
+LIVE_POSTGRES_OPT_IN = "true"
 
 
 @dataclass
@@ -32,27 +33,38 @@ class PostgresTestContext:
     session_factory: sessionmaker[Session]
 
 
-def _require_test_target(database_url: str, schema_name: str | None) -> str | None:
+def _require_live_postgres_opt_in(value: str | None) -> None:
+    if value != LIVE_POSTGRES_OPT_IN:
+        raise RuntimeError(
+            "Refusing live PostgreSQL integration: set "
+            "SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true explicitly."
+        )
+
+
+def _require_test_target(database_url: str, schema_name: str | None) -> str:
     url = make_url(database_url)
     if url.get_backend_name() != "postgresql":
         raise RuntimeError("PostgreSQL integration tests require a PostgreSQL URL.")
 
-    database_name = (url.database or "").lower()
-    if schema_name is not None:
-        normalized_schema = schema_name.lower()
-        if not TEST_SCHEMA_PATTERN.fullmatch(normalized_schema):
-            raise RuntimeError(
-                "SMARTCOAT_TEST_SCHEMA must start with 'smartcoat_test_' and contain only "
-                "lowercase letters, digits, and underscores."
-            )
-        return normalized_schema
-
-    if not database_name.endswith("_test"):
+    if schema_name is None:
+        raise RuntimeError("Refusing integration execution: SMARTCOAT_TEST_SCHEMA is mandatory.")
+    if not TEST_SCHEMA_PATTERN.fullmatch(schema_name):
         raise RuntimeError(
-            "Refusing integration execution: use a database ending in '_test' or set an "
-            "isolated SMARTCOAT_TEST_SCHEMA beginning with 'smartcoat_test_'."
+            "SMARTCOAT_TEST_SCHEMA must start with 'smartcoat_test_' and contain only "
+            "lowercase letters, digits, and underscores."
         )
-    return None
+    return schema_name
+
+
+def _drop_schema_and_assert_absent(admin_engine: Engine, schema_name: str) -> None:
+    with admin_engine.begin() as connection:
+        connection.execute(text(f'DROP SCHEMA "{schema_name}" CASCADE'))
+    with admin_engine.connect() as connection:
+        remaining = connection.scalar(
+            text("SELECT COUNT(*) FROM pg_namespace WHERE nspname = :schema_name"),
+            {"schema_name": schema_name},
+        )
+    assert remaining == 0
 
 
 def _cleanup_created_objects(
@@ -86,12 +98,20 @@ def _listed_object(client: TestClient, path: str, object_id: str) -> dict[str, A
 
 
 @pytest.fixture()
-def postgres_context() -> Generator[PostgresTestContext, None, None]:
+def live_postgres_target() -> tuple[str, str]:
     database_url = os.getenv("SMARTCOAT_TEST_DATABASE_URL")
     if not database_url:
         pytest.skip("Set SMARTCOAT_TEST_DATABASE_URL to run PostgreSQL integration tests.")
-
+    _require_live_postgres_opt_in(os.getenv("SMARTCOAT_RUN_LIVE_POSTGRES_TESTS"))
     schema_name = _require_test_target(database_url, os.getenv("SMARTCOAT_TEST_SCHEMA"))
+    return database_url, schema_name
+
+
+@pytest.fixture()
+def postgres_context(
+    live_postgres_target: tuple[str, str],
+) -> Generator[PostgresTestContext, None, None]:
+    database_url, schema_name = live_postgres_target
     admin_engine = create_engine(database_url, pool_pre_ping=True)
     test_engine: Engine = admin_engine
     schema_created = False
@@ -104,15 +124,14 @@ def postgres_context() -> Generator[PostgresTestContext, None, None]:
     }
 
     try:
-        if schema_name is not None:
-            with admin_engine.begin() as connection:
-                connection.execute(text(f'CREATE SCHEMA "{schema_name}"'))
-            schema_created = True
-            test_engine = create_engine(
-                database_url,
-                pool_pre_ping=True,
-                connect_args={"options": f"-csearch_path={schema_name}"},
-            )
+        with admin_engine.begin() as connection:
+            connection.execute(text(f'CREATE SCHEMA "{schema_name}"'))
+        schema_created = True
+        test_engine = create_engine(
+            database_url,
+            pool_pre_ping=True,
+            connect_args={"options": f"-csearch_path={schema_name}"},
+        )
 
         # This checks ORM/API compatibility only; it is not migration validation.
         Base.metadata.create_all(bind=test_engine)
@@ -142,17 +161,47 @@ def postgres_context() -> Generator[PostgresTestContext, None, None]:
             if session_factory is not None:
                 _cleanup_created_objects(session_factory, created_ids)
         finally:
-            if test_engine is not admin_engine:
-                test_engine.dispose()
-            if schema_created and schema_name is not None:
-                with admin_engine.begin() as connection:
-                    connection.execute(text(f'DROP SCHEMA "{schema_name}" CASCADE'))
-            admin_engine.dispose()
+            try:
+                if test_engine is not admin_engine:
+                    test_engine.dispose()
+                if schema_created:
+                    _drop_schema_and_assert_absent(admin_engine, schema_name)
+            finally:
+                admin_engine.dispose()
 
 
-def test_non_test_database_without_schema_is_rejected() -> None:
-    with pytest.raises(RuntimeError, match="Refusing integration execution"):
+def test_live_postgres_requires_exact_opt_in() -> None:
+    with pytest.raises(RuntimeError, match="SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true"):
+        _require_live_postgres_opt_in(None)
+    with pytest.raises(RuntimeError, match="SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true"):
+        _require_live_postgres_opt_in("TRUE")
+
+
+def test_postgres_target_requires_isolated_schema() -> None:
+    with pytest.raises(RuntimeError, match="SMARTCOAT_TEST_SCHEMA is mandatory"):
         _require_test_target("postgresql+psycopg://localhost/smartcoat", None)
+    with pytest.raises(RuntimeError, match="PostgreSQL URL"):
+        _require_test_target("sqlite:///smartcoat.db", "smartcoat_test_t04")
+    with pytest.raises(RuntimeError, match="lowercase letters"):
+        _require_test_target(
+            "postgresql+psycopg://localhost/smartcoat",
+            "smartcoat_test_T04",
+        )
+
+
+def test_schema_drop_helper_removes_temporary_schema(
+    live_postgres_target: tuple[str, str],
+) -> None:
+    database_url, base_schema_name = live_postgres_target
+    schema_name = f"{base_schema_name[:45]}_teardown_probe"
+    _require_test_target(database_url, schema_name)
+    admin_engine = create_engine(database_url, pool_pre_ping=True)
+    try:
+        with admin_engine.begin() as connection:
+            connection.execute(text(f'CREATE SCHEMA "{schema_name}"'))
+        _drop_schema_and_assert_absent(admin_engine, schema_name)
+    finally:
+        admin_engine.dispose()
 
 
 def test_http_to_postgres_round_trip_for_current_object_types(
