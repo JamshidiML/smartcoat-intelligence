@@ -35,6 +35,11 @@ canonical identifier. Each Technical Textiles Hub child schema constrains its
 own type with `const`. The platform envelope therefore does not enumerate or
 depend on textile object types.
 
+Its sole repository source is
+`schemas/platform/v1/platform-envelope.schema.json`, with canonical schema ID
+`urn:smartcoat:schema:platform:v1:envelope`. Technical Textiles schemas consume
+that ID and do not maintain a Hub-local copy.
+
 Governance values consume T07's proposed `smartcoat-governance-v1.1-draft`
 contract: `public/internal/confidential/restricted/strategic` and separate
 purpose decisions for `inventory`, `retrieval`, `analytics`, `human_review`,
@@ -60,7 +65,7 @@ or Enterprise Event semantics.
 
 | Entity | Minimum role in pilot | Machine schema |
 |---|---|---|
-| Source/provenance envelope | Explains origin, transformation, ownership, review, confidence, and evidence. | `platform-envelope.schema.json` |
+| Source/provenance envelope | Explains origin, transformation, ownership, review, confidence, and evidence. | `schemas/platform/v1/platform-envelope.schema.json` |
 | Organization/Site | Establishes tenant and facility context. | Envelope fields. |
 | Customer Requirement | Records property target, value state, unit, and priority. | Nested in trial. |
 | Project | Groups requirements, trials, accountable owner, decisions, and learning. | Nested in trial. |

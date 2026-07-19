@@ -2,11 +2,10 @@
 
 Status: Controlled-pilot proposal
 
-The JSON Schemas in this directory use JSON Schema Draft 2020-12:
+The JSON Schemas in this directory use JSON Schema Draft 2020-12 and extend the
+canonical platform envelope at
+[`../../platform/v1/platform-envelope.schema.json`](../../platform/v1/platform-envelope.schema.json):
 
-- `platform-envelope.schema.json`: industry-agnostic identity, tenancy, governance,
-  provenance, evidence, review, lifecycle, relationship, timestamp, and
-  measurement-state contract
 - `material.schema.json`: technical-textile material extension
 - `formulation.schema.json`: versioned formulation and ingredient extension
 - `coating-trial.schema.json`: project, requirement, hypothesis, sample,
@@ -21,8 +20,9 @@ test result.
 ## Validation
 
 The schemas are validated with Python `jsonschema` Draft 2020-12 support. The
-validator registers every schema by `$id`, checks each schema, and validates
-every embedded example against its owning schema with format checking enabled.
+validator registers the platform schema and all four Hub schemas by `$id`,
+checks all five schemas, and validates every embedded example against its owning
+schema with format checking enabled.
 
 ## Compatibility
 
@@ -33,10 +33,11 @@ a new schema version and a documented migration/mapping decision.
 
 ## Boundary
 
-The platform envelope's object type is extensible and contains no textile enum.
-Material, formulation, trial, and test child schemas constrain their own object
-types as Technical Textiles Industry Hub extensions. Application domain models
-and persistence are not changed by this schema package.
+The platform-owned envelope's object type is extensible and contains no textile
+enum. This directory contains no duplicate envelope definition. Material,
+formulation, trial, and test child schemas constrain their own object types as
+Technical Textiles Industry Hub extensions. Application domain models and
+persistence are not changed by this schema package.
 
 Governance values align with T07 schema `smartcoat-governance-v1.1-draft`.
 Purpose decisions are explicit for all six canonical purposes; schema presence
