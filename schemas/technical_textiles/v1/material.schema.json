@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:smartcoat:schema:technical-textiles:v1:material",
+  "title": "Technical Textiles Material v1",
+  "allOf": [
+    {"$ref": "urn:smartcoat:schema:platform:v1:envelope"},
+    {
+      "type": "object",
+      "required": ["material_kind", "manufacturer_reference", "specification_references"],
+      "properties": {
+        "object_type": {"const": "material"},
+        "material_kind": {
+          "enum": ["raw_material", "polymer", "resin", "additive", "filler", "pigment", "solvent", "substrate", "other"]
+        },
+        "manufacturer_reference": {"type": ["string", "null"]},
+        "supplier_references": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "specification_references": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "regulatory_references": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["property_name", "measurement"],
+            "properties": {
+              "property_name": {"type": "string", "minLength": 1},
+              "measurement": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "storage_condition": {"type": ["string", "null"]},
+        "shelf_life": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"},
+        "alternative_material_references": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "examples": [
+    {
+      "object_id": "material:synthetic-binder-a",
+      "object_type": "material",
+      "canonical_name": "Synthetic Binder A",
+      "description": "Generalized material used only for schema validation.",
+      "schema_version": "1.1.0",
+      "governance_schema_version": "smartcoat-governance-v1.1-draft",
+      "organization_id": "org_synthetic",
+      "site_id": "site_synthetic",
+      "owner": {"owner_id": "role:material-steward", "role": "material_steward"},
+      "confidentiality": "internal",
+      "purpose_decisions": {"inventory": "approved", "retrieval": "approved", "analytics": "not_requested", "human_review": "approved", "model_training": "denied", "external_sharing": "denied"},
+      "lifecycle_state": "reviewed",
+      "review": {"status": "accepted", "reviewer_id": "role:reviewer", "reviewed_at": "2026-01-03T00:00:00Z"},
+      "confidence": 0.9,
+      "provenance": {
+        "source_system": "synthetic_material_register",
+        "source_reference": "synthetic://materials/binder-a",
+        "created_by": "synthetic_fixture",
+        "creation_method": "manual_synthetic_fixture",
+        "source_created_at": "2026-01-01T00:00:00Z",
+        "captured_at": "2026-01-02T00:00:00Z",
+        "transformation_history": []
+      },
+      "evidence_references": ["evidence:synthetic-tds-binder-a"],
+      "relationships": [],
+      "created_at": "2026-01-02T00:00:00Z",
+      "updated_at": "2026-01-03T00:00:00Z",
+      "material_kind": "resin",
+      "manufacturer_reference": "manufacturer:synthetic-a",
+      "supplier_references": ["supplier:synthetic-a"],
+      "specification_references": ["specification:synthetic-binder-a-v1"],
+      "regulatory_references": [],
+      "properties": [
+        {"property_name": "viscosity", "measurement": {"state": "known", "value": 1000, "unit": "mPa.s"}},
+        {"property_name": "density", "measurement": {"state": "not_measured"}}
+      ],
+      "storage_condition": "Generalized controlled storage",
+      "shelf_life": {"state": "known", "value": 12, "unit": "month"},
+      "alternative_material_references": []
+    }
+  ]
+}

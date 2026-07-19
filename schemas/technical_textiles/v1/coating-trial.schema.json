@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:smartcoat:schema:technical-textiles:v1:coating-trial",
+  "title": "Technical Textiles Coating Trial v1",
+  "allOf": [
+    {"$ref": "urn:smartcoat:schema:platform:v1:envelope"},
+    {
+      "type": "object",
+      "required": [
+        "project",
+        "customer_requirements",
+        "trial_code",
+        "objective",
+        "samples",
+        "process_conditions",
+        "machine_reference",
+        "test_result_references",
+        "observations",
+        "failure_modes",
+        "root_cause_candidates",
+        "lesson_learned_references",
+        "decision_references",
+        "trial_status"
+      ],
+      "properties": {
+        "object_type": {"const": "coating_trial"},
+        "project": {
+          "type": "object",
+          "required": ["project_id", "project_name", "project_owner"],
+          "properties": {
+            "project_id": {"type": "string", "minLength": 1},
+            "project_name": {"type": "string", "minLength": 1},
+            "project_owner": {"type": "string", "minLength": 1}
+          },
+          "additionalProperties": false
+        },
+        "customer_requirements": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["requirement_id", "property_name", "target", "priority"],
+            "properties": {
+              "requirement_id": {"type": "string", "minLength": 1},
+              "property_name": {"type": "string", "minLength": 1},
+              "target": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"},
+              "priority": {"enum": ["must", "should", "could"]}
+            },
+            "additionalProperties": false
+          }
+        },
+        "trial_code": {"type": "string", "minLength": 1},
+        "objective": {"type": "string", "minLength": 1},
+        "hypotheses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["hypothesis_id", "statement", "confidence"],
+            "properties": {
+              "hypothesis_id": {"type": "string", "minLength": 1},
+              "statement": {"type": "string", "minLength": 1},
+              "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+            },
+            "additionalProperties": false
+          }
+        },
+        "samples": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["sample_id", "substrate_reference", "formulation_reference"],
+            "properties": {
+              "sample_id": {"type": "string", "minLength": 1},
+              "substrate_reference": {"type": "string", "minLength": 1},
+              "fabric_specification_reference": {"type": ["string", "null"]},
+              "formulation_reference": {"type": "string", "minLength": 1},
+              "material_batch_references": {"type": "array", "items": {"type": "string"}}
+            },
+            "additionalProperties": false
+          }
+        },
+        "process_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["condition_name", "measurement"],
+            "properties": {
+              "condition_name": {"type": "string", "minLength": 1},
+              "measurement": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "machine_reference": {"type": "string", "minLength": 1},
+        "line_reference": {"type": ["string", "null"]},
+        "test_result_references": {"type": "array", "items": {"type": "string"}},
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["observation_id", "statement", "evidence_reference"],
+            "properties": {
+              "observation_id": {"type": "string", "minLength": 1},
+              "statement": {"type": "string", "minLength": 1},
+              "evidence_reference": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": false
+          }
+        },
+        "failure_modes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["failure_mode_id", "description", "severity"],
+            "properties": {
+              "failure_mode_id": {"type": "string", "minLength": 1},
+              "description": {"type": "string", "minLength": 1},
+              "severity": {"enum": ["low", "medium", "high", "critical"]}
+            },
+            "additionalProperties": false
+          }
+        },
+        "root_cause_candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["candidate_id", "statement", "confidence", "status"],
+            "properties": {
+              "candidate_id": {"type": "string", "minLength": 1},
+              "statement": {"type": "string", "minLength": 1},
+              "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+              "status": {"enum": ["proposed", "supported", "rejected", "unresolved"]}
+            },
+            "additionalProperties": false
+          }
+        },
+        "lesson_learned_references": {"type": "array", "items": {"type": "string"}},
+        "decision_references": {"type": "array", "items": {"type": "string"}},
+        "deviations": {"type": "array", "items": {"type": "string"}},
+        "trial_status": {"enum": ["planned", "running", "completed", "reviewed", "cancelled"]}
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "examples": [
+    {
+      "object_id": "coating_trial:synthetic-trial-a",
+      "object_type": "coating_trial",
+      "canonical_name": "Synthetic Coating Trial A",
+      "description": "Generalized end-to-end R&D trial fixture.",
+      "schema_version": "1.1.0",
+      "governance_schema_version": "smartcoat-governance-v1.1-draft",
+      "organization_id": "org_synthetic",
+      "site_id": "site_synthetic",
+      "owner": {"owner_id": "role:rnd-owner", "role": "rnd_owner"},
+      "confidentiality": "confidential",
+      "purpose_decisions": {"inventory": "approved", "retrieval": "approved", "analytics": "not_requested", "human_review": "approved", "model_training": "denied", "external_sharing": "denied"},
+      "lifecycle_state": "reviewed",
+      "review": {"status": "accepted", "reviewer_id": "role:trial-reviewer", "reviewed_at": "2026-01-08T00:00:00Z"},
+      "confidence": 0.8,
+      "provenance": {
+        "source_system": "synthetic_lab_notebook",
+        "source_reference": "synthetic://trials/trial-a",
+        "created_by": "synthetic_fixture",
+        "creation_method": "manual_synthetic_fixture",
+        "source_created_at": "2026-01-05T00:00:00Z",
+        "captured_at": "2026-01-05T01:00:00Z",
+        "transformation_history": []
+      },
+      "evidence_references": ["evidence:synthetic-trial-note-a"],
+      "relationships": [
+        {"relationship_type": "uses_formulation", "target_id": "formulation:synthetic-coating-v1"},
+        {"relationship_type": "evaluated_by", "target_id": "test_result:synthetic-trial-a-result-1"}
+      ],
+      "created_at": "2026-01-05T01:00:00Z",
+      "updated_at": "2026-01-08T00:00:00Z",
+      "project": {"project_id": "project:synthetic-project-a", "project_name": "Synthetic Project A", "project_owner": "role:project-owner"},
+      "customer_requirements": [
+        {"requirement_id": "requirement:synthetic-requirement-a", "property_name": "synthetic_performance_property", "target": {"state": "known", "value": 10, "unit": "synthetic_unit"}, "priority": "must"}
+      ],
+      "trial_code": "SYN-TRIAL-A",
+      "objective": "Evaluate a fictional coating system against a synthetic requirement.",
+      "hypotheses": [
+        {"hypothesis_id": "knowledge:synthetic-hypothesis-a", "statement": "The synthetic system may satisfy the generalized target.", "confidence": 0.5}
+      ],
+      "samples": [
+        {"sample_id": "sample:synthetic-sample-a", "substrate_reference": "material:synthetic-substrate-a", "fabric_specification_reference": "specification:synthetic-fabric-a", "formulation_reference": "formulation:synthetic-coating-v1", "material_batch_references": ["batch:synthetic-a"]}
+      ],
+      "process_conditions": [
+        {"condition_name": "line_speed", "measurement": {"state": "known", "value": 5, "unit": "m/min"}},
+        {"condition_name": "drying_temperature", "measurement": {"state": "conflicting", "conflicting_values": [100, 105], "unit": "degC", "notes": "Synthetic conflict retained for review."}}
+      ],
+      "machine_reference": "machine:synthetic-coater-a",
+      "line_reference": "line:synthetic-line-a",
+      "test_result_references": ["test_result:synthetic-trial-a-result-1"],
+      "observations": [
+        {"observation_id": "knowledge:synthetic-observation-a", "statement": "Synthetic surface appeared uniform.", "evidence_reference": "evidence:synthetic-image-a"}
+      ],
+      "failure_modes": [],
+      "root_cause_candidates": [
+        {"candidate_id": "knowledge:synthetic-root-cause-a", "statement": "No confirmed root cause; retained as unresolved synthetic candidate.", "confidence": null, "status": "unresolved"}
+      ],
+      "lesson_learned_references": ["knowledge:synthetic-lesson-a"],
+      "decision_references": ["decision:synthetic-next-step-a"],
+      "deviations": ["Synthetic temperature records conflict and require review."],
+      "trial_status": "reviewed"
+    }
+  ]
+}
