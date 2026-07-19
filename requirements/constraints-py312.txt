@@ -3,6 +3,11 @@
 # Regenerate deliberately after reviewing upstream changes; do not hand this file
 # to pip as a standalone requirements file. Install the project with:
 #   python -m pip install -c requirements/constraints-py312.txt -e '.[dev]'
+#
+# Provenance: transitive version snapshot captured 2026-07-16 from the clean
+# Python 3.12 Cycle 2 environment. The original ephemeral environment and exact
+# freeze invocation were not retained. Follow the reviewed regeneration procedure
+# in docs/development/ENGINEERING_BASELINE.md; do not treat this as a hash lock.
 
 annotated-doc==0.0.4
 annotated-types==0.7.0

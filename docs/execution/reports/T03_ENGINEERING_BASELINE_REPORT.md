@@ -10,7 +10,7 @@ Branch: `thread/03-engineering-baseline-ci`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/25
 
-Final status: `CORRECTION IN PROGRESS`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -30,28 +30,30 @@ All paths are owned by issue #17 or explicitly authorized by its review.
 
 ## Methods and Commands Executed
 
-- `python -m pip install --constraint requirements/constraints-py312.txt -e '.[dev]'`
-- `python -m pip check`
-- `python -m pytest`
-- `python -m ruff check .`
-- `python -m ruff format --check .`
-- `python -m mypy src`
+- `"$TMPDIR/smartcoat-cycle3-t03-venv/bin/python" -m pip install --constraint requirements/constraints-py312.txt -e '.[dev]'`
+- `"$TMPDIR/smartcoat-cycle3-t03-venv/bin/python" -m pip check`
+- `"$TMPDIR/smartcoat-cycle3-t03-venv/bin/python" -m pytest -q`
+- `"$TMPDIR/smartcoat-cycle3-t03-venv/bin/python" -m ruff check .`
+- `"$TMPDIR/smartcoat-cycle3-t03-venv/bin/python" -m ruff format --check .`
+- `"$TMPDIR/smartcoat-cycle3-t03-venv/bin/python" -m mypy src`
+- In the T04 worktree: `"$TMPDIR/smartcoat-cycle3-t04-venv/bin/python" -m mypy src`
 - `git diff --check`
 
 ## Actual Results
 
 | Method or Command | Actual Result | Evidence |
 |---|---|---|
-| Python runtime | PASS: Python 3.12.13 | Clean Cycle 2 environment output. |
-| Constrained install | PASS: fresh environment installed | Escalated Cycle 2 install output. |
+| Python runtime | PASS: Python 3.12.13 | Clean Cycle 3 environment output. |
+| Constrained install | PASS: fresh Cycle 3 environment installed | Python 3.12.13 and committed constraints. |
 | `pip check` | PASS: no broken requirements | Command output. |
-| Pytest | PASS: 13 tests | Cycle 2 test output. |
+| Pytest | PASS: 13 tests in 0.69 seconds | Final Cycle 3 test output. |
 | Ruff check | FAIL: 24 existing findings | Repository-wide measurement, not enabled as a gate. |
 | Ruff format | FAIL: 2 files would be reformatted | Repository-wide measurement, not enabled as a gate. |
 | MyPy | FAIL: 2 event-service return-type errors | Must be remeasured after T04 integration. |
-| GitHub Actions | PASS: SmartCoat CI run #5 on older cited commit | Report correction must replace this with current run #6 evidence. |
+| T04 contract MyPy | PASS: no issues in 41 source files at `36eef25` | Cross-branch evidence; no integration or merge is claimed. |
+| GitHub Actions | PASS: run #7 for `efa1c55` | GitHub commit workflow evidence, conclusion success. |
 | Owned-path check | PASS: six changed paths within T03 ownership/authorization | Branch diff against release baseline. |
-| `git diff --check` | PASS: no whitespace errors | Cycle 2 command output. |
+| `git diff --check` | PASS: no whitespace errors | Cycle 3 command output. |
 
 ## Acceptance-Criteria Evidence
 
@@ -82,21 +84,22 @@ introduced. The workflow uses explicit read-only repository permissions.
 
 ## Known Limitations
 
-- Current-head/run evidence and constraints provenance need Cycle 3 correction.
+- Final self-referential commit/run evidence must be recorded in PR #25 after push.
+- Original snapshot environment/freeze command was not retained; this is documented provenance debt.
 - Constraints are a Python 3.12 environment snapshot, not a universal hash lock.
-- Ruff and formatting debt need explicit ownership before becoming CI gates.
+- Ruff and formatting debt is owned by issue #36 and must reach zero before becoming CI gates.
 - MyPy must be remeasured after T04 contract changes are available.
 
 ## Lost Points and Correction Items
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | PR #25 current-head evidence deduction | 2 | IN PROGRESS | Record current commit and GitHub Actions run #6. |
-| C02 | PR #25 constraints provenance deduction | 2 | IN PROGRESS | Document generation, regeneration, review, and diff procedure. |
-| C03 | PR #25 compatibility deduction | 1 | IN PROGRESS | State Python 3.12 snapshot and non-universal non-hash-lock limits. |
-| C04 | PR #25 integrated MyPy deduction | 1 | IN PROGRESS | Remeasure after T04 integration and report actual current result. |
-| C05 | PR #25 Ruff ownership deduction | 1 | IN PROGRESS | Name follow-up owner and CI-enablement acceptance condition. |
-| C06 | PR #25 report-contract deduction | 1 | IN PROGRESS | Complete schema-v2 migration and final validation evidence. |
+| C01 | PR #25 current-head evidence deduction | 2 | IN PROGRESS | Run #7 for `efa1c55` recorded; final commit/run pair goes in PR #25 after push. |
+| C02 | PR #25 constraints provenance deduction | 2 | IN PROGRESS | Honest snapshot origin and seven-step regeneration/review procedure documented. |
+| C03 | PR #25 compatibility deduction | 1 | IN PROGRESS | Python 3.12 snapshot and platform/hash-lock limits are explicit. |
+| C04 | PR #25 integrated MyPy deduction | 1 | IN PROGRESS | T04 `36eef25` passes 41 files; integration-branch remeasurement remains pending because merging is prohibited. |
+| C05 | PR #25 Ruff ownership deduction | 1 | IN PROGRESS | Issue #36 owns named paths and zero-finding/CI acceptance criteria; re-review pending. |
+| C06 | PR #25 report-contract deduction | 1 | IN PROGRESS | Schema-v2 validation passes; independent re-review pending. |
 
 ## Codex Self-Score
 
@@ -149,11 +152,11 @@ Critical-gate result: PASS
 |---:|---:|---|---|---:|---|---|
 | 1 | 92 | Clean install lacked TestClient dependency and deterministic controls. | Added dependency, constraints, least privilege, event deduplication, cancellation, and pip check. | 96 | Clean install, pip check, pytest, CI, and measured debt. | CLOSED |
 | 2 | 96 | Reviewer required current evidence, constraint provenance, compatibility limits, integrated MyPy, Ruff ownership, and T10 migration. | Recorded 92 reviewer score and eight-point correction burden. | 92 | PR #25 Cycle 2 independent review. | CLOSED |
-| 3 | 92 | Six Cycle 3 correction groups remain. | Schema-v2 normalization started; substantive validation continues in Wave C. | 96 | V2 structural validation pending this migration commit. | OPEN |
+| 3 | 92 | Current CI evidence, provenance, compatibility, MyPy integration, Ruff ownership, and v2 migration required correction. | Recorded run #7, honest snapshot provenance, regeneration policy, compatibility limits, T04 cross-branch MyPy pass, issue #36, and v2 report. | 96 | Clean install, pip check, 13 tests, 24 Ruff findings, 2 format findings, 2 isolated T03 MyPy errors, T04 41-file MyPy pass, and run #7 success. | OPEN |
 
 ## Recommended Follow-up Issues
 
-- Assign repository-wide Ruff/format debt and enable gates only when zero findings are demonstrated.
+- Complete issue #36 and enable Ruff/format gates only when zero findings are demonstrated.
 - Enable MyPy in CI only after integrated T04 contracts produce a green scoped result.
 
 ## Blockers
