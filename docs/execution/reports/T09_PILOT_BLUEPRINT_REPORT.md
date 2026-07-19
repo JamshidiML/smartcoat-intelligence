@@ -23,16 +23,17 @@ multi-company proof, or production maturity.
 - `docs/pilot/TECHNICAL_TEXTILE_LIVING_FACTORY_PILOT.md`
 - `docs/pilot/PILOT_SUCCESS_METRICS.md`
 - `docs/pilot/INVESTOR_AND_CUSTOMER_PROOF_PACKAGE.md`
+- `docs/pilot/PILOT_USE_CASE_PORTFOLIO.md`
 - `docs/execution/reports/T09_PILOT_BLUEPRINT_REPORT.md`
 
-The unchanged `docs/pilot/PILOT_USE_CASE_PORTFOLIO.md` was reviewed in full. All
-modified paths are owned by issue #23.
+The use-case portfolio was unchanged during Cycle 3 after full review, but it is
+part of the branch diff. All five changed paths are owned by issue #23.
 
 ## Methods and Commands Executed
 
 - Python 3.12 inline assertions checked dependency rows, cross-thread targets,
   stop contracts, claim contracts, use cases, autonomy vocabulary, and scorecard.
-- `rg -n "l2_assisted_recommendation|planning assumptions|Phase 1|Phase 2" docs/pilot`
+- `rg -n "l2_recommend|planning assumptions|Phase 1|Phase 2" docs/pilot`
 - `git diff --check`
 - `git diff --name-only origin/release/1.7-project-reset...HEAD`
 
@@ -41,9 +42,9 @@ modified paths are owned by issue #23.
 | Method or Command | Actual Result | Evidence |
 |---|---|---|
 | Cross-document assertions | PASS: 8 dependency rows, 4 cross-thread references, 4 stop contracts, 8 claim contracts, and 9 use cases | Python assertion output. |
-| Autonomy scan | PASS: canonical `l2_assisted_recommendation` and no active legacy level | Scoped text scan. |
+| Autonomy scan | PASS: T07 canonical `l2_recommend` and no active legacy level | Scoped text scan. |
 | Scorecard arithmetic | PASS: 95 of 100 | Seven category rows recomputed. |
-| Owned-path check | PASS: four changed paths, all T09-owned | Branch diff against release baseline. |
+| Owned-path check | PASS: five changed paths, all T09-owned | Branch diff against release baseline. |
 | `git diff --check` | PASS: no whitespace errors | Command exited zero. |
 
 ## Acceptance-Criteria Evidence
@@ -91,7 +92,7 @@ review, deletion, incident stop, and evidence controls.
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | PR #33 autonomy correction | 1 | IN PROGRESS | Canonical `l2_assisted_recommendation` applied; re-review pending. |
+| C01 | PR #33 autonomy correction | 1 | IN PROGRESS | T07 canonical `l2_recommend` applied; re-review pending. |
 | C02 | PR #33 company-phasing correction | 1 | IN PROGRESS | Phase 1 product proof and Phase 2 platform proof are separately gated. |
 | C03 | PR #33 planning-assumption correction | 1 | IN PROGRESS | User, record, scenario, and duration ranges require explicit approval. |
 | C04 | PR #33 dependency-map correction | 1 | IN PROGRESS | All eight steps map releases, governance, and external blockers. |
@@ -132,7 +133,7 @@ Gate-adjusted score: 93.8
 | G2 Confidential data | PASS | Generalized and synthetic-only descriptions. |
 | G3 Approved scope and architecture | PASS | Documentation-only product/platform phasing within issue scope. |
 | G4 Required validation | PASS | Cross-document, autonomy, score, scope, and diff checks passed. |
-| G5 File ownership | PASS | All four modified paths are T09-owned. |
+| G5 File ownership | PASS | All five modified paths are T09-owned. |
 | G6 Acceptance completeness | PASS | Every issue criterion is checked with evidence. |
 
 Critical-gate result: PASS

@@ -38,7 +38,7 @@ data-readiness assessment, and product-capacity review:
 - 6-8 operational weeks after technical and governance readiness
 - approved metadata, requirement abstractions, project/trial references, test
   results, observations, failures, lessons, and decisions only
-- canonical `l2_assisted_recommendation`; every knowledge promotion and
+- canonical `l2_recommend`; every knowledge promotion and
   consequential decision remains human-approved
 
 Packaging/logistics participates only when packaging, storage, transport, or
@@ -136,7 +136,7 @@ before the corresponding step can enter a live pilot.
 | 1. Authorize session | Basic API/auth concepts only | Tenant-aware persistence and audit events | Role-aware session UI | None required | Production IAM, tenant isolation, purpose/expiry enforcement | Named users, approved roles, company security review |
 | 2. Frame requirement | Domain/API foundations only | Requirement/context lifecycle and evidence links | Guided capture and human confirmation | Adaptive questions and uncertainty | Approved fields, customer disclosure boundary, provenance | Sponsor-selected workflow and sanitized requirement set |
 | 3. Retrieve context | Basic list/get behavior only | Filtered, paginated reviewed records | Evidence/status browsing UI | Semantic retrieval and relevance rationale | Purpose-scoped access, reviewed-only filter, audit | Approved historical package with sufficient coverage |
-| 4. Plan | No recommendation capability | Persist missing-information and decision records | Review/approval interface | Missing-information detection and assisted recommendation | `l2_assisted_recommendation`, human approval, no actuation | Domain-approved rubric and test-planning authority |
+| 4. Plan | No recommendation capability | Persist missing-information and decision records | Review/approval interface | Missing-information detection and assisted recommendation | `l2_recommend`, human approval, no actuation | Domain-approved rubric and test-planning authority |
 | 5. Capture outcome | Manual API input only | Experiment/result/lesson models, lifecycle, provenance | Usable non-JSON capture UI | Extraction, confidence, adaptive follow-up | Source permission, classification, evidence handling | Approved new captures and trained users |
 | 6. Review | Partial status concepts only | Review lifecycle, correction history, audit | Named reviewer workflow | Field-level uncertainty support | Segregation of duties and quality authority | Available R&D/Quality reviewers and agreed rubric |
 | 7. Promote and store | Development persistence only | Governed persistence and immutable audit evidence | Explicit promotion action and status visibility | No autonomous promotion | Authorization, retention/deletion, rollback, incident stop | Production readiness and approved retention package |
@@ -196,7 +196,7 @@ artifacts before implementation claims are made:
   `docs/data/DATA_READINESS_MATRIX.md` for source-specific readiness evidence;
 - T07: `docs/governance/INDUSTRIAL_DATA_GOVERNANCE_V1.md` and
   `docs/governance/HUMAN_OVERSIGHT_AND_AUTONOMY_LEVELS.md` for canonical
-  purpose decisions and `l2_assisted_recommendation`;
+  purpose decisions and `l2_recommend`;
 - T08: `docs/ingestion/INGESTION_FOUNDATION_V1.md` for metadata-only source
   registration, duplicate identity, and the non-authorization boundary.
 
