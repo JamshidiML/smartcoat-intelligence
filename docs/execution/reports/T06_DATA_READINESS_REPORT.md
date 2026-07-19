@@ -1,5 +1,7 @@
 # T06 Data Readiness Report
 
+Report schema version: `smartcoat-execution-report-v2.0`
+
 Thread ID: T06
 
 Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/20
@@ -8,7 +10,7 @@ Branch: `thread/06-data-source-inventory-readiness`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/31
 
-Final status: `CORRECTION CYCLE 3 COMPLETE; READY FOR INDEPENDENT RE-REVIEW`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -23,112 +25,133 @@ technical-textile data landscape without ingesting confidential sources.
 - `docs/data/templates/DATASET_ASSESSMENT_TEMPLATE.md`
 - `docs/execution/reports/T06_DATA_READINESS_REPORT.md`
 
-## Work Completed
+All paths are owned by issue #20.
 
-- Covered 15 source families across the enterprise.
-- Separated source discovery, permission, assessment, preparation, and ingestion.
-- Defined mandatory governance metadata and stop gates.
-- Added a weighted 100-point, 16-dimension readiness model.
-- Added reusable CSV and assessment templates with synthetic examples.
-- Recommended a small measurable first package and founder questions.
-- Versioned the scoring model and every assessment with timestamp, assessor,
-  evidence, and reassessment lineage.
-- Adopted canonical T07 confidentiality and six purpose-decision values plus
-  tri-state sensitivity fields where unknown never means false.
+## Methods and Commands Executed
 
-## Validation
+- Python 3.12 `csv.DictReader` validation checked schema, canonical values,
+  timestamps, lineage, rating ranges, purpose gates, and score recomputation.
+- `rg -n "contains_personal_data|permitted_uses|inventory_only|highly_confidential" docs/data`
+- `git diff --check`
+- `git diff --name-only origin/release/1.7-project-reset...HEAD`
 
-Cycle 3 validation completed on 2026-07-19:
+## Actual Results
 
-- Python `csv.DictReader` check: 3 synthetic rows, unique IDs, 16/16 rating
-  columns present, and every rating within 0-4.
-- Independent weighted-score recomputation: `77.5`, `97.8`, and `94.8`, all
-  matching stored values to one decimal place.
-- Purpose-gate check: one `94.8` example remains `blocked` because analytics is
-  intended and its decision is `in_review`.
-- Version, timestamp, assessor, evidence, canonical vocabulary, sensitivity,
-  and history checks passed for every row.
-- `git diff --check`: passed.
+| Method or Command | Actual Result | Evidence |
+|---|---|---|
+| CSV structure | PASS: 3 synthetic rows and 62 columns | DictReader output with no extra cells. |
+| Rating dimensions | PASS: 16 dimensions per row in range 0-4 | Python assertion output. |
+| Score recomputation | PASS: 77.5, 97.8, and 94.8 | Independent weighted calculation. |
+| Purpose gate | PASS: 94.8 row remains blocked for analytics in review | Gate assertion output. |
+| Vocabulary and history | PASS: canonical decisions, tri-state sensitivity, version, assessor, evidence, and lineage | Python assertions. |
+| Legacy vocabulary scan | PASS: no active retired register fields or values | Scoped text scan. |
+| Owned-path check | PASS: five changed paths, all T06-owned | Branch diff against release baseline. |
+| `git diff --check` | PASS: no whitespace errors | Command exited zero. |
 
 ## Acceptance-Criteria Evidence
 
-| Criterion | Evidence |
-|---|---|
-| Covers company flows | Taxonomy spans R&D, materials, quality, production, ERP, commercial, logistics, machines, media, tacit and external knowledge. |
-| Discovery separate from permission | Non-negotiable boundary, workflow, and gate. |
-| Mandatory owner/confidentiality | Canonical confidentiality, tri-state sensitivity, register columns, assessment stop check, and blocked gate. |
-| Explicit readiness calculation | 16 dimensions total 100 with 0-4 formula. |
-| Small measurable package | Recommended first controlled package. |
-| No confidential content | Generalized/synthetic metadata only. |
-| User-completable structure | CSV and Markdown templates. |
+- [x] Cover the technical-textile company data landscape.
+  Evidence: fifteen source families across R&D, quality, production, ERP, commercial, machine, tacit, and external sources.
+- [x] Separate discovery from permission and ingestion.
+  Evidence: fail-closed discovery-to-pilot workflow and mandatory gate.
+- [x] Require owner, classification, and purpose-specific decisions.
+  Evidence: CSV and assessment fields for accountability, canonical confidentiality, sensitivity, and six purposes.
+- [x] Make readiness calculation explicit and versioned.
+  Evidence: sixteen dimensions, 100 points, formula, model version, and calibration policy.
+- [x] Prove score cannot override governance.
+  Evidence: synthetic 94.8 row remains blocked for analytics in review.
+- [x] Preserve reassessment history.
+  Evidence: new assessment ID, prior ID/score, reason, timestamp, assessor, evidence, and history reference.
+- [x] Provide reusable user-completable templates.
+  Evidence: CSV register and Markdown assessment template.
+- [x] Use no confidential content.
+  Evidence: generalized synthetic metadata only.
 
 ## Architecture Impact
 
-No schema, ingestion, application, or security policy changed. The framework
-operationalizes existing security, provenance, quality, and pilot decisions.
+No application, schema, ingestion, or security implementation changed. The
+framework operationalizes existing security, provenance, quality, and pilot
+decisions as a metadata-only preparation contract.
 
 ## Security and Data Impact
 
 No raw names, identities, recipes, prices, personal data, or source content are
-included. Unknown permission always blocks ingestion.
+included. Unknown sensitivity is never false, and any non-approved intended
+purpose blocks preparation regardless of score.
 
 ## Known Limitations
 
-- Ratings require evidence and human/domain-owner review.
+- Ratings require evidence and domain-owner review.
 - This framework is not legal approval or technical ingestion enforcement.
 - Real source counts, owners, permissions, and quality remain unknown.
-- Weights and bands are pilot hypotheses requiring outcome-based calibration.
-- Final T10 report-contract migration remains a Wave B action.
+- Weights and bands are hypotheses requiring outcome-based calibration.
+- Independent Cycle 3 review remains pending.
 
 ## Lost Points and Correction Items
 
-Authoritative independent review scored the prior head **91/100**; with the
-96 self-score, the provisional weighted score was **93.0/100**. All critical
-gates passed. Every deduction became a Cycle 3 correction item.
-
-Remaining provisional deductions:
-
-1. Reserve one point for independent Cycle 3 governance/domain review.
-2. Reserve one point until real owners complete the metadata-only inventory.
-3. Reserve one point until the first sanctioned package is scored.
-4. Reserve one point until measured outcomes calibrate the hypothesis weights.
-5. Reserve one point until Wave B applies the corrected T10 report contract.
+| Item | Source | Points | Status | Action or Evidence |
+|---|---|---:|---|---|
+| C01 | PR #31 assessment-metadata correction | 2 | IN PROGRESS | Model version, timestamp, assessor, evidence, and unique assessment ID added. |
+| C02 | PR #31 sensitivity-state correction | 1 | IN PROGRESS | Five sensitivity fields use unknown, none, or present. |
+| C03 | PR #31 purpose-status correction | 1 | IN PROGRESS | Six canonical purpose decisions are stored separately. |
+| C04 | PR #31 vocabulary correction | 1 | IN PROGRESS | T07 confidentiality and decision values applied. |
+| C05 | PR #31 calibration correction | 1 | IN PROGRESS | Weights and bands labeled hypotheses with versioned recalibration. |
+| C06 | PR #31 blocked-high-score correction | 1 | IN PROGRESS | Synthetic 94.8 analytics-in-review row remains blocked. |
+| C07 | PR #31 history correction | 1 | IN PROGRESS | Prior ID/score, reason, evidence, and immutable history fields added. |
+| C08 | PR #31 report-contract correction | 1 | IN PROGRESS | Execution report migrated to schema v2 and validated locally. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 24 | Versioned dimensions, formula, purpose gates, lineage, and examples. | Independent Cycle 3 review pending. |
-| Scope and acceptance criteria | 20 | 20 | All five owned deliverables complete. | None. |
-| Architecture and North-Star alignment | 15 | 15 | Covers enterprise nervous system and controlled pilot. | None. |
-| Verification, tests, or validation | 15 | 14 | CSV parsing, rating-range, score, gate, coverage, and diff checks passed. | Real package not available. |
+| Correctness and evidence | 25 | 24 | Versioned dimensions, purpose gates, lineage, and examples. | Independent Cycle 3 review pending. |
+| Scope and acceptance criteria | 20 | 20 | All five owned deliverables and issue criteria covered. | None. |
+| Architecture and North-Star alignment | 15 | 15 | Enterprise source landscape and controlled pilot boundary align. | None. |
+| Verification, tests, or validation | 15 | 14 | CSV, vocabulary, history, score, gate, scope, and diff checks passed. | Real package unavailable. |
 | Security, privacy, and data governance | 10 | 10 | Permission cannot be overridden by readiness. | None. |
-| Documentation and traceability | 10 | 8 | Security/domain/information/project coverage plus assessment history. | Real owners and T10 migration remain. |
-| Maintainability and clarity | 5 | 4 | Reusable versioned templates and explicit recalibration policy. | Outcome calibration pending. |
-| Total | 100 | 95 | Cycle 3 locally evidenced; authoritative score remains 91. | Five provisional points remain. |
+| Documentation and traceability | 10 | 8 | Versioned model, evidence, history, and report are explicit. | Real owners and evidence pending. |
+| Maintainability and clarity | 5 | 4 | Reusable versioned templates and recalibration policy. | Outcome calibration pending. |
+| Total | 100 | 95 | Cycle 3 local evidence is complete. | Five self-score points remain. |
+
+## ChatGPT Reviewer Score
+
+Reviewer total: 91
+
+Reviewer evidence: GitHub PR #31 Cycle 1 independent review submitted 2026-07-16.
+
+## Final Score
+
+Provisional weighted score: 92.6
+
+Gate-adjusted score: 92.6
 
 ## Critical-Gate Declaration
 
-The independent review confirmed that all critical gates pass. A synthetic 94.8
-example remains blocked by its purpose-specific analytics gate. No raw data was
-accessed, and files remain in T06 scope. Only independent Cycle 3 re-review may
-replace the authoritative 91/100 score.
+| Gate | Status | Evidence |
+|---|---|---|
+| G1 Verified claims | PASS | Scores and gates are recomputed from synthetic metadata. |
+| G2 Confidential data | PASS | Generalized synthetic rows only. |
+| G3 Approved scope and architecture | PASS | Metadata-only documentation/templates within issue scope. |
+| G4 Required validation | PASS | CSV, score, gate, vocabulary, history, scope, and diff checks passed. |
+| G5 File ownership | PASS | All five changed paths are T06-owned. |
+| G6 Acceptance completeness | PASS | Every issue criterion is checked with evidence. |
+
+Critical-gate result: PASS
 
 ## Correction-Cycle History
 
-| Cycle | Starting Score | Findings | Corrections | Ending Score |
-|---:|---:|---|---|---:|
-| 1 | 90 | Needed permission stop gates, explicit weighting, and reusable templates. | Added governance gate, 100-point matrix, CSV/assessment templates, and controlled package. | 96 provisional. |
-| 2 | 96 self-score | Independent review required assessment metadata, tri-state sensitivity, purpose-specific decisions, canonical vocabulary, hypothesis labeling, a blocked high-score example, reassessment history, and T10 migration. | Findings accepted; reviewer score recorded as 91 and weighted score as 93.0. | 91 authoritative. |
-| 3 | 91 authoritative | Eight correction groups derived from every reviewer deduction. | Added model/assessment versioning, canonical decisions, tri-state sensitivity, hypothesis/calibration policy, blocked 94.8 example, and immutable reassessment lineage. | 95 provisional self-score; 91 remains authoritative pending re-review. |
+| Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
+|---:|---:|---|---|---:|---|---|
+| 1 | 90 | Needed permission gates, explicit weights, and reusable templates. | Added gate, 100-point matrix, CSV/assessment templates, and controlled package. | 96 | Initial CSV, score, gate, coverage, and diff checks. | CLOSED |
+| 2 | 96 | Reviewer required metadata, tri-state sensitivity, six decisions, canonical values, calibration, blocked high score, history, and T10 migration. | Recorded 91 reviewer score and nine-point correction burden. | 91 | PR #31 independent review. | CLOSED |
+| 3 | 91 | Nine reviewer points became eight correction items. | Added versioning, canonical decisions, sensitivity states, calibration policy, blocked 94.8 example, history, and v2 report. | 95 | Three rows, sixteen dimensions, exact scores, purpose gate, vocabulary, history, scope, and diff checks passed. | OPEN |
 
 ## Recommended Follow-up Issues
 
 - Run a metadata-only owner workshop to populate the register.
 - Obtain legal/security review before inspecting any real sample.
-- Score and approve the first sanitized package under the governance framework.
+- Score the first sanctioned package and calibrate the model from outcomes.
 
 ## Blockers
 
-None for framework review. Real-data preparation remains blocked until owners
-and permissions are documented.
+None.
