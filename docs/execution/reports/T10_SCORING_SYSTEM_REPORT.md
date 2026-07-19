@@ -37,6 +37,7 @@ All paths are exclusively owned by issue #24.
 - `"$TMPDIR/smartcoat-cycle3-t08-venv/bin/python" -m ruff format --check scripts/validate_execution_reports.py tests/test_validate_execution_reports.py`
 - `"$TMPDIR/smartcoat-cycle3-t08-venv/bin/python" -m mypy --explicit-package-bases scripts/validate_execution_reports.py tests/test_validate_execution_reports.py`
 - `python scripts/validate_execution_reports.py --require-count 10 <ten actual report paths>`
+- In the Cycle 4 candidate: `"$TMPDIR/smartcoat-cycle4-integration-venv/bin/python" scripts/validate_execution_reports.py --require-count 10 docs/execution/reports/T01_LIVING_INDUSTRY_REPORT.md docs/execution/reports/T02_DOCUMENTATION_SYNC_REPORT.md docs/execution/reports/T03_ENGINEERING_BASELINE_REPORT.md docs/execution/reports/T04_PERSISTENCE_API_REPORT.md docs/execution/reports/T05_CANONICAL_SCHEMA_REPORT.md docs/execution/reports/T06_DATA_READINESS_REPORT.md docs/execution/reports/T07_GOVERNANCE_REPORT.md docs/execution/reports/T08_INGESTION_FOUNDATION_REPORT.md docs/execution/reports/T09_PILOT_BLUEPRINT_REPORT.md docs/execution/reports/T10_SCORING_SYSTEM_REPORT.md`
 - `git diff --check`
 
 ## Actual Results
@@ -49,6 +50,7 @@ All paths are exclusively owned by issue #24.
 | MyPy | PASS: no issues in 2 source files | Final scoped type-check output. |
 | Nine non-T10 reports | PASS: 9 actual reports validate individually | T01-T09 branch-local v2 validator outputs. |
 | Ten-report cross-worktree validation | PASS: exactly 10 actual reports and zero validation errors | `--require-count 10` CLI output across persistent worktrees; assembled-tree evidence remains pending. |
+| Assembled ten-report validation | PASS: exactly 10 candidate-local reports and zero validation errors | Candidate `d2e2443` after T02 was applied last. |
 | Owned-path check | PASS: seven changed paths, all T10-owned | Branch diff against release baseline. |
 | `git diff --check` | PASS: no whitespace errors before final integration | Command output. |
 
@@ -88,8 +90,8 @@ are checked only inside each report's repository worktree.
 - Evidence structure and repository path existence do not prove an external command truly ran.
 - Strict table grammar prohibits escaped pipes instead of parsing arbitrary Markdown.
 - GitHub review identity and CI enforcement remain outside this script.
-- Cycle 3 reviewer score is 98/100. The remaining two points require one exact
-  ten-report run on the assembled Release 1.7 candidate.
+- Cycle 3 reviewer score remains 98/100 until independent re-review. The exact
+  ten-report assembled-candidate run now passes; this is not release acceptance.
 
 ## Lost Points and Correction Items
 
@@ -101,7 +103,7 @@ are checked only inside each report's repository worktree.
 | C04 | PR #34 verification deduction | 4 | RESOLVED | Cycle 3 reviewer confirmed duplicate, grammar, path, result, and integration-test coverage. |
 | C05 | PR #34 documentation deduction | 3 | RESOLVED | Cycle 3 reviewer confirmed status, burden, compatibility, and migration documentation. |
 | C06 | PR #34 maintainability deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed duplicate-ID and escaped-pipe rejection. |
-| C07 | PR #34 Cycle 3 assembled-tree deduction | 2 | IN PROGRESS | Run the validator with `--require-count 10` on the assembled Release 1.7 candidate and record exact evidence. |
+| C07 | PR #34 Cycle 3 assembled-tree deduction | 2 | IN PROGRESS | Candidate `d2e2443` validates exactly ten local reports with zero errors; independent re-review remains required. |
 
 ## Codex Self-Score
 
@@ -112,9 +114,9 @@ are checked only inside each report's repository worktree.
 | Architecture and North-Star alignment | 15 | 15 | Reviewer authority, human gates, and explicit migration preserved. | None. |
 | Verification, tests, or validation | 15 | 15 | Thirty-one tests, Ruff, format, MyPy, and ten real reports pass. | None. |
 | Security, privacy, and data governance | 10 | 10 | Standard-library parser and synthetic evidence only. | None. |
-| Documentation and traceability | 10 | 9 | V2 policy, templates, migration rules, and histories documented. | Independent adoption review pending. |
+| Documentation and traceability | 10 | 10 | V2 policy, templates, migration rules, histories, and assembled exact-count evidence are documented. | None. |
 | Maintainability and clarity | 5 | 4 | Typed modular validator with explicit strict grammar. | CI enforcement remains future work. |
-| Total | 100 | 97 | Cycle 3 local implementation and integration evidence are complete. | Three self-score points remain. |
+| Total | 100 | 98 | Cycle 4 assembled-tree evidence is complete. | Two self-score points remain. |
 
 ## ChatGPT Reviewer Score
 
@@ -124,9 +126,9 @@ Reviewer evidence: GitHub PR #34 Cycle 3 independent review submitted 2026-07-19
 
 ## Final Score
 
-Provisional weighted score: 97.6
+Provisional weighted score: 98.0
 
-Gate-adjusted score: 97.6
+Gate-adjusted score: 98.0
 
 ## Critical-Gate Declaration
 
@@ -148,7 +150,7 @@ Critical-gate result: PASS
 | 1 | 90 | Needed executable score, gate, correction, blocker, and completion rules. | Implemented v1 validator, templates, and synthetic suite. | 96 | Nineteen focused tests, Ruff, format, MyPy, and self-validation. | CLOSED |
 | 2 | 96 | Reviewer found incompatibility, competing burden formulas, weak evidence checks, no versioning, and premature adoption. | Recorded 74 reviewer score, 26-point burden, and G6 failure. | 74 | PR #34 independent review. | CLOSED |
 | 3 | 74 | Ten reviewer corrections required schema and ecosystem migration. | Implemented v2 policy, statuses, reviewer burden, strict evidence checks, duplicate detection, migration, and configured integration test. | 97 | Thirty-one tests, lint, format, types, exact-count CLI, and ten real reports passed before independent re-review. | CLOSED |
-| 4 | 98 | Cycle 3 reviewer closed functional findings and retained only assembled-tree exact-count evidence. | Recorded the authoritative score and kept one two-point integration correction open. | 98 | PR #34 Cycle 3 review and prior exact-count cross-worktree evidence. | OPEN |
+| 4 | 98 | Cycle 3 reviewer closed functional findings and retained only assembled-tree exact-count evidence. | Applied all threads, validated ten candidate-local reports, recorded exact evidence, and retained reviewer verification. | 98 | Candidate `d2e2443`: exactly ten reports and zero validation errors after T02. | OPEN |
 
 ## Recommended Follow-up Issues
 
