@@ -77,18 +77,19 @@ explicitly gated.
 - Industry Hub packaging and compatibility are conceptual, not implemented.
 - L0-L4 thresholds require workflow-specific evidence and governance.
 - Tenancy, IAM, legal basis, and cross-company learning remain open decisions.
-- The prior G3 failure remains authoritative until independent re-review.
+- Cycle 3 reviewer findings are closed at branch scope; controlled integration
+  and release-level validation remain pending and are not claimed here.
 
 ## Lost Points and Correction Items
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | PR #28 correctness deduction | 3 | IN PROGRESS | Contradiction removed and concept evidence added; re-review pending. |
-| C02 | PR #28 scope deduction | 2 | IN PROGRESS | Active model is limited to T07 L0-L4 and future control is non-operational. |
-| C03 | PR #28 architecture deduction | 7 | IN PROGRESS | One canonical authority model, authority labels, and robotics prerequisites added. |
-| C04 | PR #28 verification deduction | 4 | IN PROGRESS | Legacy/canonical scans, contradiction review, scope check, and diff check passed. |
-| C05 | PR #28 governance deduction | 1 | IN PROGRESS | Mandatory approval and future execution safety boundaries are explicit. |
-| C06 | PR #28 traceability deduction | 1 | IN PROGRESS | T07 and T09 integration targets plus schema-v2 history are recorded. |
+| C01 | PR #28 correctness deduction | 3 | RESOLVED | Cycle 3 reviewer confirmed the contradiction was removed and concept evidence added. |
+| C02 | PR #28 scope deduction | 2 | RESOLVED | Cycle 3 reviewer confirmed L0-L4 is the sole operational model and future control is non-operational. |
+| C03 | PR #28 architecture deduction | 7 | RESOLVED | Cycle 3 reviewer confirmed one authority model, authority labels, and robotics prerequisites. |
+| C04 | PR #28 verification deduction | 4 | RESOLVED | Cycle 3 reviewer accepted the legacy/canonical scans and contradiction review. |
+| C05 | PR #28 governance deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed approval and future-execution safety boundaries. |
+| C06 | PR #28 traceability deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed T07/T09 alignment and report traceability. |
 
 ## Codex Self-Score
 
@@ -105,22 +106,15 @@ explicitly gated.
 
 ## ChatGPT Reviewer Score
 
-| Category | Maximum | Awarded | Evidence | Deduction Reason |
-|---|---:|---:|---|---|
-| Correctness and evidence | 25 | 22 | Reviewer confirmed the core three-level model. | Autonomy contradiction reduced correctness. |
-| Scope and acceptance criteria | 20 | 18 | Most issue criteria were met. | Competing taxonomy exceeded the canonical boundary. |
-| Architecture and North-Star alignment | 15 | 8 | Platform/Hub/company separation was strong. | A0-A5 conflicted with T07/T09 L0-L4. |
-| Verification, tests, or validation | 15 | 11 | Document checks were present. | Cross-thread contradiction was not resolved. |
-| Security, privacy, and data governance | 10 | 9 | Human governance was explicit. | Execution prerequisites needed detail. |
-| Documentation and traceability | 10 | 9 | Canonical paths were cited. | T07/T09 correction references were pending. |
-| Maintainability and clarity | 5 | 5 | Model structure was clear. | None. |
-| Total | 100 | 82 | GitHub PR #28 Cycle 1 review. | Eighteen reviewer points remain authoritative. |
+Reviewer total: 100
+
+Reviewer evidence: GitHub PR #28 Cycle 3 independent review submitted 2026-07-19.
 
 ## Final Score
 
-Provisional weighted score: 87.6
+Provisional weighted score: 98.4
 
-Gate-adjusted score: 79.0
+Gate-adjusted score: 98.4
 
 ## Critical-Gate Declaration
 
@@ -128,12 +122,12 @@ Gate-adjusted score: 79.0
 |---|---|---|
 | G1 Verified claims | PASS | Proposals and future horizons are labeled, not claimed implemented. |
 | G2 Confidential data | PASS | Generalized strategy content only. |
-| G3 Approved scope and architecture | FAIL | PR #28 gate remains authoritative until re-review verifies taxonomy reconciliation. |
+| G3 Approved scope and architecture | PASS | Cycle 3 reviewer confirmed the sole L0-L4 model and separately gated research horizon. |
 | G4 Required validation | PASS | Local scans and contradiction review passed after correction. |
 | G5 File ownership | PASS | Both changed paths are owned by issue #15. |
 | G6 Acceptance completeness | PASS | Every issue criterion is checked with evidence. |
 
-Critical-gate result: FAIL
+Critical-gate result: PASS
 
 ## Correction-Cycle History
 
@@ -141,7 +135,8 @@ Critical-gate result: FAIL
 |---:|---:|---|---|---:|---|---|
 | 1 | 92 | Needed sharper horizon, tenancy, autonomy, and interpretation boundaries. | Added three-level contract, autonomy model, traceability, and open decisions. | 96 | Initial document and scope review. | CLOSED |
 | 2 | 96 | Reviewer found A0-A5 conflict, unlabeled concepts, and incomplete robotics prerequisites. | Recorded 82 reviewer score and G3 failure. | 82 | PR #28 independent review. | CLOSED |
-| 3 | 82 | Eighteen reviewer points became correction items. | Adopted L0-L4, classified concepts, gated machine control, added T07/T09 targets, and migrated report. | 96 | Legacy/canonical scans, contradiction review, scope, and diff checks passed. | OPEN |
+| 3 | 82 | Eighteen reviewer points became correction items. | Adopted L0-L4, classified concepts, gated machine control, added T07/T09 targets, and migrated report. | 96 | Legacy/canonical scans, contradiction review, scope, and diff checks passed. | CLOSED |
+| 4 | 100 | Cycle 3 independent review closed all prior branch findings; release integration remained pending. | Recorded reviewer authority and resolved the confirmed correction burden without claiming integration. | 100 | PR #28 Cycle 3 review and preserved branch validation evidence. | OPEN |
 
 ## Recommended Follow-up Issues
 
