@@ -1,0 +1,28 @@
+{
+  "source_type": "erp_export",
+  "source_format": "json",
+  "source_system": "synthetic_erp_export",
+  "source_reference": "synthetic://erp/export-placeholder.json",
+  "organization_id": "org_synthetic",
+  "site_id": "site_synthetic",
+  "source_owner": "Operations steward",
+  "confidentiality_level": "strategic",
+  "governance_schema_version": "smartcoat-governance-v1.1-draft",
+  "purpose_decisions": {
+    "inventory": "approved",
+    "retrieval": "denied",
+    "analytics": "denied",
+    "human_review": "approved",
+    "model_training": "denied",
+    "external_sharing": "denied"
+  },
+  "schema_target": {
+    "name": "source_inventory_record",
+    "version": "v1"
+  },
+  "content_fingerprint": "synthetic-erp-export-placeholder-v1",
+  "dry_run": true,
+  "metadata": {
+    "description": "Metadata-only ERP export placeholder; no commercial data."
+  }
+}

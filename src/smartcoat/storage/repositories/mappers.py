@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from smartcoat.domain.base import LifecycleState, Provenance
@@ -17,7 +17,7 @@ def _uuid_list(values: list) -> list[UUID]:
 
 
 def _timestamp(value: datetime | None) -> datetime:
-    return value if value is not None else datetime.now(timezone.utc)
+    return value if value is not None else datetime.now(UTC)
 
 
 def knowledge_to_record(obj: KnowledgeObject) -> KnowledgeObjectRecord:
