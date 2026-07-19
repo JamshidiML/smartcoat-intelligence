@@ -8,7 +8,7 @@ Branch: `thread/01-living-industry-north-star`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/28
 
-Final status: `READY FOR CHATGPT REVIEW`
+Final status: `CORRECTION CYCLE 3 IMPLEMENTED; INDEPENDENT RE-REVIEW REQUIRED`
 
 ## Objective
 
@@ -33,10 +33,19 @@ reference-model documents.
 - Added a one-sentence definition and planning-horizon distinctions.
 - Defined mother-platform, Industry Hub, and company-instance contracts.
 - Mapped the complete sensing-to-learning nervous-system loop.
-- Added risk-based autonomy levels and mandatory human approvals.
+- Adopted T07's sole L0-L4 operational-authority model and mandatory approvals.
 - Positioned technical textiles as first proof domain and Knowledge Capture as
   the first vertical slice.
 - Added non-goals, traceability, and explicit open questions.
+- Classified existing, proposed, and future-unresolved concepts and moved machine
+  control into a separately gated North-Star research horizon.
+
+## Independent Review
+
+Authoritative reviewer score: `82/100`; gate-adjusted score: `79/100` because G3
+failed on the competing A0-A5 taxonomy. Cycle 3 removes that taxonomy, adopts
+T07's L0-L4 contract, adds robotics boundaries, concept-authority labels, and
+cross-thread references. Independent re-review must decide whether G3 is closed.
 
 ## Validation
 
@@ -49,10 +58,10 @@ rg -n "mother platform|Industry Hub|company instance|human|technical textile|Kno
 Actual results:
 
 - `git diff --check` passed.
-- Deprecated-term search returned no matches.
+- Deprecated/competing autonomy search returned no active A0-A5 levels.
 - Required-concept search found every model boundary and traceability section.
-- Manual contradiction review found no conflict with the active North Star,
-  current release sequence, Knowledge Capture MVP, or cited architecture.
+- Manual contradiction review found the T07/T09 autonomy conflict resolved on
+  this branch; cross-thread integration remains pending.
 
 ## Acceptance-Criteria Evidence
 
@@ -85,10 +94,11 @@ data, or raw sources are included. Cross-company reuse is explicitly gated.
 
 ## Lost Points and Correction Items
 
-1. Reserve two points for independent contradiction and terminology review.
-2. Reserve one point until an approved pilot defines autonomy evidence
+1. Reserve one point for independent Cycle 3 contradiction and terminology re-review.
+2. Reserve one point until an approved pilot defines L0-L4 evidence
    thresholds.
 3. Reserve one point until the minimum mother-platform contract is decided.
+4. Reserve one point until cross-thread artifacts are accepted together.
 
 ## Codex Self-Score
 
@@ -96,23 +106,35 @@ data, or raw sources are included. Cross-company reuse is explicitly gated.
 |---|---:|---:|---|---|
 | Correctness and evidence | 25 | 24 | Claims are path-traced and horizons distinguished. | Independent review pending. |
 | Scope and acceptance criteria | 20 | 20 | Both owned deliverables cover issue #15. | None. |
-| Architecture and North-Star alignment | 15 | 15 | Uses existing models without replacement. | None. |
+| Architecture and North-Star alignment | 15 | 15 | T07 L0-L4 contract adopted; future control is non-operational. | None. |
 | Verification, tests, or validation | 15 | 14 | Terminology and contradiction pass documented. | Independent review pending. |
 | Security, privacy, and data governance | 10 | 10 | No confidential data; isolation and approvals explicit. | None. |
 | Documentation and traceability | 10 | 9 | Detailed path-based traceability. | Platform-contract decision remains open. |
 | Maintainability and clarity | 5 | 4 | Three-level model and tables are reusable. | Autonomy evidence thresholds remain open. |
-| Total | 100 | 96 | Complete for initial independent review. | Four correction points remain above. |
+| Total | 100 | 96 | Cycle 3 corrections complete locally. | Four points remain pending re-review/decisions. |
+
+## ChatGPT Reviewer Score
+
+Authoritative prior reviewer score: `82/100`, gate-adjusted to `79/100`. Cycle 3
+re-review is pending; the former self-score is not a final score.
+
+## Provisional Score
+
+The prior weighted score was `87.6/100`. Using the updated self-score and prior
+reviewer score produces the same `87.6`; it remains non-final pending G3 re-review.
 
 ## Critical-Gate Declaration
 
-No critical gate failed. The document makes no implementation or production
-readiness claim, and all changes remain in T01-owned paths.
+Prior G3 failure: competing autonomy taxonomy. Cycle 3 removes the conflict
+locally; independent re-review is required to close the gate. No implementation
+or production-readiness claim is made, and all changes remain in T01-owned paths.
 
 ## Correction-Cycle History
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score |
 |---:|---:|---|---|---:|
 | 1 | 92 | Needed sharper horizon, tenancy, autonomy, and anti-misinterpretation boundaries. | Added three-level contract, risk-based autonomy, traceability, and open decisions. | 96 provisional. |
+| 3 | 79 gate-adjusted | A0-A5 conflicted with T07 L0-L4; concepts and robotics horizon lacked authority labels and prerequisites. | Adopted L0-L4, classified concepts, gated future machine control, and added T07/T09 targets. | 96 self; reviewer/G3 re-review pending. |
 
 ## Recommended Follow-up Issues
 

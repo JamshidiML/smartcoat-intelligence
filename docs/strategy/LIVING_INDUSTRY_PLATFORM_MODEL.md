@@ -32,6 +32,18 @@ The following statements have different planning horizons:
 | MVP | Smallest usable product increment | Knowledge Capture is the active first vertical slice. |
 | Release 1.7 | Project reset and engineering baseline | Improves coherence and reliability; it is not a product-autonomy release. |
 
+### Concept Authority
+
+| Classification | Concepts in this document |
+|---|---|
+| Existing canonical concepts | Enterprise/Knowledge/Decision Objects, Enterprise Events, Evidence, Provenance, Context, lifecycle, the North Star, and Knowledge Capture MVP |
+| Proposed clarifications | Mother Platform / Industry Hub / Company Instance packaging and the reusable Hub contract |
+| Proposed cross-thread governance contract | T07 L0-L4 operational authority, confidentiality, purpose, and approval vocabulary |
+| Future unresolved architecture decisions | Certified machine/robot control, second-Hub contract, multi-company isolation and learning, workflow-specific authority evidence |
+
+Proposed clarifications do not supersede accepted ADRs. Future decisions grant no
+implementation or operational authority until separately approved.
+
 ## Three-Level Platform Model
 
 ### 1. Mother Platform
@@ -155,14 +167,30 @@ legal consequence, confidentiality, and strategic importance. Autonomy is a
 permission level for a bounded workflow, not a property granted permanently to
 an AI model or agent.
 
+The proposed T07 governance contract in
+`docs/governance/HUMAN_OVERSIGHT_AND_AUTONOMY_LEVELS.md` defines the single
+current operational-authority model:
+
 | Level | System authority | Human role | Example boundary |
 |---:|---|---|---|
-| A0 | Observe and record only | Performs the task | Capture an approved event or measurement. |
-| A1 | Retrieve, summarize, and flag | Reviews output before use | Find prior lessons with evidence links. |
-| A2 | Recommend ranked alternatives | Decides and records rationale | Suggest test plans or material alternatives. |
-| A3 | Execute a reversible, pre-approved action | Supervises; can stop or override | Create a draft workflow task within limits. |
-| A4 | Execute bounded operations with monitored exceptions | Approves policy and exception thresholds | Adjust a non-safety-critical schedule inside an approved range. |
-| A5 | High autonomy within a certified control envelope | Retains governance and emergency authority | Future closed-loop industrial control after validation and approval. |
+| L0 Manual (`l0_manual`) | Store or display approved facts | Performs and records the decision | View an approved record. |
+| L1 Assist (`l1_assist`) | Extract, summarize, or flag missing information | Verifies every output before trust | Draft a knowledge object. |
+| L2 Recommend (`l2_recommend`) | Rank options with evidence, uncertainty, and constraints | Chooses, rejects, or edits | Suggest prior lessons or a test plan. |
+| L3 Supervised Action (`l3_supervised_action`) | Execute a bounded, reversible, low-impact action after explicit approval | Approves each action; monitors and can roll back | Save an approved draft or route an internal review task. |
+| L4 Bounded Automation (`l4_bounded_automation`) | Repeat pre-authorized, low-impact, reversible actions inside hard limits | Owns policy, monitors exceptions, can stop, periodically reauthorizes | Re-index already approved records. |
+
+L4 cannot approve data, broaden purpose, grant access, change its own control
+limits, or promote its own output. There is no active A0-A5 taxonomy.
+
+### Future Machine and Robot Control Horizon
+
+Closed-loop industrial control remains a North-Star research and architecture
+horizon, not an operational-authority level. Before any such capability can be
+proposed for implementation, it requires a versioned control envelope, hazard
+analysis, independent verification/validation, applicable regulatory and
+certification review, tested rollback and emergency stop, production monitoring,
+named human accountability, and a separately accepted architecture decision.
+Current Release 1.7 and the first pilot authorize no machine actuation.
 
 ### Mandatory Human Approval
 
@@ -170,7 +198,7 @@ Human approval is always required for actions that can materially affect:
 
 - worker or product safety
 - legal, regulatory, contractual, or certification compliance
-- proprietary formulations, inventions, or highly confidential information
+- proprietary formulations, inventions, or Restricted/Strategic information
 - customer commitments, pricing, contracts, or external publication
 - destructive, irreversible, or high-cost operations
 - production release, quality disposition, or safety-critical process limits
@@ -236,6 +264,8 @@ SmartCoat is not:
 | Knowledge Capture as first implementation | `docs/project/MVP_STRATEGY.md`; `architecture/ADR/ADR-0015_Knowledge_Capture_MVP_First_Implementation.md` | Current product slice. |
 | Release 1.7 before Knowledge Capture Core | `docs/project/PROJECT_STATE.md`; `docs/project/DECISION_LOG.md` D-015 | Active execution sequence. |
 | Agent governance for high-impact systems | `architecture/handbook/08_Agents/15_Agent_Governance.md` | Autonomy controls. |
+| Canonical L0-L4 operational authority and governance values | `docs/governance/HUMAN_OVERSIGHT_AND_AUTONOMY_LEVELS.md`; `docs/governance/INDUSTRIAL_DATA_GOVERNANCE_V1.md` | Proposed cross-thread contract led by T07. |
+| First single-company pilot and later multi-company proof | `docs/pilot/TECHNICAL_TEXTILE_LIVING_FACTORY_PILOT.md` | T09 integration target; remains draft until accepted. |
 
 ## Open Questions
 
@@ -245,7 +275,7 @@ These are not resolved by this document:
    Hub may be created?
 2. Which Technical Textiles Hub concepts are shared across companies, and which
    remain company-private extensions?
-3. Which evidence and evaluation thresholds authorize each autonomy level for
+3. Which evidence and evaluation thresholds authorize each L0-L4 operational level for
    a specific workflow?
 4. What tenancy, identity, and cryptographic isolation design is required before
    multi-company operation?
