@@ -91,16 +91,17 @@ metadata and cannot authorize model-training candidate creation.
 - Checksum calculation is out of scope because raw content is not read.
 - Approval-reference issuer, version, expiry, revocation, and authenticity are deferred.
 - Candidate namespace migration policy remains future work.
-- Independent Cycle 3 review is still required.
+- Cycle 3 reviewer findings are closed at branch scope; controlled integration
+  and release-level tests remain pending.
 
 ## Lost Points and Correction Items
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | PR #27 correctness deduction | 1 | IN PROGRESS | Governance and authorization invariants pass local tests; re-review pending. |
-| C02 | PR #27 architecture deduction | 1 | IN PROGRESS | Site identity policy and service authorization boundary are documented. |
-| C03 | PR #27 governance deduction | 1 | IN PROGRESS | T07 vocabulary applied and approval metadata cannot unlock model training. |
-| C04 | PR #27 documentation deduction | 2 | IN PROGRESS | Deferred approval contract, site behavior, private-helper threat, and v2 report recorded. |
+| C01 | PR #27 correctness deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed governance and authorization invariants. |
+| C02 | PR #27 architecture deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed site identity and service-boundary documentation. |
+| C03 | PR #27 governance deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed canonical T07 values and fail-closed model-training behavior. |
+| C04 | PR #27 documentation deduction | 2 | RESOLVED | Cycle 3 reviewer confirmed approval deferrals, site behavior, helper boundary, and v2 traceability. |
 
 ## Codex Self-Score
 
@@ -117,22 +118,15 @@ metadata and cannot authorize model-training candidate creation.
 
 ## ChatGPT Reviewer Score
 
-| Category | Maximum | Awarded | Evidence | Deduction Reason |
-|---|---:|---:|---|---|
-| Correctness and evidence | 25 | 24 | Reviewer confirmed validation, identity, and provenance corrections. | Approval semantics needed clarification. |
-| Scope and acceptance criteria | 20 | 20 | Issue scope and criteria were met. | None. |
-| Architecture and North-Star alignment | 15 | 14 | Tenant-scoped preparation is aligned. | Site identity and integration boundary needed detail. |
-| Verification, tests, or validation | 15 | 15 | Required safety tests passed. | None. |
-| Security, privacy, and data governance | 10 | 9 | Critical governance paths were corrected. | Approval reference was not verified authorization. |
-| Documentation and traceability | 10 | 8 | Workflow and identity were documented. | Approval contract, threat note, and T10 migration remained. |
-| Maintainability and clarity | 5 | 5 | Single governed workflow was clear. | None. |
-| Total | 100 | 95 | GitHub PR #27 Cycle 2 review. | Five reviewer points remain authoritative. |
+Reviewer total: 100
+
+Reviewer evidence: GitHub PR #27 Cycle 3 independent review submitted 2026-07-19.
 
 ## Final Score
 
-Provisional weighted score: 95.0
+Provisional weighted score: 98.0
 
-Gate-adjusted score: 95.0
+Gate-adjusted score: 98.0
 
 ## Critical-Gate Declaration
 
@@ -153,7 +147,8 @@ Critical-gate result: PASS
 |---:|---:|---|---|---:|---|---|
 | 1 | 94 | Initial workflow had bypassable validation, random identity, global duplicates, and missing provenance. | Added governed registry, UUIDv5, tenant scope, provenance, and safety tests. | 95 | Twenty Cycle 2 tests plus Ruff and MyPy. | CLOSED |
 | 2 | 95 | Reviewer required canonical vocabulary, approval semantics, site policy, threat boundary, and T10 migration. | Recorded five reviewer deduction points. | 95 | PR #27 independent review. | CLOSED |
-| 3 | 95 | Five reviewer points became correction items. | Applied T07 values, blocked metadata-only approval, documented deferrals/site/threat boundary, added tests, and migrated report. | 95 | Twenty-two tests, Ruff, MyPy, five manifests, JSON, scope, and diff checks passed. | OPEN |
+| 3 | 95 | Five reviewer points became correction items. | Applied T07 values, blocked metadata-only approval, documented deferrals/site/threat boundary, added tests, and migrated report. | 95 | Twenty-two tests, Ruff, MyPy, five manifests, JSON, scope, and diff checks passed. | CLOSED |
+| 4 | 100 | Cycle 3 independent review closed every T08 branch finding; controlled integration remained pending. | Recorded reviewer authority and resolved all confirmed correction items without claiming persistence or production ingestion. | 100 | PR #27 Cycle 3 review and preserved tests, lint, types, manifest, JSON, scope, and diff evidence. | OPEN |
 
 ## Recommended Follow-up Issues
 
