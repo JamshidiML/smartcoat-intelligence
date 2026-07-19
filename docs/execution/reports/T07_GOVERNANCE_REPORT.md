@@ -77,20 +77,21 @@ controls are defined to fail closed.
 - Jurisdiction-specific legal, privacy, employment, IP, and works-council review is pending.
 - Policy is not yet enforced by production IAM, storage, model, or audit controls.
 - Named pilot authorities, processors, data boundary, and deletion tests remain external decisions.
-- Local corrections require independent re-review before the 91-point reviewer score changes.
+- Cycle 3 reviewer findings are closed at branch scope; controlled integration
+  remains pending and professional real-data approvals remain future gates.
 
 ## Lost Points and Correction Items
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | PR #32 autonomy-model deduction | 2 | IN PROGRESS | Canonical L0-L4 contract published; independent re-review must verify closure. |
-| C02 | PR #32 confidentiality deduction | 1 | IN PROGRESS | Canonical five-level taxonomy applied across owned artifacts. |
-| C03 | PR #32 purpose-vocabulary deduction | 1 | IN PROGRESS | Six purpose keys and six decision states published with machine values. |
-| C04 | PR #32 RACI deduction | 1 | IN PROGRESS | Single accountable owner is separated from mandatory joint approvers. |
-| C05 | PR #32 lifecycle deduction | 1 | IN PROGRESS | Version, status, effective date, review cadence, and supersession added. |
-| C06 | PR #32 lawful-basis deduction | 1 | IN PROGRESS | Consent is one possible basis and professional determination is recorded. |
-| C07 | PR #32 machine-contract deduction | 1 | IN PROGRESS | Compact machine-readable governance proposal added. |
-| C08 | PR #32 traceability deduction | 1 | IN PROGRESS | Cross-thread targets and v2 report migration are recorded. |
+| C01 | PR #32 autonomy-model deduction | 2 | RESOLVED | Cycle 3 reviewer confirmed the sole canonical L0-L4 contract. |
+| C02 | PR #32 confidentiality deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed the canonical five-level taxonomy. |
+| C03 | PR #32 purpose-vocabulary deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed six purpose keys and independent decisions. |
+| C04 | PR #32 RACI deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed accountable ownership and mandatory joint approvers. |
+| C05 | PR #32 lifecycle deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed versioned policy lifecycle metadata. |
+| C06 | PR #32 lawful-basis deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed consent is not assumed and professional determination remains required. |
+| C07 | PR #32 machine-contract deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed the compact machine-readable governance proposal. |
+| C08 | PR #32 traceability deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed cross-thread targets and report-v2 traceability. |
 
 ## Codex Self-Score
 
@@ -107,15 +108,15 @@ controls are defined to fail closed.
 
 ## ChatGPT Reviewer Score
 
-Reviewer total: 91
+Reviewer total: 100
 
-Reviewer evidence: GitHub PR #32 Cycle 1 independent review submitted 2026-07-16.
+Reviewer evidence: GitHub PR #32 Cycle 3 independent review submitted 2026-07-19.
 
 ## Final Score
 
-Provisional weighted score: 93.0
+Provisional weighted score: 98.4
 
-Gate-adjusted score: 93.0
+Gate-adjusted score: 98.4
 
 ## Critical-Gate Declaration
 
@@ -136,7 +137,8 @@ Critical-gate result: PASS
 |---:|---:|---|---|---:|---|---|
 | 1 | 88 | Needed purpose separation, classification overlays, autonomy limits, and approval evidence. | Added four policy layers and the pilot gate. | 95 | Initial document review and scope checks. | CLOSED |
 | 2 | 95 | Reviewer found competing vocabularies, lifecycle, RACI, lawful-basis, and traceability gaps. | Accepted eight reviewer findings and recorded authoritative score. | 91 | PR #32 independent review. | CLOSED |
-| 3 | 91 | Reviewer deductions became nine correction points. | Published one canonical contract, lifecycle rules, mandatory approvers, lawful-basis evidence, and v2 report. | 96 | Canonical assertions, legacy scan, scope check, and diff check passed. | OPEN |
+| 3 | 91 | Reviewer deductions became nine correction points. | Published one canonical contract, lifecycle rules, mandatory approvers, lawful-basis evidence, and v2 report. | 96 | Canonical assertions, legacy scan, scope check, and diff check passed. | CLOSED |
+| 4 | 100 | Cycle 3 independent review closed every T07 branch finding; controlled integration remained pending. | Recorded reviewer authority and resolved all confirmed correction items without claiming policy effectiveness or release integration. | 100 | PR #32 Cycle 3 review and preserved vocabulary, legacy, scope, and diff evidence. | OPEN |
 
 ## Recommended Follow-up Issues
 
