@@ -12,9 +12,16 @@ relationship to current implementation and project execution.
 - [Decision Log](../docs/project/DECISION_LOG.md)
 - [Execution Control Center](../docs/execution/EXECUTION_CONTROL_CENTER.md)
 
-The North Star describes the horizontal mother platform. Technical textiles are
-the first proof domain. Knowledge Capture is the first vertical implementation
-slice. Release 1.7 is the active project-reset and engineering-baseline release.
+The active North Star describes the horizontal mother-platform direction.
+Technical textiles are the first proof domain, and Knowledge Capture is the
+first vertical implementation slice. Release 1.7 is in progress.
+
+The [Living Industry Platform Model](../docs/strategy/LIVING_INDUSTRY_PLATFORM_MODEL.md)
+from T01 is a **proposed** clarification that has been independently reviewed;
+it is not accepted or merged by that review alone. Its Mother Platform / Industry
+Hub / Company Instance packaging and L0-L4 governance references remain
+cross-thread integration targets until their owning draft PRs are accepted and
+merged.
 
 ## Architecture Volumes
 
@@ -43,7 +50,9 @@ slice. Release 1.7 is the active project-reset and engineering-baseline release.
 - [Database assets](../database/README.md)
 
 Implementation files are evidence of the current scaffold, not proof that all
-North-Star capabilities exist or are production ready.
+North-Star capabilities exist or are production ready. Releases through 1.6 are
+merged historical implementation. T03/T04 Release 1.7 corrections are
+independently reviewed drafts until integrated.
 
 ## Decisions, Releases, and Navigation
 
@@ -64,4 +73,6 @@ North-Star capabilities exist or are production ready.
 - [Implementation readiness review](reviews/IMPLEMENTATION_READINESS_REVIEW.md)
 
 Update this portal whenever a major architecture area, implementation entry
-point, index, or active project-state source changes.
+point, index, or active project-state source changes. Preserve valid historical
+navigation; label superseded paths and their replacement instead of silently
+deleting context.

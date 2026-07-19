@@ -1,6 +1,8 @@
 # ADR Index
 
-All ADR files currently present are accepted.
+All 17 ADR files currently present are **Accepted** architecture decisions and
+are **Merged** into the Release 1.7 integration baseline. A draft thread document
+does not become an accepted ADR merely by linking to this index.
 
 | ADR | Decision | Record |
 |---|---|---|

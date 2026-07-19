@@ -10,10 +10,10 @@ Capture MVP; it does not claim the full Living Industry vision is implemented.
 
 ## Current State
 
-Active work is **Release 1.7 — Project Reset & Engineering Baseline**. It aligns
-documentation and implementation, establishes reliable development and CI
-baselines, and validates the current FastAPI-to-PostgreSQL path before Release
-1.8 Knowledge Capture Core.
+Active work is **Release 1.7 - Project Reset & Engineering Baseline**. Its core
+project-state and execution-control documents are merged. The ten specialized
+thread outputs have been independently reviewed and corrected on draft pull
+requests, but they are not accepted or merged by that review alone.
 
 The repository already contains:
 
@@ -21,10 +21,29 @@ The repository already contains:
 - a Python/FastAPI implementation scaffold from Release 1.4
 - SQLAlchemy/PostgreSQL persistence and mappers from Releases 1.5-1.5.2
 - repository-backed persistent API routes from Release 1.6
-- Release 1.7 reset, validation, and controlled-pilot preparation
+- merged Release 1.7 project-state, decision, strategy, and execution-control documents
+
+Release 1.7 engineering, persistence, governance, schema, ingestion, pilot, and
+quality-system changes remain in progress until their draft pull requests are
+accepted, merged in the approved order, and validated together.
 
 See [Project State](docs/project/PROJECT_STATE.md) for verified current facts
 and [Project History](docs/project/PROJECT_HISTORY.md) for chronology.
+
+## Work Status
+
+| Status | Current meaning |
+|---|---|
+| Accepted | Project decisions in the Decision Log and ADRs listed by the accepted ADR index. |
+| Merged | Historical Releases 0.1-1.6 and the core Release 1.7 reset/control documents present on the integration baseline. |
+| In progress | Release 1.7 and Correction Cycle 3. Release completion has not been declared. |
+| Independently reviewed | Draft PRs #25-#34 received reviewer scores and corrections; review did not accept or merge them. |
+| Proposed | The T01 Living Industry Platform Model and other new thread contracts remain proposals until separately accepted and merged. |
+
+The [Living Industry Platform Model](docs/strategy/LIVING_INDUSTRY_PLATFORM_MODEL.md)
+is a proposed clarification, not an accepted replacement for the active North
+Star or existing ADRs. It is supplied by draft PR #28 and is intentionally
+integrated only after its governance dependencies are accepted.
 
 ## Strategic Boundaries
 
@@ -77,25 +96,33 @@ stronger human oversight.
 
 ## Development
 
-Python 3.12 or newer is required.
+Python 3.12 or newer is required. The constrained baseline is documented in
+[Engineering Baseline](docs/development/ENGINEERING_BASELINE.md) and pinned by
+[Python 3.12 constraints](requirements/constraints-py312.txt).
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
-python -m pip install -e '.[dev]'
-python -m pytest
+.venv/bin/python -m pip install \
+  --constraint requirements/constraints-py312.txt -e '.[dev]'
+.venv/bin/python -m pip check
+.venv/bin/python -m pytest
 ```
+
+Those two baseline files are owned by T03 draft PR #25. On the current isolated
+T02 branch they are cross-thread integration targets; use this command after T03
+is accepted and merged into the integration branch.
 
 Additional measured checks:
 
 ```bash
-python -m ruff check .
-python -m ruff format --check .
-python -m mypy src
+.venv/bin/python -m ruff check .
+.venv/bin/python -m ruff format --check .
+.venv/bin/python -m mypy src
 ```
 
-Do not report these checks as passing unless they were actually run. Current
-baseline details belong in Release 1.7 engineering reports.
+Do not report these checks as passing unless they were actually run. The T03
+baseline records remaining Ruff/format debt and the isolated-versus-integrated
+MyPy evidence explicitly.
 
 ## Data Boundary
 

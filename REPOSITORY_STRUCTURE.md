@@ -43,7 +43,14 @@ Start at [Architecture Portal](architecture/ARCHITECTURE_PORTAL.md).
 - `project/PROJECT_HISTORY.md`: historical chronology
 - `project/MVP_STRATEGY.md`: focused product path
 - `project/DECISION_LOG.md`: accepted and open decisions
-- `execution/`: Release 1.7 control, thread instructions, and reports
+- `execution/`: merged Release 1.7 control and thread instructions; individual
+  reports become merged repository evidence only through their owning PRs
+
+Cross-thread draft targets are not treated as current files merely because they
+exist in another worktree. Notable targets include the proposed T01 Living
+Industry model and the independently reviewed T03 engineering baseline and
+constraints. Root links to those targets are valid for the planned integrated
+branch, but their status remains proposed or independently reviewed until merge.
 
 ## Application
 
@@ -78,3 +85,11 @@ a route for committing sensitive enterprise information. Follow
 Architecture defines canonical language and constraints; implementation must
 remain traceable to approved use cases and decisions. Historical and draft
 documents provide context but do not automatically become active requirements.
+
+## Documentation Preservation Rule
+
+Synchronization adds current summaries and navigation without deleting valid
+historical detail. If a statement becomes obsolete, label it superseded and
+link its accepted replacement. Before removing content, compare the target
+branch, release records, and accepted decisions, then document the reason and
+coverage impact in the pull request.
