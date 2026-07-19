@@ -10,7 +10,7 @@ Branch: `thread/02-documentation-synchronization`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/29
 
-Final status: `CORRECTION IN PROGRESS`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -33,7 +33,7 @@ All paths are owned by issue #16.
 
 ## Methods and Commands Executed
 
-- Python 3.12 standard-library Markdown link resolution across all eight owned files.
+- Python 3.12 standard-library Markdown link resolution across the complete assembled tree.
 - Python 3.12 cross-worktree resolution for intentional T01/T03 integration targets.
 - Python 3.12 baseline-versus-current changelog heading and bullet comparison.
 - Python 3.12 ADR and release filename-to-index inventory comparison.
@@ -48,7 +48,7 @@ All paths are owned by issue #16.
 | First Cycle 1 link invocation | FAIL: zero links recognized due over-escaped regular expression | Discarded result retained for transparency. |
 | Cycle 3 isolated link check | PASS: 107 links resolve in T02 | Python 3.12 output across all eight owned files. |
 | Cycle 3 cross-thread links | PASS: 4 intended targets resolve on exact T01/T03 heads; 0 broken | T01 model plus T03 baseline/constraints; no merge is claimed. |
-| Assembled-candidate link check | NOT RUN: controlled integration is the active Cycle 4 task | Must run after prerequisite thread heads are assembled; G6 remains failed. |
+| Assembled-candidate link check | PASS: 112 local Markdown links and 0 broken | Candidate `d2e2443` after all prerequisite threads and T02 were applied. |
 | Changelog preservation | PASS: 12/12 baseline detailed releases and 63/63 original bullets retained | Baseline-versus-current comparison; zero missing detail. |
 | Changelog expansion | PASS: detailed release coverage increased from 12 to 19 versions | Releases 1.3-1.7 and 1.5 hotfixes added without replacing history. |
 | Status audit | PASS: proposed, in progress, independently reviewed, accepted, and merged are distinguished | Seven entry points audited with `rg` and manual context review. |
@@ -74,15 +74,16 @@ All paths are owned by issue #16.
 - [x] Use no confidential data.
   Evidence: navigation/status documentation only.
 - [x] Preserve correction needs rather than claim integration.
-  Evidence: G6 remains failed and all Cycle 2 requirements are explicit below.
+  Evidence: candidate validation is recorded without claiming PR merge, release
+  acceptance, or closure before independent review.
 - [x] Preserve valid historical changelog detail while adding current summaries.
   Evidence: 12/12 detailed sections and 63/63 baseline bullets retained; 19 versions covered.
 - [x] Use exact lifecycle language for thread artifacts.
   Evidence: status vocabulary and root/portal/roadmap status boundaries.
 - [x] Synchronize development instructions with T03.
   Evidence: constrained command and cross-thread links resolve on T03 `f48b01d`.
-- [ ] Validate links on the assembled integration branch.
-  Evidence: prohibited until authorized merges occur; isolated and exact-head checks pass.
+- [x] Validate links on the assembled integration branch.
+  Evidence: candidate `d2e2443` resolves 112 local Markdown links with zero broken.
 
 ## Architecture Impact
 
@@ -106,9 +107,9 @@ the synthetic-or-approved-data boundary.
 
 ## Known Limitations
 
-- Final link validation on the controlled integration candidate is pending.
-- Four cross-thread links are proven on exact current heads, not on a merged tree.
-- External web links are not validated by the local path checker.
+- Candidate validation is rehearsal evidence, not authorization to merge or
+  declare Release 1.7 complete.
+- External web links are intentionally outside the local-path checker.
 
 ## Lost Points and Correction Items
 
@@ -117,7 +118,7 @@ the synthetic-or-approved-data boundary.
 | C01 | PR #29 correctness deduction | 6 | RESOLVED | Cycle 3 reviewer confirmed detailed changelog history is restored and preserved. |
 | C02 | PR #29 scope/completeness deduction | 9 | RESOLVED | Cycle 3 reviewer confirmed lifecycle language does not overstate draft artifacts. |
 | C03 | PR #29 architecture deduction | 2 | RESOLVED | Cycle 3 reviewer confirmed T01 remains proposed and independently reviewed. |
-| C04 | PR #29 Cycle 3 assembled-tree deduction | 2 | IN PROGRESS | Run complete Markdown link, ADR, release, roadmap/status, and structure validation on the assembled Release 1.7 candidate. |
+| C04 | PR #29 Cycle 3 assembled-tree deduction | 2 | IN PROGRESS | Candidate `d2e2443` passes 112 local links, 17 ADRs, 18 releases, 12 historical sections, 63 historical bullets, README commands, roadmap statuses, and structure checks; independent re-review remains required. |
 | C05 | PR #29 traceability deduction | 4 | RESOLVED | Cycle 3 reviewer confirmed T03 setup, preservation evidence, and report-v2 traceability. |
 | C06 | PR #29 maintainability deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed the preservation-first maintenance rule. |
 
@@ -128,11 +129,11 @@ the synthetic-or-approved-data boundary.
 | Correctness and evidence | 25 | 24 | File-system inventory supports release and ADR claims. | Independent correction review pending. |
 | Scope and acceptance criteria | 20 | 20 | Eight T02-owned files only. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Vision, proof domain, MVP, and release are separated. | None. |
-| Verification, tests, or validation | 15 | 13 | Deterministic local, cross-head, history, and inventory validation. | Assembled-branch and external URL checks are not run. |
+| Verification, tests, or validation | 15 | 15 | Assembled links, history, inventories, README commands, status, and structure checks passed. | None. |
 | Security, privacy, and data governance | 10 | 10 | No data and security boundary linked. | None. |
-| Documentation and traceability | 10 | 9 | Releases, ADRs, project, and implementation linked. | Other thread outputs not integrated. |
+| Documentation and traceability | 10 | 9 | Releases, ADRs, project, implementation, and candidate evidence linked. | Independent final review remains. |
 | Maintainability and clarity | 5 | 5 | Compact navigation plus an explicit preservation-first procedure. | None. |
-| Total | 100 | 96 | Cycle 3 branch-level evidence. | Four self-score points remain. |
+| Total | 100 | 98 | Cycle 4 assembled-tree evidence is recorded. | Two self-score points remain. |
 
 ## ChatGPT Reviewer Score
 
@@ -142,9 +143,9 @@ Reviewer evidence: GitHub PR #29 Cycle 3 independent review submitted 2026-07-19
 
 ## Final Score
 
-Provisional weighted score: 97.2
+Provisional weighted score: 98.0
 
-Gate-adjusted score: 79.0
+Gate-adjusted score: 98.0
 
 ## Critical-Gate Declaration
 
@@ -155,9 +156,9 @@ Gate-adjusted score: 79.0
 | G3 Approved scope and architecture | PASS | T02-owned documentation paths only. |
 | G4 Required validation | PASS | Local/cross-head links, history coverage, inventories, scope, and diff checks ran. |
 | G5 File ownership | PASS | All eight changed paths are T02-owned. |
-| G6 Acceptance completeness | FAIL | Final assembled-integration-branch link validation cannot run before authorized merges. |
+| G6 Acceptance completeness | PASS | Complete assembled-candidate documentation validation passed after T02 was applied last. |
 
-Critical-gate result: FAIL
+Critical-gate result: PASS
 
 ## Correction-Cycle History
 
@@ -166,7 +167,7 @@ Critical-gate result: FAIL
 | 1 | 88 | Root docs ended at 1.2 and omitted implementation/project entry points. | Synchronized eight entry points through active Release 1.7. | 96 | 107 links, 17 ADRs, 18 releases, scope, and diff checks. | CLOSED |
 | 2 | 96 | Reviewer found lost changelog history, incorrect statuses, unconstrained install, premature T01 adoption, and incomplete integrated validation. | Recorded 76 reviewer score and G6 failure. | 76 | PR #29 independent review. | CLOSED |
 | 3 | 76 | History loss, imprecise statuses, unconstrained setup, premature T01 adoption, missing integrated validation, preservation rule, and v2 migration required correction. | Restored history, added exact statuses, T03 setup, proposed T01 boundary, preservation policy, cross-head checks, and v2 evidence. | 96 | 107 local links, 4 cross-head targets, 63/63 bullets, 19 versions, 17 ADRs, and 18 release records passed before independent re-review. | CLOSED |
-| 4 | 98 | Cycle 3 reviewer closed substantive documentation findings and retained only assembled-tree validation. | Recorded the authoritative score and kept the two-point G6 correction open without changing root documents. | 98 | PR #29 Cycle 3 review and preserved branch-local link, history, and inventory evidence. | OPEN |
+| 4 | 98 | Cycle 3 reviewer closed substantive findings and retained only assembled-tree documentation validation. | Applied T02 last, ran the complete documentation matrix, recorded exact evidence, and retained reviewer verification. | 98 | Candidate `d2e2443`: 112 links, 17 ADRs, 18 releases, 12 sections, 63 bullets, README, roadmap, and structure checks passed. | OPEN |
 
 ## Recommended Follow-up Issues
 
