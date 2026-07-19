@@ -1,5 +1,7 @@
 # T01 Living Industry Report
 
+Report schema version: `smartcoat-execution-report-v2.0`
+
 Thread ID: T01
 
 Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/15
@@ -8,7 +10,7 @@ Branch: `thread/01-living-industry-north-star`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/28
 
-Final status: `CORRECTION CYCLE 3 IMPLEMENTED; INDEPENDENT RE-REVIEW REQUIRED`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -21,127 +23,132 @@ domain, and focused MVP sequence without changing approved architecture.
 - `docs/strategy/LIVING_INDUSTRY_PLATFORM_MODEL.md`
 - `docs/execution/reports/T01_LIVING_INDUSTRY_REPORT.md`
 
-## Method
+Both paths are owned by issue #15.
 
-Reviewed the active North Star, project state/history, MVP strategy, decision
-log, execution control center, security rules, issue #15, and relevant
-foundation, business, information, knowledge, decision, agent, platform, and
-reference-model documents.
+## Methods and Commands Executed
 
-## Work Completed
+- `git diff --check`
+- `git diff --name-only origin/release/1.7-project-reset...HEAD`
+- `rg -n "A0|A1|A2|A3|A4|A5|l0_manual|l4_bounded_automation" docs/strategy/LIVING_INDUSTRY_PLATFORM_MODEL.md`
+- Manual concept-authority and robotics-prerequisite review against T07 and T09.
 
-- Added a one-sentence definition and planning-horizon distinctions.
-- Defined mother-platform, Industry Hub, and company-instance contracts.
-- Mapped the complete sensing-to-learning nervous-system loop.
-- Adopted T07's sole L0-L4 operational-authority model and mandatory approvals.
-- Positioned technical textiles as first proof domain and Knowledge Capture as
-  the first vertical slice.
-- Added non-goals, traceability, and explicit open questions.
-- Classified existing, proposed, and future-unresolved concepts and moved machine
-  control into a separately gated North-Star research horizon.
+## Actual Results
 
-## Independent Review
-
-Authoritative reviewer score: `82/100`; gate-adjusted score: `79/100` because G3
-failed on the competing A0-A5 taxonomy. Cycle 3 removes that taxonomy, adopts
-T07's L0-L4 contract, adds robotics boundaries, concept-authority labels, and
-cross-thread references. Independent re-review must decide whether G3 is closed.
-
-## Validation
-
-```bash
-git diff --check
-rg -n "Industrial Intelligence|Engineering Intelligence|Industrial Knowledge|AI Platform|Knowledge Platform|Decision Platform|Chatbot" docs/strategy/LIVING_INDUSTRY_PLATFORM_MODEL.md
-rg -n "mother platform|Industry Hub|company instance|human|technical textile|Knowledge Capture|Open Questions|Traceability" docs/strategy/LIVING_INDUSTRY_PLATFORM_MODEL.md
-```
-
-Actual results:
-
-- `git diff --check` passed.
-- Deprecated/competing autonomy search returned no active A0-A5 levels.
-- Required-concept search found every model boundary and traceability section.
-- Manual contradiction review found the T07/T09 autonomy conflict resolved on
-  this branch; cross-thread integration remains pending.
+| Method or Command | Actual Result | Evidence |
+|---|---|---|
+| Legacy autonomy scan | PASS: no active A0-A5 taxonomy remains | Scoped search of the strategy model. |
+| Canonical autonomy scan | PASS: exact L0-L4 machine values and boundaries present | Strategy autonomy table and assertions. |
+| Concept and robotics review | PASS: authority labels and control prerequisites present | Concept-authority and research-horizon sections. |
+| Owned-path check | PASS: two changed paths, both owned by T01 | Branch diff against release baseline. |
+| `git diff --check` | PASS: no whitespace errors | Command exited zero. |
 
 ## Acceptance-Criteria Evidence
 
-| Criterion | Evidence |
-|---|---|
-| Not reduced to voice, capture, textiles, or chatbot | Anti-misinterpretations and horizon table. |
-| Three-level separation explicit | Mother Platform, Industry Hub, Company Instance sections. |
-| Risk-based oversight | Autonomy table and mandatory-approval list. |
-| Compatible with architecture | Layer mapping and path-based traceability table. |
-| Technical textiles are first proof | Technical-Textile Proof Domain section. |
-| Repository-derived claims referenced | Traceability table cites canonical paths. |
-| Open questions labeled | Dedicated Open Questions section. |
-| No confidential information | Generalized architecture and synthetic example language only. |
+- [x] Keep SmartCoat broader than voice, capture, textiles, or a chatbot.
+  Evidence: anti-misinterpretations and planning-horizon table.
+- [x] Define Mother Platform, Industry Hub, and Company Instance separately.
+  Evidence: three explicit contract sections.
+- [x] Use risk-based human oversight without a competing taxonomy.
+  Evidence: T07 L0-L4 is the sole operational-authority model.
+- [x] Preserve current architecture and mark proposal authority.
+  Evidence: layer mapping, authority labels, and path-based traceability.
+- [x] Position technical textiles as the first proof domain.
+  Evidence: dedicated proof-domain section.
+- [x] Label open questions and future machine control honestly.
+  Evidence: open-decisions and separately gated research-horizon sections.
+- [x] Use no confidential information.
+  Evidence: generalized architecture and synthetic scenario language only.
 
 ## Architecture Impact
 
-No architecture is replaced. The document clarifies how existing canonical
-models compose across platform, industry, and company scopes.
+No architecture is replaced. The document clarifies how canonical models compose
+across platform, industry, and company scopes. Future robotics/machine execution
+is a research horizon requiring control envelopes, validation, certification,
+rollback, emergency stop, and accountable human authority.
 
 ## Security and Data Impact
 
 No industrial records, identities, formulations, prices, credentials, personal
-data, or raw sources are included. Cross-company reuse is explicitly gated.
+data, or raw sources are included. Cross-company reuse and future execution are
+explicitly gated.
 
 ## Known Limitations
 
 - Industry Hub packaging and compatibility are conceptual, not implemented.
-- Autonomy thresholds require workflow-specific evidence and governance.
+- L0-L4 thresholds require workflow-specific evidence and governance.
 - Tenancy, IAM, legal basis, and cross-company learning remain open decisions.
+- The prior G3 failure remains authoritative until independent re-review.
 
 ## Lost Points and Correction Items
 
-1. Reserve one point for independent Cycle 3 contradiction and terminology re-review.
-2. Reserve one point until an approved pilot defines L0-L4 evidence
-   thresholds.
-3. Reserve one point until the minimum mother-platform contract is decided.
-4. Reserve one point until cross-thread artifacts are accepted together.
+| Item | Source | Points | Status | Action or Evidence |
+|---|---|---:|---|---|
+| C01 | PR #28 correctness deduction | 3 | IN PROGRESS | Contradiction removed and concept evidence added; re-review pending. |
+| C02 | PR #28 scope deduction | 2 | IN PROGRESS | Active model is limited to T07 L0-L4 and future control is non-operational. |
+| C03 | PR #28 architecture deduction | 7 | IN PROGRESS | One canonical authority model, authority labels, and robotics prerequisites added. |
+| C04 | PR #28 verification deduction | 4 | IN PROGRESS | Legacy/canonical scans, contradiction review, scope check, and diff check passed. |
+| C05 | PR #28 governance deduction | 1 | IN PROGRESS | Mandatory approval and future execution safety boundaries are explicit. |
+| C06 | PR #28 traceability deduction | 1 | IN PROGRESS | T07 and T09 integration targets plus schema-v2 history are recorded. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 24 | Claims are path-traced and horizons distinguished. | Independent review pending. |
+| Correctness and evidence | 25 | 24 | Claims are path-traced and horizons distinguished. | Independent Cycle 3 review pending. |
 | Scope and acceptance criteria | 20 | 20 | Both owned deliverables cover issue #15. | None. |
-| Architecture and North-Star alignment | 15 | 15 | T07 L0-L4 contract adopted; future control is non-operational. | None. |
-| Verification, tests, or validation | 15 | 14 | Terminology and contradiction pass documented. | Independent review pending. |
-| Security, privacy, and data governance | 10 | 10 | No confidential data; isolation and approvals explicit. | None. |
-| Documentation and traceability | 10 | 9 | Detailed path-based traceability. | Platform-contract decision remains open. |
-| Maintainability and clarity | 5 | 4 | Three-level model and tables are reusable. | Autonomy evidence thresholds remain open. |
-| Total | 100 | 96 | Cycle 3 corrections complete locally. | Four points remain pending re-review/decisions. |
+| Architecture and North-Star alignment | 15 | 15 | T07 L0-L4 adopted and future control is non-operational. | None. |
+| Verification, tests, or validation | 15 | 14 | Terminology, contradiction, scope, and diff checks passed. | Independent review pending. |
+| Security, privacy, and data governance | 10 | 10 | Isolation, approval, and execution prerequisites are explicit. | None. |
+| Documentation and traceability | 10 | 9 | Detailed authority labels and path-based traceability. | Platform-contract decision remains open. |
+| Maintainability and clarity | 5 | 4 | Three-level model and reusable tables. | Autonomy evidence thresholds remain open. |
+| Total | 100 | 96 | Cycle 3 corrections complete locally. | Four self-score points remain. |
 
 ## ChatGPT Reviewer Score
 
-Authoritative prior reviewer score: `82/100`, gate-adjusted to `79/100`. Cycle 3
-re-review is pending; the former self-score is not a final score.
+| Category | Maximum | Awarded | Evidence | Deduction Reason |
+|---|---:|---:|---|---|
+| Correctness and evidence | 25 | 22 | Reviewer confirmed the core three-level model. | Autonomy contradiction reduced correctness. |
+| Scope and acceptance criteria | 20 | 18 | Most issue criteria were met. | Competing taxonomy exceeded the canonical boundary. |
+| Architecture and North-Star alignment | 15 | 8 | Platform/Hub/company separation was strong. | A0-A5 conflicted with T07/T09 L0-L4. |
+| Verification, tests, or validation | 15 | 11 | Document checks were present. | Cross-thread contradiction was not resolved. |
+| Security, privacy, and data governance | 10 | 9 | Human governance was explicit. | Execution prerequisites needed detail. |
+| Documentation and traceability | 10 | 9 | Canonical paths were cited. | T07/T09 correction references were pending. |
+| Maintainability and clarity | 5 | 5 | Model structure was clear. | None. |
+| Total | 100 | 82 | GitHub PR #28 Cycle 1 review. | Eighteen reviewer points remain authoritative. |
 
-## Provisional Score
+## Final Score
 
-The prior weighted score was `87.6/100`. Using the updated self-score and prior
-reviewer score produces the same `87.6`; it remains non-final pending G3 re-review.
+Provisional weighted score: 87.6
+
+Gate-adjusted score: 79.0
 
 ## Critical-Gate Declaration
 
-Prior G3 failure: competing autonomy taxonomy. Cycle 3 removes the conflict
-locally; independent re-review is required to close the gate. No implementation
-or production-readiness claim is made, and all changes remain in T01-owned paths.
+| Gate | Status | Evidence |
+|---|---|---|
+| G1 Verified claims | PASS | Proposals and future horizons are labeled, not claimed implemented. |
+| G2 Confidential data | PASS | Generalized strategy content only. |
+| G3 Approved scope and architecture | FAIL | PR #28 gate remains authoritative until re-review verifies taxonomy reconciliation. |
+| G4 Required validation | PASS | Local scans and contradiction review passed after correction. |
+| G5 File ownership | PASS | Both changed paths are owned by issue #15. |
+| G6 Acceptance completeness | PASS | Every issue criterion is checked with evidence. |
+
+Critical-gate result: FAIL
 
 ## Correction-Cycle History
 
-| Cycle | Starting Score | Findings | Corrections | Ending Score |
-|---:|---:|---|---|---:|
-| 1 | 92 | Needed sharper horizon, tenancy, autonomy, and anti-misinterpretation boundaries. | Added three-level contract, risk-based autonomy, traceability, and open decisions. | 96 provisional. |
-| 3 | 79 gate-adjusted | A0-A5 conflicted with T07 L0-L4; concepts and robotics horizon lacked authority labels and prerequisites. | Adopted L0-L4, classified concepts, gated future machine control, and added T07/T09 targets. | 96 self; reviewer/G3 re-review pending. |
+| Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
+|---:|---:|---|---|---:|---|---|
+| 1 | 92 | Needed sharper horizon, tenancy, autonomy, and interpretation boundaries. | Added three-level contract, autonomy model, traceability, and open decisions. | 96 | Initial document and scope review. | CLOSED |
+| 2 | 96 | Reviewer found A0-A5 conflict, unlabeled concepts, and incomplete robotics prerequisites. | Recorded 82 reviewer score and G3 failure. | 82 | PR #28 independent review. | CLOSED |
+| 3 | 82 | Eighteen reviewer points became correction items. | Adopted L0-L4, classified concepts, gated machine control, added T07/T09 targets, and migrated report. | 96 | Legacy/canonical scans, contradiction review, scope, and diff checks passed. | OPEN |
 
 ## Recommended Follow-up Issues
 
-- Decide the minimum versioned mother-platform/Industry-Hub contract.
+- Decide the minimum versioned mother-platform and Industry-Hub contract.
 - Define workflow-specific autonomy evidence and approval thresholds.
 - Approve tenancy and cross-company learning architecture before implementation.
 
 ## Blockers
 
-None for independent review. Open decisions are future implementation gates.
+None.
