@@ -1,5 +1,7 @@
 # TXX Thread Report
 
+Report schema version: `smartcoat-execution-report-v2.0`
+
 Thread ID: TXX
 
 Issue: https://github.com/OWNER/REPOSITORY/issues/NN
@@ -25,7 +27,12 @@ State the approved issue objective and bounded outcome.
 
 ## Actual Results
 
-Record counts and pass/fail/skip output. Never write a planned result as actual.
+| Method or Command | Actual Result | Evidence |
+|---|---|---|
+| | PASS / FAIL / SKIP / BLOCKED / NOT RUN: count or outcome | output, log, file, or explicit observation |
+
+Every result starts with one allowed status. Never write a planned result as
+actual.
 
 ## Acceptance-Criteria Evidence
 
@@ -52,6 +59,11 @@ whether examples are synthetic/generalized.
 |---|---|---:|---|---|
 | C01 | | | OPEN | |
 
+Before independent review, unresolved points equal `100 - self-score`. After
+review, they equal `100 - reviewer-score`; the weighted score is not the
+correction burden. Keep locally implemented reviewer items `IN PROGRESS` until
+independent re-review verifies closure.
+
 ## Codex Self-Score
 
 Insert the complete standard scorecard from `THREAD_SCORECARD_TEMPLATE.md`.
@@ -59,6 +71,15 @@ Insert the complete standard scorecard from `THREAD_SCORECARD_TEMPLATE.md`.
 ## ChatGPT Reviewer Score
 
 Reviewer status: Pending independent review.
+
+After review, use the full scorecard when category awards were published. If the
+authoritative review contains only a total, replace the pending line with:
+
+```text
+Reviewer total: NN
+
+Reviewer evidence: GitHub PR #NN review, cycle and date.
+```
 
 ## Final Score
 
@@ -87,6 +108,10 @@ None.
 For a human blocker, replace `None` with the four required fields in
 `CORRECTION_CYCLE_TEMPLATE.md`.
 
+Standard table cells must not contain escaped Markdown pipes. Use words, commas,
+or prose outside the table. Every backticked path in `Files Changed` must exist
+in the report's branch.
+
 ## PR Summary Template
 
 ```markdown
@@ -110,4 +135,3 @@ For a human blocker, replace `None` with the four required fields in
 
 Closes #NN
 ```
-

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
+
+import pytest
 
 SCRIPTS_DIR = Path(__file__).parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from validate_execution_reports import main, validate_text  # noqa: E402
+from validate_execution_reports import main, validate_path, validate_text  # noqa: E402
 
 CATEGORIES = (
     ("Correctness and evidence", 25),
@@ -36,7 +39,7 @@ def make_report(
     self_score: int = 95,
     reviewer_score: int | None = 95,
     gate_failed: bool = False,
-    status: str = "READY FOR CHATGPT REVIEW",
+    status: str = "READY FOR INDEPENDENT RE-REVIEW",
     unchecked: bool = False,
     correction_points: int | None = None,
     correction_status: str = "OPEN",
@@ -55,7 +58,7 @@ def make_report(
         weighted = round(0.4 * self_score + 0.6 * reviewer_score, 1)
         provisional = f"{weighted:.1f}"
         adjusted = f"{min(weighted, 79.0) if gate_failed else weighted:.1f}"
-        current_loss = 100 - min(self_score, reviewer_score)
+        current_loss = 100 - reviewer_score
     points = current_loss if correction_points is None else correction_points
     correction_row = ""
     if points or correction_points is not None or correction_status != "OPEN":
@@ -68,6 +71,8 @@ def make_report(
     gate_result = gate_status
 
     return f"""# Synthetic Thread Report
+
+Report schema version: `smartcoat-execution-report-v2.0`
 
 Thread ID: T99
 
@@ -85,7 +90,7 @@ Validate a synthetic report.
 
 ## Files Changed
 
-- `synthetic.md`
+- `docs/synthetic.md`
 
 ## Methods and Commands Executed
 
@@ -93,7 +98,9 @@ Validate a synthetic report.
 
 ## Actual Results
 
-Passed one synthetic validation.
+| Method or Command | Actual Result | Evidence |
+|---|---|---|
+| Synthetic test | PASS: one validation | Synthetic command output. |
 
 ## Acceptance-Criteria Evidence
 
@@ -169,6 +176,17 @@ def test_valid_reviewed_report() -> None:
     assert validate_text(make_report()) == []
 
 
+def test_valid_total_only_reviewer_score_with_evidence() -> None:
+    report = make_report().replace(
+        f"## ChatGPT Reviewer Score\n\n{scorecard(95)}\n\n## Final Score",
+        "## ChatGPT Reviewer Score\n\n"
+        "Reviewer total: 95\n\n"
+        "Reviewer evidence: GitHub PR review dated 2026-07-19.\n\n"
+        "## Final Score",
+    )
+    assert validate_text(report) == []
+
+
 def test_valid_pending_reviewer_report() -> None:
     assert validate_text(make_report(reviewer_score=None)) == []
 
@@ -229,6 +247,54 @@ def test_lost_points_must_match_unresolved_corrections() -> None:
     assert_has_error(report, "must equal current lost points 5")
 
 
+def test_reviewer_deductions_define_correction_burden_after_review() -> None:
+    report = make_report(self_score=99, reviewer_score=90, correction_points=1)
+    assert_has_error(report, "must equal current lost points 10")
+
+
+def test_self_deductions_define_correction_burden_before_review() -> None:
+    assert (
+        validate_text(make_report(self_score=90, reviewer_score=None, correction_points=10)) == []
+    )
+
+
+def test_duplicate_correction_ids_are_rejected() -> None:
+    report = make_report().replace(
+        "| C01 | Current score | 5 | OPEN | Apply and validate the correction. |",
+        "| C01 | Current score | 5 | RESOLVED | Historical correction. |\n"
+        "| C01 | Reviewer score | 5 | OPEN | Apply reviewer correction. |",
+    )
+    assert_has_error(report, "duplicate correction item ID")
+
+
+def test_duplicate_cycle_numbers_are_rejected() -> None:
+    report = make_report().replace(
+        "| 1 | 90 | Synthetic gap. | Synthetic correction. | 95 | "
+        "Synthetic test passed. | CLOSED |",
+        "| 1 | 90 | Synthetic gap. | Synthetic correction. | 95 | "
+        "Synthetic test passed. | CLOSED |\n"
+        "| 1 | 95 | New gap. | New correction. | 95 | Synthetic test passed. | OPEN |",
+    )
+    assert_has_error(report, "duplicate correction cycle number")
+
+
+def test_escaped_table_pipe_is_rejected() -> None:
+    report = make_report().replace("Synthetic command output.", r"Synthetic command \| output.")
+    assert_has_error(report, "escaped Markdown table pipes are prohibited")
+
+
+def test_unsupported_schema_version_is_rejected() -> None:
+    report = make_report().replace(
+        "smartcoat-execution-report-v2.0", "smartcoat-execution-report-v1.0"
+    )
+    assert_has_error(report, "legacy reports require explicit migration")
+
+
+def test_actual_results_requires_explicit_result_status() -> None:
+    report = make_report().replace("PASS: one validation", "one validation")
+    assert_has_error(report, "must start with PASS")
+
+
 def test_100_status_rejects_unchecked_acceptance_criterion() -> None:
     report = make_report(
         self_score=100,
@@ -237,6 +303,10 @@ def test_100_status_rejects_unchecked_acceptance_criterion() -> None:
         unchecked=True,
     )
     assert_has_error(report, "cannot contain unchecked acceptance criteria")
+
+
+def test_ready_for_re_review_rejects_unchecked_acceptance_criterion() -> None:
+    assert_has_error(make_report(unchecked=True), "cannot contain unchecked acceptance criteria")
 
 
 def test_100_status_rejects_unresolved_correction() -> None:
@@ -285,6 +355,35 @@ def test_cli_returns_nonzero_for_invalid_report(tmp_path: Path) -> None:
 
 
 def test_cli_accepts_valid_report(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "synthetic.md").write_text("synthetic\n", encoding="utf-8")
     report = tmp_path / "valid.md"
     report.write_text(make_report(), encoding="utf-8")
     assert main([str(report)]) == 0
+
+
+def test_path_validation_rejects_missing_changed_file(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    report = tmp_path / "valid.md"
+    report.write_text(make_report(), encoding="utf-8")
+    assert "referenced repository path does not exist: docs/synthetic.md" in validate_path(report)
+
+
+def test_cli_require_count_rejects_incomplete_report_set(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "synthetic.md").write_text("synthetic\n", encoding="utf-8")
+    report = tmp_path / "valid.md"
+    report.write_text(make_report(), encoding="utf-8")
+    assert main(["--require-count", "2", str(report)]) == 1
+
+
+def test_actual_thread_reports_validate_when_configured() -> None:
+    configured = os.environ.get("SMARTCOAT_ACTUAL_REPORTS")
+    if not configured:
+        pytest.skip("set SMARTCOAT_ACTUAL_REPORTS for the ten-report integration check")
+    paths = [Path(value) for value in configured.split(os.pathsep)]
+    assert len(paths) == 10
+    failures = {str(path): validate_path(path) for path in paths if validate_path(path)}
+    assert failures == {}

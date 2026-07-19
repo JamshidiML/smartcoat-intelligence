@@ -1,6 +1,8 @@
 # SmartCoat Execution Quality Scoring System
 
-Version: 1.0 Draft
+Report schema version: `smartcoat-execution-report-v2.0`
+
+Policy version: 2.0 Draft
 
 Authority: Parent issue #14, `EXECUTION_CONTROL_CENTER.md`, and assigned thread issue
 
@@ -36,7 +38,10 @@ looks plausible.
 
 1. **Codex Self-Score:** implementation engineer's evidence-based assessment.
 2. **ChatGPT Reviewer Score:** independent assessment recorded separately; it
-   must not be pre-filled or inferred by Codex.
+   must not be pre-filled or inferred by Codex. Use a full category table when
+   the reviewer published category awards. When the authoritative review
+   published only a total, preserve it without invention as `Reviewer total`
+   plus a dated PR-review evidence reference.
 3. **Provisional weighted score:**
 
 ```text
@@ -49,9 +54,11 @@ round(0.40 * Codex Self-Score + 0.60 * ChatGPT Reviewer Score, 1)
    is not final merely because arithmetic exists.
 
 Until independent review is recorded, both final-score fields are `Pending`.
-The lower available assessment determines the number of current lost points that
-must be represented by unresolved correction items. Category-level findings and
-review rationale remain the authoritative detail.
+The weighted score measures provisional performance; it does **not** define the
+correction burden. Before independent review, correction points equal Codex
+self-deductions. After independent review, correction points equal reviewer
+deductions, because reviewer findings are the authoritative work queue until a
+later independent review replaces them.
 
 ## Critical Gates
 
@@ -72,10 +79,17 @@ corrected.
 
 Every current lost point maps to a numbered correction item with source, points,
 status, and concrete action/evidence. Allowed statuses are `OPEN`, `IN PROGRESS`,
-`BLOCKED`, and `RESOLVED`. Unresolved correction points must equal:
+`BLOCKED`, and `RESOLVED`. Before independent review, unresolved correction
+points must equal:
 
 ```text
-100 - min(available Codex score, available ChatGPT score)
+100 - Codex Self-Score
+```
+
+After independent review they must equal:
+
+```text
+100 - ChatGPT Reviewer Score
 ```
 
 Resolved historical items remain in the table but no longer count toward current
@@ -100,8 +114,10 @@ evidence, and `OPEN`, `CLOSED`, or `BLOCKED` state. Do not erase earlier cycles.
 
 ## Status Rules
 
-- `READY FOR CHATGPT REVIEW`: implementation and internal validation are ready;
-  a real draft PR URL is required and reviewer score may be pending.
+- `READY FOR INDEPENDENT REVIEW`: first-pass implementation and internal
+  validation are ready; a real draft PR URL is required.
+- `READY FOR INDEPENDENT RE-REVIEW`: reviewer corrections are implemented and
+  locally validated, but the prior reviewer score remains authoritative.
 - `CORRECTION IN PROGRESS`: work or a correction is active. `Pending (pre-PR)` is
   allowed only in this state.
 - `100/100 — READY FOR APPROVAL`: self, reviewer, weighted and gate-adjusted
@@ -113,27 +129,50 @@ evidence, and `OPEN`, `CLOSED`, or `BLOCKED` state. Do not erase earlier cycles.
 perfection. Out-of-scope futures may be follow-up issues; unresolved in-scope
 defects, missing required validation, or unchecked criteria prevent 100.
 
+Ready-for-review and ready-for-re-review reports must have every in-scope
+acceptance criterion checked. A correction may be implemented locally while its
+reviewer-sourced item remains `IN PROGRESS` until independent re-review verifies
+closure.
+
+## Schema Version and Migration
+
+Every report declares `Report schema version:
+smartcoat-execution-report-v2.0`. The v2 validator does not silently reinterpret
+legacy reports. A v1 or unversioned report must be explicitly normalized, retain
+its historical scores, gates, and cycles, and then pass v2 validation. Future
+breaking changes require a new schema version and documented migration.
+
+The quality system is not considered adopted by the ten-thread wave until the
+validator runs against exactly ten actual reports with zero errors. Use
+`--require-count 10` for that integration evidence.
+
 ## Validator Contract
 
 `scripts/validate_execution_reports.py` checks:
 
-- metadata, exact required sections, valid status, issue/branch/PR forms
+- metadata, exact report schema version, valid status, issue/branch/PR forms
 - seven category rows, fixed maxima totaling 100, numeric ranges and evidence
 - independent reviewer pending or a complete reviewer scorecard
 - weighted calculation and critical-gate cap
 - all six gate declarations and evidence
 - acceptance checklist and evidence language
-- unresolved lost-point/correction-point equality
+- reviewer-based correction burden after review and self-based burden before it
+- duplicate correction/cycle IDs and prohibited escaped pipes in table cells
+- existing backticked repository paths in `Files Changed`
+- exact commands plus structured actual-result declarations
 - correction-cycle structure and blocker details
 - strict `100/100` completion conditions
 
 Usage:
 
 ```bash
-python scripts/validate_execution_reports.py docs/execution/reports/TXX_REPORT.md
+python scripts/validate_execution_reports.py --require-count 10 REPORT_1 ... REPORT_10
 ```
 
 The command exits `0` only when every supplied report validates; otherwise it
 prints report-specific errors and exits `1`. It uses only the Python standard
 library. Tests use synthetic reports and contain no industrial data.
 
+Escaped Markdown pipes (`\|`) are prohibited inside standard table rows because
+the v2 parser uses a strict, auditable table grammar. Use words, commas, or a
+non-table paragraph instead.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate SmartCoat execution-thread reports against the Cycle 1 contract."""
+"""Validate SmartCoat execution-thread reports against the v2 contract."""
 
 from __future__ import annotations
 
@@ -19,7 +19,15 @@ RUBRIC = {
     "Maintainability and clarity": 5.0,
 }
 
-REQUIRED_METADATA = ("Thread ID", "Issue", "Branch", "Draft PR", "Final status")
+REPORT_SCHEMA_VERSION = "smartcoat-execution-report-v2.0"
+REQUIRED_METADATA = (
+    "Report schema version",
+    "Thread ID",
+    "Issue",
+    "Branch",
+    "Draft PR",
+    "Final status",
+)
 REQUIRED_SECTIONS = (
     "Objective",
     "Files Changed",
@@ -39,7 +47,8 @@ REQUIRED_SECTIONS = (
     "Blockers",
 )
 FINAL_STATUSES = {
-    "READY FOR CHATGPT REVIEW",
+    "READY FOR INDEPENDENT REVIEW",
+    "READY FOR INDEPENDENT RE-REVIEW",
     "CORRECTION IN PROGRESS",
     "100/100 — READY FOR APPROVAL",
     "BLOCKED — HUMAN DECISION REQUIRED",
@@ -53,6 +62,20 @@ GATE_NAMES = {
     "G6 Acceptance completeness",
 }
 PLACEHOLDERS = {"", "-", "tbd", "todo", "none provided", "pending evidence"}
+READY_STATUSES = {
+    "READY FOR INDEPENDENT REVIEW",
+    "READY FOR INDEPENDENT RE-REVIEW",
+    "100/100 — READY FOR APPROVAL",
+}
+REPOSITORY_PATH_PREFIXES = (
+    ".github/",
+    "docs/",
+    "examples/",
+    "schemas/",
+    "scripts/",
+    "src/",
+    "tests/",
+)
 
 
 @dataclass(frozen=True)
@@ -112,6 +135,48 @@ def _is_evidence(value: str) -> bool:
     return value.strip().lower() not in PLACEHOLDERS and len(value.strip()) >= 3
 
 
+def _actual_results(section: str, errors: list[str]) -> None:
+    rows = _table(section)
+    expected = ["Method or Command", "Actual Result", "Evidence"]
+    if not rows or rows[0] != expected or len(rows) < 2:
+        errors.append("Actual Results must contain the standard result table and one result")
+        return
+
+    seen: set[str] = set()
+    for row in rows[1:]:
+        if len(row) != 3:
+            errors.append("each Actual Results row must contain three columns")
+            continue
+        method, result, evidence = row
+        if method in seen:
+            errors.append(f"duplicate Actual Results method: {method!r}")
+        seen.add(method)
+        if not re.match(r"^(PASS|FAIL|SKIP|BLOCKED|NOT RUN)(?:\b|:)", result.upper()):
+            errors.append(
+                f"Actual Result for {method!r} must start with "
+                "PASS, FAIL, SKIP, BLOCKED, or NOT RUN"
+            )
+        if not _is_evidence(evidence):
+            errors.append(f"Actual Results row {method!r} needs evidence")
+
+
+def _repository_paths(section: str, repository_root: Path, errors: list[str]) -> None:
+    paths = [
+        token
+        for token in re.findall(r"`([^`\n]+)`", section)
+        if token.startswith(REPOSITORY_PATH_PREFIXES)
+    ]
+    if not paths:
+        errors.append("Files Changed must contain backticked repository paths")
+        return
+    if len(paths) != len(set(paths)):
+        errors.append("Files Changed contains duplicate repository paths")
+    for relative in paths:
+        candidate = repository_root / relative
+        if not candidate.is_file():
+            errors.append(f"referenced repository path does not exist: {relative}")
+
+
 def _number(value: str, label: str, errors: list[str]) -> float | None:
     try:
         result = float(value.strip())
@@ -124,9 +189,26 @@ def _number(value: str, label: str, errors: list[str]) -> float | None:
     return result
 
 
-def _score(section: str, label: str, allow_pending: bool, errors: list[str]) -> float | None:
+def _score(
+    section: str,
+    label: str,
+    allow_pending: bool,
+    errors: list[str],
+    allow_total_only: bool = False,
+) -> float | None:
     if allow_pending and re.search(r"Reviewer status:\s*Pending\b", section, re.IGNORECASE):
         return None
+
+    if allow_total_only:
+        total_match = re.search(r"^Reviewer total:\s*(.+?)\s*$", section, re.MULTILINE)
+        evidence_match = re.search(r"^Reviewer evidence:\s*(.+?)\s*$", section, re.MULTILINE)
+        if total_match or evidence_match:
+            if not total_match or not evidence_match:
+                errors.append("total-only reviewer score requires Reviewer total and evidence")
+                return None
+            if not _is_evidence(evidence_match.group(1)):
+                errors.append("total-only reviewer score needs substantive evidence")
+            return _number(total_match.group(1), "reviewer total", errors)
 
     rows = _table(section)
     expected_header = ["Category", "Maximum", "Awarded", "Evidence", "Deduction Reason"]
@@ -236,6 +318,7 @@ def _corrections(section: str, current_loss: float | None, errors: list[str]) ->
         return []
 
     statuses: list[str] = []
+    seen_items: set[str] = set()
     unresolved_points = 0.0
     for row in rows[1:]:
         if len(row) != 5:
@@ -244,6 +327,9 @@ def _corrections(section: str, current_loss: float | None, errors: list[str]) ->
         item, source, points_text, status, action = row
         if not re.fullmatch(r"C\d{2,}", item):
             errors.append(f"invalid correction item ID: {item!r}")
+        if item in seen_items:
+            errors.append(f"duplicate correction item ID: {item!r}")
+        seen_items.add(item)
         if not _is_evidence(source) or not _is_evidence(action):
             errors.append(f"correction item {item!r} needs source and action/evidence")
         points = _number(points_text, f"correction item {item} points", errors)
@@ -276,12 +362,16 @@ def _cycle_history(section: str, errors: list[str]) -> None:
     if not rows or rows[0] != expected or len(rows) < 2:
         errors.append("Correction-Cycle History must contain the standard table and one cycle")
         return
+    seen_cycles: set[str] = set()
     for row in rows[1:]:
         if len(row) != 7:
             errors.append("each correction-cycle row must contain seven columns")
             continue
         if not re.fullmatch(r"\d+", row[0]):
             errors.append(f"invalid correction cycle number: {row[0]!r}")
+        if row[0] in seen_cycles:
+            errors.append(f"duplicate correction cycle number: {row[0]!r}")
+        seen_cycles.add(row[0])
         for index, name in ((1, "starting"), (4, "ending")):
             if row[index].lower() != "pending":
                 _number(row[index], f"cycle {row[0]} {name} score", errors)
@@ -291,10 +381,16 @@ def _cycle_history(section: str, errors: list[str]) -> None:
             errors.append(f"invalid correction-cycle status: {row[6]!r}")
 
 
-def validate_text(text: str) -> list[str]:
+def validate_text(text: str, repository_root: Path | None = None) -> list[str]:
     """Return validation errors for one report string."""
 
     errors: list[str] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if line.strip().startswith("|") and r"\|" in line:
+            errors.append(
+                f"escaped Markdown table pipes are prohibited (line {line_number}); "
+                "use words, commas, or a non-table section"
+            )
     report = _parse_report(text, errors)
 
     for key in REQUIRED_METADATA:
@@ -309,6 +405,11 @@ def validate_text(text: str) -> list[str]:
     if errors:
         return errors
 
+    if report.metadata["Report schema version"] != REPORT_SCHEMA_VERSION:
+        errors.append(
+            f"Report schema version must be {REPORT_SCHEMA_VERSION!r}; "
+            "legacy reports require explicit migration"
+        )
     status = report.metadata["Final status"]
     if status not in FINAL_STATUSES:
         errors.append(f"invalid Final status: {status!r}")
@@ -325,9 +426,20 @@ def validate_text(text: str) -> list[str]:
     elif not pre_pr and not re.match(r"https://github\.com/.+?/pull/\d+$", draft_pr):
         errors.append("Draft PR must be a GitHub pull-request URL")
 
+    methods = report.sections["Methods and Commands Executed"]
+    if not re.search(r"^- `[^`]+`", methods, re.MULTILINE):
+        errors.append("Methods and Commands Executed must contain an exact backticked command")
+    _actual_results(report.sections["Actual Results"], errors)
+    if repository_root is not None:
+        _repository_paths(report.sections["Files Changed"], repository_root, errors)
+
     self_score = _score(report.sections["Codex Self-Score"], "Codex Self-Score", False, errors)
     reviewer_score = _score(
-        report.sections["ChatGPT Reviewer Score"], "ChatGPT Reviewer Score", True, errors
+        report.sections["ChatGPT Reviewer Score"],
+        "ChatGPT Reviewer Score",
+        True,
+        errors,
+        allow_total_only=True,
     )
     provisional, adjusted = _final_scores(report.sections["Final Score"], errors)
     gate_failed = _critical_gates(report.sections["Critical-Gate Declaration"], errors)
@@ -346,8 +458,8 @@ def validate_text(text: str) -> list[str]:
         if adjusted is None or abs(adjusted - expected_adjusted) > 0.05:
             errors.append(f"gate-adjusted score must be {expected_adjusted:.1f}")
 
-    scores = [score for score in (self_score, reviewer_score) if score is not None]
-    current_loss = 100.0 - min(scores) if scores else None
+    correction_basis = reviewer_score if reviewer_score is not None else self_score
+    current_loss = 100.0 - correction_basis if correction_basis is not None else None
     correction_statuses = _corrections(
         report.sections["Lost Points and Correction Items"], current_loss, errors
     )
@@ -362,6 +474,9 @@ def validate_text(text: str) -> list[str]:
         errors.append("Acceptance-Criteria Evidence must contain checklist items")
     if "evidence" not in report.sections["Acceptance-Criteria Evidence"].lower():
         errors.append("Acceptance-Criteria Evidence must reference evidence")
+
+    if status in READY_STATUSES and any(mark.strip().lower() != "x" for mark, _ in criteria):
+        errors.append(f"{status} cannot contain unchecked acceptance criteria")
 
     complete_status = status == "100/100 — READY FOR APPROVAL"
     if complete_status:
@@ -397,15 +512,29 @@ def validate_path(path: Path) -> list[str]:
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return ["file is not valid UTF-8"]
-    return validate_text(text)
+    repository_root = next(
+        (parent for parent in (path.parent, *path.parents) if (parent / ".git").exists()),
+        None,
+    )
+    if repository_root is None:
+        return ["could not locate repository root for deterministic path validation"]
+    return validate_text(text, repository_root=repository_root)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reports", nargs="+", type=Path, help="thread report Markdown files")
+    parser.add_argument(
+        "--require-count",
+        type=int,
+        help="fail unless exactly this many report paths are supplied",
+    )
     args = parser.parse_args(argv)
 
     failed = False
+    if args.require_count is not None and len(args.reports) != args.require_count:
+        print(f"FAIL expected {args.require_count} reports, received {len(args.reports)}")
+        failed = True
     for path in args.reports:
         errors = validate_path(path)
         if errors:

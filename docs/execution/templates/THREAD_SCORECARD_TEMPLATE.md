@@ -4,6 +4,9 @@ Use this component twice: once for `Codex Self-Score` and once after independent
 review for `ChatGPT Reviewer Score`. Do not copy the self-score into the reviewer
 table. Until review, write `Reviewer status: Pending independent review.`
 
+When the authoritative reviewer published only a total, do not invent category
+awards. Use `Reviewer total: NN` and `Reviewer evidence: <dated PR review>`.
+
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
 | Correctness and evidence | 25 | | | |
@@ -30,6 +33,9 @@ Provisional weighted score = round(0.40 * self + 0.60 * reviewer, 1)
 Gate-adjusted score = provisional, or min(provisional, 79.0) when a gate failed
 ```
 
+The weighted score is a provisional performance measure only. Correction points
+equal self-deductions before review and reviewer deductions after review.
+
 ## Critical-Gate Component
 
 | Gate | Status | Evidence |
@@ -42,4 +48,3 @@ Gate-adjusted score = provisional, or min(provisional, 79.0) when a gate failed
 | G6 Acceptance completeness | PASS / FAIL | |
 
 Critical-gate result: PASS / FAIL
-
