@@ -2,6 +2,8 @@
 
 Status: Pilot preparation scoring model
 
+Scoring model version: `smartcoat-readiness-v1.1-draft`
+
 ## Scoring Principle
 
 Readiness measures whether an already authorized source can support a defined
@@ -15,6 +17,12 @@ total readiness = sum(dimension points)
 
 Round the total to one decimal place. Record evidence and reviewer for every
 rating; unsupported ratings are zero.
+
+The dimensions, weights, and score bands below are **pilot hypotheses**, not
+validated predictors of value or ingestion safety. Preserve the model version
+with every assessment. Recalibrate only from measured pilot outcomes, domain
+review, and observed decision error; publish a new version and mapping instead
+of silently changing historical scores.
 
 ## Dimensions
 
@@ -52,6 +60,8 @@ Regardless of score, status is `blocked` when any is true:
 - retention/deletion authority is undefined
 - assessment would require copying unapproved raw content
 - security, safety, employee-consent, or IP review is unresolved
+- any intended purpose is not explicitly `approved`, including when its status
+  is `not_requested`, `in_review`, `denied`, `expired`, or `revoked`
 
 ## Score Bands After Gate Passes
 
@@ -64,6 +74,10 @@ Regardless of score, status is `blocked` when any is true:
 | 0-24.9 | Defer | No pilot work until fundamentals change. |
 
 The readiness band cannot change a `blocked` governance gate.
+
+These bands are prioritization hypotheses for the first controlled pilot. They
+must be tested against measured preparation effort, correction rate, ingestion
+defects, and user value before reuse as decision thresholds.
 
 ## Prioritization
 
@@ -90,8 +104,14 @@ risk summary and required mitigation for each source.
 | Formulation reference index | Medium | >= 75 | No composition unless explicit trade-secret approval |
 | Raw documents/images/voice | Variable | Not first package | Separate source, consent, extraction, retention, and content review |
 
+A synthetic high-scoring row in the register deliberately remains `blocked`
+because analytics is an intended purpose with status `in_review`. This proves
+that a score near 100 cannot override a purpose-specific permission gate.
+
 ## Reassessment
 
 Re-score when source structure, owner, permission, purpose, quality, mapping,
-retention, or pilot scope changes. Record previous score and reason; never
-overwrite evidence silently.
+retention, or pilot scope changes. Every reassessment records a new assessment
+ID, model version, timestamp, assessor role, evidence references, previous
+assessment ID and score, reason, and immutable history reference. Never
+overwrite prior rows or evidence silently.

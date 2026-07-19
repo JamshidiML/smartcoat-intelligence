@@ -50,9 +50,12 @@ The canonical inventory row is defined in
 `docs/data/templates/DATA_SOURCE_REGISTER_TEMPLATE.csv`. Key groups are:
 
 - identity: source ID, family, generalized name, organization/site
+- assessment identity: assessment ID, scoring-model version, timestamp,
+  assessor role, evidence references, and reassessment lineage
 - accountability: owner, steward, system owner, contact role
-- governance: confidentiality, personal data, legal/contractual permission,
-  permitted uses, access boundary, retention, deletion authority
+- governance: canonical confidentiality; tri-state personal, employee, customer,
+  supplier/commercial, and trade-secret sensitivity; separate decisions for all
+  six canonical purposes; access boundary, retention, deletion authority
 - shape: format, structure, volume band, history band, language
 - quality: completeness, consistency, identifiers, timestamps, units,
   provenance, duplicate risk
@@ -83,14 +86,23 @@ Discover source family
 Every transition records reviewer, date, evidence reference, and unresolved
 questions. A rejected or expired approval returns the source to `blocked`.
 
+Canonical confidentiality values are `public`, `internal`, `confidential`,
+`restricted`, and `strategic`. Each sensitivity indicator is `unknown`, `none`,
+or `present`; `unknown` is never interpreted as absence. Each purpose decision
+uses `not_requested`, `in_review`, `approved`, `denied`, `expired`, or `revoked`
+for `inventory`, `retrieval`, `analytics`, `human_review`, `model_training`, and
+`external_sharing`.
+
 ## Synthetic Example Interpretations
 
-The CSV template includes two explicitly synthetic rows:
+The CSV template includes three explicitly synthetic rows:
 
 - a generalized R&D trial-summary register that is valuable but still blocked
   because contractual permission has not been confirmed
 - a synthetic laboratory-result export with explicit test-only permission and
   stronger identifier/unit readiness
+- a high-scoring synthetic quality archive that remains blocked because
+  analytics is an intended purpose whose decision is still `in_review`
 
 They demonstrate that readiness and permission are independent.
 
@@ -115,7 +127,8 @@ rate, evidence coverage, and lesson reuse are measurable.
 ## Missing Information for Founder/Domain Owner
 
 1. Which organization and site owns each source family?
-2. Who can authorize inventory, retrieval, analytics, and model-training uses separately?
+2. Who can authorize inventory, retrieval, analytics, human-review,
+   model-training, and external-sharing purposes separately?
 3. Which sources contain personal data, employee voice, customer identity, or supplier terms?
 4. Which contracts or licenses restrict TDS/SDS, standards, literature, ERP, or customer data?
 5. What retention and deletion obligations apply?
@@ -131,3 +144,7 @@ This inventory aligns with `SECURITY.md`, domain source families, information
 governance/provenance/quality concepts, project history, and Decision D-014's
 controlled measurable pilot. It does not determine legal basis, approve access,
 perform schema mapping, or ingest data.
+
+Readiness model `smartcoat-readiness-v1.1-draft`, its weights, and its bands are
+pilot hypotheses. A later calibration creates a new version and preserves every
+prior assessment, score, evidence reference, and reassessment reason.

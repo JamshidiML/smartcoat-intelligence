@@ -2,17 +2,22 @@
 
 Assessment ID:
 
+Scoring model version: `smartcoat-readiness-v1.1-draft`
+
 Source ID:
 
-Assessment date:
+Assessment timestamp (UTC):
 
-Reviewer roles:
+Assessor role:
+
+Assessment evidence references:
 
 ## Stop Check
 
 - [ ] Assessment uses only synthetic, generalized, metadata-only, or explicitly approved sanitized content.
 - [ ] Data owner and steward are identified.
-- [ ] Confidentiality and personal-data classifications are complete.
+- [ ] Confidentiality and every sensitivity indicator are classified as
+  `unknown`, `none`, or `present`; no `unknown` is treated as false.
 - [ ] Legal/contractual permission covers the exact assessment purpose.
 - [ ] Organization/site and need-to-know access boundary are explicit.
 - [ ] Retention, deletion, correction, and incident contacts are known.
@@ -54,13 +59,31 @@ Steward role:
 
 Confidentiality:
 
-Personal/employee data:
+Personal-data state (`unknown`, `none`, `present`):
 
-Customer/supplier/trade-secret content:
+Employee-data state (`unknown`, `none`, `present`):
+
+Customer-identity state (`unknown`, `none`, `present`):
+
+Supplier/commercial state (`unknown`, `none`, `present`):
+
+Trade-secret state (`unknown`, `none`, `present`):
 
 Permission evidence reference:
 
-Permitted uses:
+Intended purposes (canonical T07 values):
+
+Inventory permission (`not_requested`, `in_review`, `approved`, `denied`, `expired`, `revoked`):
+
+Retrieval permission:
+
+Analytics permission:
+
+Human-review permission:
+
+Model-training permission:
+
+External-sharing permission:
 
 Access boundary:
 
@@ -103,6 +126,8 @@ Record 0-4 rating and evidence for all 16 dimensions in
 
 Calculated score:
 
+Scoring evidence references:
+
 Governance gate (`passed` or `blocked`):
 
 Recommended priority:
@@ -126,3 +151,16 @@ Decision owner:
 Rationale and evidence references:
 
 Next review trigger:
+
+## Reassessment History
+
+Previous assessment ID:
+
+Previous readiness score:
+
+Reassessment reason (`initial_assessment` when none):
+
+Immutable history reference:
+
+Do not replace a prior assessment row or evidence reference. Create a new
+assessment ID and link it here.
