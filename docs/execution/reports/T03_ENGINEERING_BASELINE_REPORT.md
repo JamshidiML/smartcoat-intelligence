@@ -37,6 +37,8 @@ All paths are owned by issue #17 or explicitly authorized by its review.
 - `"$TMPDIR/smartcoat-cycle3-t03-venv/bin/python" -m ruff format --check .`
 - `"$TMPDIR/smartcoat-cycle3-t03-venv/bin/python" -m mypy src`
 - In the T04 worktree: `"$TMPDIR/smartcoat-cycle3-t04-venv/bin/python" -m mypy src`
+- In the Cycle 4 candidate: `"$TMPDIR/smartcoat-cycle4-integration-venv/bin/python" -m pytest -q`
+- In the Cycle 4 candidate: `"$TMPDIR/smartcoat-cycle4-integration-venv/bin/python" -m mypy src`
 - `git diff --check`
 
 ## Actual Results
@@ -51,6 +53,8 @@ All paths are owned by issue #17 or explicitly authorized by its review.
 | Ruff format | FAIL: 2 files would be reformatted | Repository-wide measurement, not enabled as a gate. |
 | MyPy | FAIL: 2 event-service return-type errors | Must be remeasured after T04 integration. |
 | T04 contract MyPy | PASS: no issues in 41 source files at `36eef25` | Cross-branch evidence; no integration or merge is claimed. |
+| Cycle 4 candidate full suite | PASS: 71 tests; 4 live tests skipped without opt-in | Candidate `8537f08` after T04 assembly. |
+| Cycle 4 candidate MyPy | PASS: no issues in 44 source files | Candidate `8537f08` after T04 assembly. |
 | GitHub Actions | PASS: run #8 for `f48b01d` | Exact current-head GitHub workflow evidence, conclusion success. |
 | Owned-path check | PASS: six changed paths within T03 ownership/authorization | Branch diff against release baseline. |
 | `git diff --check` | PASS: no whitespace errors | Cycle 3 command output. |
@@ -89,7 +93,8 @@ introduced. The workflow uses explicit read-only repository permissions.
 - Original snapshot environment/freeze command was not retained; this is documented provenance debt.
 - Constraints are a Python 3.12 environment snapshot, not a universal hash lock.
 - Ruff and formatting debt is owned by issue #36 and must reach zero before becoming CI gates.
-- MyPy must be remeasured after T04 contract changes are available.
+- Candidate MyPy and the release-level suite pass after T04 assembly; the
+  two-point reviewer correction remains in progress until independent review.
 
 ## Lost Points and Correction Items
 
@@ -98,7 +103,7 @@ introduced. The workflow uses explicit read-only repository permissions.
 | C01 | PR #25 current-head evidence deduction | 2 | RESOLVED | Cycle 3 reviewer confirmed current-head run #8 at `f48b01d`. |
 | C02 | PR #25 constraints provenance deduction | 2 | RESOLVED | Cycle 3 reviewer confirmed honest provenance and regeneration limits. |
 | C03 | PR #25 compatibility deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed Python 3.12 and non-universal lock limits. |
-| C04 | PR #25 Cycle 3 integration-evidence deduction | 2 | IN PROGRESS | Rerun MyPy and the release-level suite after T04 is assembled; do not expand Ruff scope. |
+| C04 | PR #25 Cycle 3 integration-evidence deduction | 2 | IN PROGRESS | Candidate `8537f08` passes MyPy across 44 files and 71 tests with 4 opt-in live skips; independent re-review remains required. Ruff scope was not expanded. |
 | C05 | PR #25 Ruff ownership deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed issue #36 owns repository-wide Ruff and format debt. |
 | C06 | PR #25 report-contract deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed report-v2 and evidence traceability. |
 
@@ -109,11 +114,11 @@ introduced. The workflow uses explicit read-only repository permissions.
 | Correctness and evidence | 25 | 24 | Actual command results and CI behavior recorded. | Current run evidence correction remains. |
 | Scope and acceptance criteria | 20 | 20 | Owned and explicitly authorized files only. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Supports Release 1.7 engineering baseline. | None. |
-| Verification, tests, or validation | 15 | 13 | Install and required checks executed. | Repository-wide non-pytest checks are not yet green. |
+| Verification, tests, or validation | 15 | 14 | Install, 71-test candidate suite, and 44-file candidate MyPy passed. | Repository-wide Ruff and format measurements remain tracked debt. |
 | Security, privacy, and data governance | 10 | 10 | Least privilege, no secrets, and data-boundary checklist. | None. |
 | Documentation and traceability | 10 | 10 | Baseline, issue, branch, PR, constraints, and report linked. | None. |
 | Maintainability and clarity | 5 | 4 | CI is minimal, explicit, and constrained. | Constraints regeneration procedure remains. |
-| Total | 100 | 96 | Cycle 2 implementation evidence. | Four self-score points remain. |
+| Total | 100 | 97 | Cycle 4 assembled-tree evidence is recorded. | Three self-score points remain. |
 
 ## ChatGPT Reviewer Score
 
@@ -123,9 +128,9 @@ Reviewer evidence: GitHub PR #25 Cycle 3 independent review submitted 2026-07-19
 
 ## Final Score
 
-Provisional weighted score: 97.2
+Provisional weighted score: 97.6
 
-Gate-adjusted score: 97.2
+Gate-adjusted score: 97.6
 
 ## Critical-Gate Declaration
 
@@ -147,7 +152,7 @@ Critical-gate result: PASS
 | 1 | 92 | Clean install lacked TestClient dependency and deterministic controls. | Added dependency, constraints, least privilege, event deduplication, cancellation, and pip check. | 96 | Clean install, pip check, pytest, CI, and measured debt. | CLOSED |
 | 2 | 96 | Reviewer required current evidence, constraint provenance, compatibility limits, integrated MyPy, Ruff ownership, and T10 migration. | Recorded 92 reviewer score and eight-point correction burden. | 92 | PR #25 Cycle 2 independent review. | CLOSED |
 | 3 | 92 | Current CI evidence, provenance, compatibility, MyPy integration, Ruff ownership, and v2 migration required correction. | Recorded run #7, honest snapshot provenance, regeneration policy, compatibility limits, T04 cross-branch MyPy pass, issue #36, and v2 report. | 96 | Clean install, pip check, 13 tests, 24 Ruff findings, 2 format findings, 2 isolated T03 MyPy errors, T04 41-file MyPy pass, and run #7 success. | CLOSED |
-| 4 | 98 | Cycle 3 reviewer closed branch findings and retained only assembled-tree MyPy and release-suite evidence. | Recorded the authoritative score and kept the two-point integration correction open without expanding Ruff scope. | 98 | PR #25 Cycle 3 review and exact current-head CI run #8. | OPEN |
+| 4 | 98 | Cycle 3 reviewer closed branch findings and retained only assembled-tree MyPy and release-suite evidence. | Assembled T04, ran both checks, recorded exact results, and kept reviewer verification open without expanding Ruff scope. | 97 | Candidate `8537f08`: 71 passed, 4 opt-in live skips, and MyPy clean across 44 files. | OPEN |
 
 ## Recommended Follow-up Issues
 
