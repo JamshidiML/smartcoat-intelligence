@@ -1,5 +1,7 @@
 # T07 Governance Report
 
+Report schema version: `smartcoat-execution-report-v2.0`
+
 Thread ID: T07
 
 Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/21
@@ -8,12 +10,12 @@ Branch: `thread/07-data-governance-human-oversight`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/32
 
-Final status: `CORRECTION CYCLE 3 IMPLEMENTED; INDEPENDENT RE-REVIEW REQUIRED`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
-Define the policy gates required before SmartCoat processes real industrial data
-or automates consequential decisions in a multi-tenant mother platform.
+Define fail-closed policy gates for industrial data and consequential decisions
+in a multi-tenant platform, without implementing IAM or using real company data.
 
 ## Files Changed
 
@@ -23,117 +25,125 @@ or automates consequential decisions in a multi-tenant mother platform.
 - `docs/governance/templates/DATA_INGESTION_APPROVAL_TEMPLATE.md`
 - `docs/execution/reports/T07_GOVERNANCE_REPORT.md`
 
-## Work Completed
+All paths are owned by issue #21.
 
-- Defined ten principles, a RACI matrix, source-specific protections, permitted-use metadata, lifecycle, incidents, and a pilot gate.
-- Added five confidentiality levels plus independent legal/risk overlays.
-- Governed retrieval, analytics, training, and external sharing separately.
-- Added L0-L4 autonomy with an L2-first-pilot cap and mandatory human decisions.
-- Added a reusable approval record and explicit professional-review questions.
-- Published the Cycle 3 canonical L0-L4, confidentiality, purpose, approval, and
-  governance-version vocabulary with a compact machine-readable proposal.
-- Distinguished one accountable RACI owner from mandatory joint approvers and
-  clarified that consent is not an assumed lawful basis.
+## Methods and Commands Executed
 
-## Independent Review
+- `git diff --check`
+- `git diff --name-only origin/release/1.7-project-reset...HEAD`
+- Canonical-vocabulary assertions executed with Python 3.12 across the four
+  governance artifacts.
 
-Authoritative Cycle 1 reviewer score: `91/100`. Prior weighted score: `92.6/100`
-using the former `95/100` self-score. The reviewer required one autonomy model,
-unified confidentiality/purpose values, policy lifecycle metadata, RACI clarity,
-lawful-basis clarity, machine vocabulary, cross-thread targets, and T10 migration.
-The first seven findings are implemented here; final report-schema migration will
-be completed after T10's Cycle 3 contract is corrected.
+## Actual Results
 
-## Validation
-
-Cycle 3 validation completed on 2026-07-19:
-
-- Canonical-vocabulary script: autonomy, confidentiality, six purposes, approval,
-  version, and consent-basis values present across all four governance artifacts.
-- Legacy-value check: `highly_confidential` appears only in explicit migration guidance.
-- Owned-path check: only the five files assigned by issue #21 are changed.
-- `git diff --check`: passed.
+| Method or Command | Actual Result | Evidence |
+|---|---|---|
+| Canonical vocabulary assertions | PASS: autonomy, confidentiality, six purposes, approval states, version, and lawful-basis rules present | Cycle 3 local assertion output. |
+| Legacy-value scan | PASS: retired confidentiality value appears only in migration guidance | Scoped text scan. |
+| Owned-path check | PASS: five changed paths, all owned by T07 | Branch diff against release baseline. |
+| `git diff --check` | PASS: no whitespace errors | Command exited zero. |
 
 ## Acceptance-Criteria Evidence
 
-| Criterion | Evidence |
-|---|---|
-| Multi-tenant/multi-industry | Organization-scoped data, models, logs, derivatives, and cross-industry rules. |
-| Company isolation default | First governing principle and classification policy. |
-| Voice/meeting permission | Special rule, approval gate, and high-risk human decision. |
-| Formulations/inventions | Restricted/Strategic treatment and separate Legal/IP approval. |
-| Purpose separation | Five-purpose metadata and approval table. |
-| Impact-based oversight | Risk escalation and L0-L4 model. |
-| Legal limitations | Not-legal-advice notices and professional-review questions. |
-| No confidential data | Generalized policy and empty template only. |
+- [x] Define multi-tenant and multi-industry governance boundaries.
+  Evidence: organization-scoped controls and cross-company isolation policy.
+- [x] Keep company isolation as the default.
+  Evidence: first governing principle and classification policy.
+- [x] Govern voice, meeting, employee, formulation, invention, and trade-secret data.
+  Evidence: source-specific rules, Restricted/Strategic classes, and approval gate.
+- [x] Separate all six canonical purposes.
+  Evidence: versioned purpose-decision vocabulary and approval template.
+- [x] Define impact-based human oversight.
+  Evidence: sole canonical L0-L4 model with an L2 pilot cap.
+- [x] Preserve professional legal and works-council determinations.
+  Evidence: lawful-basis fields and no assumed consent.
+- [x] Use no confidential industrial data.
+  Evidence: generalized policy text and an empty reusable template only.
 
 ## Architecture Impact
 
-Policy documentation only. It aligns with D-003, D-006, D-007, D-014, the
-North Star, MVP architecture, and `SECURITY.md`; enforcement architecture and
-IAM require later reviewed work.
+Documentation only. The policies align D-003, D-006, D-007, D-014, the North
+Star, MVP architecture, and `SECURITY.md`. IAM and enforcement remain separate
+reviewed implementation work.
 
 ## Security and Data Impact
 
 No real company, employee, customer, supplier, formulation, or personal data was
-accessed. The policy makes permission, isolation, and stop controls fail closed.
+accessed. Permission, isolation, purpose, approval, retention, deletion, and stop
+controls are defined to fail closed.
 
 ## Known Limitations
 
-- Legal, privacy, employment, IP, and works-council requirements depend on jurisdiction and contracts.
+- Jurisdiction-specific legal, privacy, employment, IP, and works-council review is pending.
 - Policy is not yet enforced by production IAM, storage, model, or audit controls.
-- Named pilot owners, processors, data boundary, and deletion tests remain human decisions.
+- Named pilot authorities, processors, data boundary, and deletion tests remain external decisions.
+- Local corrections require independent re-review before the 91-point reviewer score changes.
 
 ## Lost Points and Correction Items
 
-1. Reserve one point for independent Cycle 3 governance/security re-review.
-2. Reserve one point for qualified legal/privacy/employment/IP review.
-3. Reserve one point until controls are mapped to implementation and tested.
-4. Reserve one point until a sanctioned synthetic rehearsal exercises the template.
+| Item | Source | Points | Status | Action or Evidence |
+|---|---|---:|---|---|
+| C01 | PR #32 autonomy-model deduction | 2 | IN PROGRESS | Canonical L0-L4 contract published; independent re-review must verify closure. |
+| C02 | PR #32 confidentiality deduction | 1 | IN PROGRESS | Canonical five-level taxonomy applied across owned artifacts. |
+| C03 | PR #32 purpose-vocabulary deduction | 1 | IN PROGRESS | Six purpose keys and six decision states published with machine values. |
+| C04 | PR #32 RACI deduction | 1 | IN PROGRESS | Single accountable owner is separated from mandatory joint approvers. |
+| C05 | PR #32 lifecycle deduction | 1 | IN PROGRESS | Version, status, effective date, review cadence, and supersession added. |
+| C06 | PR #32 lawful-basis deduction | 1 | IN PROGRESS | Consent is one possible basis and professional determination is recorded. |
+| C07 | PR #32 machine-contract deduction | 1 | IN PROGRESS | Compact machine-readable governance proposal added. |
+| C08 | PR #32 traceability deduction | 1 | IN PROGRESS | Cross-thread targets and v2 report migration are recorded. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 24 | Explicit rules, gates, responsibilities, and fail-closed defaults. | Independent review pending. |
-| Scope and acceptance criteria | 20 | 20 | Nine deliverables and all acceptance criteria covered. | None. |
-| Architecture and North-Star alignment | 15 | 15 | Human-governed, tenant-isolated mother-platform policy. | None. |
-| Verification, tests, or validation | 15 | 14 | Deterministic content, consistency, scope, and diff checks. | No live policy enforcement. |
-| Security, privacy, and data governance | 10 | 10 | Canonical fail-closed taxonomy, lifecycle, approval, and lawful-basis rules. | None in documentation scope. |
-| Documentation and traceability | 10 | 9 | Sources, issue, decisions, evidence fields, and reusable template. | Named pilot evidence pending. |
-| Maintainability and clarity | 5 | 4 | Layered policies and stable decision tables. | First operational trial pending. |
-| Total | 100 | 96 | Cycle 3 corrections validated locally. | Four points remain pending review/operation. |
+| Correctness and evidence | 25 | 24 | Explicit rules, gates, responsibilities, and fail-closed defaults. | Independent Cycle 3 review pending. |
+| Scope and acceptance criteria | 20 | 20 | Owned paths and all issue criteria are covered. | None. |
+| Architecture and North-Star alignment | 15 | 15 | Human-governed, tenant-isolated platform policy. | None. |
+| Verification, tests, or validation | 15 | 14 | Deterministic content, consistency, scope, and diff checks. | No live enforcement test. |
+| Security, privacy, and data governance | 10 | 10 | Canonical lifecycle, approval, purpose, and lawful-basis rules. | None. |
+| Documentation and traceability | 10 | 9 | Sources, decisions, evidence fields, report, and template. | Named pilot evidence pending. |
+| Maintainability and clarity | 5 | 4 | Layered versioned policies and stable decision tables. | First operational rehearsal pending. |
+| Total | 100 | 96 | Cycle 3 corrections have local evidence. | Four self-score points remain. |
 
 ## ChatGPT Reviewer Score
 
-Authoritative prior reviewer score: `91/100`. Independent Cycle 3 re-review: pending.
+Reviewer total: 91
 
-## Provisional Score
+Reviewer evidence: GitHub PR #32 Cycle 1 independent review submitted 2026-07-16.
 
-Using the updated non-final self-score, the next-cycle provisional calculation is
-`0.40 * 96 + 0.60 * 91 = 93.0`. This is not a final score and does not replace re-review.
+## Final Score
+
+Provisional weighted score: 93.0
+
+Gate-adjusted score: 93.0
 
 ## Critical-Gate Declaration
 
-No implementation critical gate failed in local Cycle 3 validation. The prior
-cross-thread vocabulary findings are corrected on this branch but remain subject
-to independent re-review. No confidential data was accessed and only T07-owned
-files changed. Real-data ingestion remains blocked by design.
+| Gate | Status | Evidence |
+|---|---|---|
+| G1 Verified claims | PASS | Claims distinguish policy proposals from implemented enforcement. |
+| G2 Confidential data | PASS | Generalized policy and empty template only. |
+| G3 Approved scope and architecture | PASS | Documentation-only change within the governance boundary. |
+| G4 Required validation | PASS | Vocabulary, legacy-value, scope, and diff checks passed. |
+| G5 File ownership | PASS | All five changed paths are owned by issue #21. |
+| G6 Acceptance completeness | PASS | Every issue criterion is checked with evidence. |
+
+Critical-gate result: PASS
 
 ## Correction-Cycle History
 
-| Cycle | Starting Score | Findings | Corrections | Ending Score |
-|---:|---:|---|---|---:|
-| 1 | 88 | Needed operational purpose separation, classification overlays, autonomy limits, and reusable approval evidence. | Added all four policy layers and the pilot gate. | 95 provisional. |
-| 3 | 95 | Reviewer found competing vocabularies, missing lifecycle metadata, ambiguous joint accountability, and consent-basis wording. | Established one canonical contract, lifecycle/version rules, mandatory approvers, and lawful-basis evidence. | 96 provisional; re-review pending. |
+| Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
+|---:|---:|---|---|---:|---|---|
+| 1 | 88 | Needed purpose separation, classification overlays, autonomy limits, and approval evidence. | Added four policy layers and the pilot gate. | 95 | Initial document review and scope checks. | CLOSED |
+| 2 | 95 | Reviewer found competing vocabularies, lifecycle, RACI, lawful-basis, and traceability gaps. | Accepted eight reviewer findings and recorded authoritative score. | 91 | PR #32 independent review. | CLOSED |
+| 3 | 91 | Reviewer deductions became nine correction points. | Published one canonical contract, lifecycle rules, mandatory approvers, lawful-basis evidence, and v2 report. | 96 | Canonical assertions, legacy scan, scope check, and diff check passed. | OPEN |
 
 ## Recommended Follow-up Issues
 
 - Obtain jurisdiction-specific professional review and record policy decisions.
 - Design and threat-model tenant IAM, audit, deletion, and emergency-stop enforcement.
-- Exercise the template on a metadata-only synthetic pilot package.
+- Exercise the approval template on a metadata-only synthetic pilot package.
 
 ## Blockers
 
-None for policy review. Real-data use is blocked until named authorities approve
-the bounded package and required professional and technical controls exist.
+None.
