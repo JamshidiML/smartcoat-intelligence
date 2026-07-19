@@ -1,6 +1,14 @@
 # Human Oversight and Autonomy Levels
 
-Status: Draft pilot control model
+Policy version: `operational-authority-v1.1-draft`
+
+Approval status: Proposed; not yet effective
+
+Effective date: Pending named governance approval
+
+Review cadence: Before each pilot phase, after incidents or scope changes, and annually
+
+Supersession: A replacement must map every L0-L4 authority and preserve approvals
 
 ## Control Principle
 
@@ -10,6 +18,10 @@ confidence does not lower a required approval level. SmartCoat assistance must
 remain attributable, reviewable, stoppable, and reversible.
 
 ## Levels
+
+L0-L4 is SmartCoat's sole proposed operational-authority taxonomy. Machine values
+are `l0_manual`, `l1_assist`, `l2_recommend`, `l3_supervised_action`, and
+`l4_bounded_automation`.
 
 | Level | System role | Human control | Pilot examples |
 |---|---|---|---|
@@ -21,6 +33,14 @@ remain attributable, reviewable, stoppable, and reversible.
 
 No unrestricted or self-expanding autonomy is defined. L4 cannot approve data,
 alter limits, broaden purpose, grant access, or promote its own outputs.
+
+## North-Star Horizon
+
+Future machine or factory closed-loop control is a research/architecture horizon,
+not an additional operational level. It requires a separately approved control
+envelope, hazard analysis, verification and validation, regulatory/certification
+review, monitored rollback and emergency stop, named human accountability, and a
+new architecture decision before any authority exists.
 
 ## Risk Assessment and Escalation
 
@@ -74,4 +94,3 @@ The first technical-textile pilot is capped at L2 for knowledge extraction and
 recommendations, plus L3 only for saving an explicitly approved draft or routing
 an internal review task. Production actuation, external communication, model
 training, cross-company learning, and high-risk decisions are outside the pilot.
-

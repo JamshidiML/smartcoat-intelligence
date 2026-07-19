@@ -1,6 +1,14 @@
 # Confidentiality and Access Classification
 
-Status: Draft companion policy
+Policy version: `confidentiality-v1.1-draft`
+
+Approval status: Proposed; not yet effective
+
+Effective date: Pending named governance approval
+
+Review cadence: Before each pilot phase, on classification change, and annually
+
+Supersession: Preserve prior labels and record the replacing approved version
 
 This classification is **not legal advice**. It is a conservative operational
 baseline; contracts, law, owners, and security review may impose stricter rules.
@@ -9,14 +17,16 @@ baseline; contracts, law, owners, and security review may impose stricter rules.
 
 | Level | Definition and examples | Default access | SmartCoat default |
 |---|---|---|---|
-| Public | Intentionally published, redistribution permitted | Authenticated or public as approved | May ingest after source/license check |
-| Internal | Routine non-public operations with limited harm | Organization members with business need | Organization-isolated retrieval; no training or sharing by default |
-| Confidential | Customer/supplier requirements, ordinary R&D, test and quality records | Named roles and approved services | Bounded pilot only with owner approval |
-| Restricted | Personal data, employee communications, contracts, prices, unpublished inventions, detailed process or formulation data | Explicit named principals; monitored access | Excluded unless essential and separately approved |
-| Strategic | Enabling formulations, critical trade secrets, patent strategy, acquisition or existential-risk information | Executive/owner-approved compartment | Excluded from first pilot by default |
+| Public (`public`) | Intentionally published, redistribution permitted | Authenticated or public as approved | May ingest after source/license check |
+| Internal (`internal`) | Routine non-public operations with limited harm | Organization members with business need | Organization-isolated retrieval; no training or sharing by default |
+| Confidential (`confidential`) | Customer/supplier requirements, ordinary R&D, test and quality records | Named roles and approved services | Bounded pilot only with owner approval |
+| Restricted (`restricted`) | Personal data, employee communications, contracts, prices, unpublished inventions, detailed process or formulation data | Explicit named principals; monitored access | Excluded unless essential and separately approved |
+| Strategic (`strategic`) | Enabling formulations, critical trade secrets, patent strategy, acquisition or existential-risk information | Executive/owner-approved compartment | Excluded from first pilot by default |
 
 Classify to the highest applicable level. Derivatives inherit the source level
 unless an owner-approved assessment demonstrates irreversible risk reduction.
+`highly_confidential` is not a canonical value; existing drafts must map it to
+`restricted` or `strategic` through documented owner/security review.
 
 ## Mandatory Overlays
 
@@ -67,4 +77,3 @@ retain labels and expiry. Access is reviewed at role/source/model changes and at
 least at the pilot review cadence. Revocation disables new use immediately and
 starts the approved deletion or legal-hold workflow. Public issue trackers and
 source repositories never receive confidential source content or secrets.
-

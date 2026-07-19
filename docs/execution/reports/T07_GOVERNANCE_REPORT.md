@@ -8,7 +8,7 @@ Branch: `thread/07-data-governance-human-oversight`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/32
 
-Final status: `READY FOR CHATGPT REVIEW`
+Final status: `CORRECTION CYCLE 3 IMPLEMENTED; INDEPENDENT RE-REVIEW REQUIRED`
 
 ## Objective
 
@@ -30,15 +30,27 @@ or automates consequential decisions in a multi-tenant mother platform.
 - Governed retrieval, analytics, training, and external sharing separately.
 - Added L0-L4 autonomy with an L2-first-pilot cap and mandatory human decisions.
 - Added a reusable approval record and explicit professional-review questions.
+- Published the Cycle 3 canonical L0-L4, confidentiality, purpose, approval, and
+  governance-version vocabulary with a compact machine-readable proposal.
+- Distinguished one accountable RACI owner from mandatory joint approvers and
+  clarified that consent is not an assumed lawful basis.
+
+## Independent Review
+
+Authoritative Cycle 1 reviewer score: `91/100`. Prior weighted score: `92.6/100`
+using the former `95/100` self-score. The reviewer required one autonomy model,
+unified confidentiality/purpose values, policy lifecycle metadata, RACI clarity,
+lawful-basis clarity, machine vocabulary, cross-thread targets, and T10 migration.
+The first seven findings are implemented here; final report-schema migration will
+be completed after T10's Cycle 3 contract is corrected.
 
 ## Validation
 
-Validation completed on 2026-07-16:
+Cycle 3 validation completed on 2026-07-19:
 
-- Acceptance/control coverage script: 8/8 groups present across all four
-  governance deliverables (isolation, employee capture, sensitive IP, purpose
-  separation, oversight drivers, legal boundary, lifecycle, and emergency stop).
-- Scorecard parser: 7 categories, maximum `100`, awarded `95`.
+- Canonical-vocabulary script: autonomy, confidentiality, six purposes, approval,
+  version, and consent-basis values present across all four governance artifacts.
+- Legacy-value check: `highly_confidential` appears only in explicit migration guidance.
 - Owned-path check: only the five files assigned by issue #21 are changed.
 - `git diff --check`: passed.
 
@@ -74,10 +86,10 @@ accessed. The policy makes permission, isolation, and stop controls fail closed.
 
 ## Lost Points and Correction Items
 
-1. Reserve two points for independent governance/security review.
+1. Reserve one point for independent Cycle 3 governance/security re-review.
 2. Reserve one point for qualified legal/privacy/employment/IP review.
 3. Reserve one point until controls are mapped to implementation and tested.
-4. Reserve one point until a real sanitized pilot request exercises the template.
+4. Reserve one point until a sanctioned synthetic rehearsal exercises the template.
 
 ## Codex Self-Score
 
@@ -87,21 +99,33 @@ accessed. The policy makes permission, isolation, and stop controls fail closed.
 | Scope and acceptance criteria | 20 | 20 | Nine deliverables and all acceptance criteria covered. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Human-governed, tenant-isolated mother-platform policy. | None. |
 | Verification, tests, or validation | 15 | 14 | Deterministic content, consistency, scope, and diff checks. | No live policy enforcement. |
-| Security, privacy, and data governance | 10 | 9 | Conservative classification and purpose controls. | Professional legal review pending. |
+| Security, privacy, and data governance | 10 | 10 | Canonical fail-closed taxonomy, lifecycle, approval, and lawful-basis rules. | None in documentation scope. |
 | Documentation and traceability | 10 | 9 | Sources, issue, decisions, evidence fields, and reusable template. | Named pilot evidence pending. |
 | Maintainability and clarity | 5 | 4 | Layered policies and stable decision tables. | First operational trial pending. |
-| Total | 100 | 95 | Ready for independent review. | Five correction points remain. |
+| Total | 100 | 96 | Cycle 3 corrections validated locally. | Four points remain pending review/operation. |
+
+## ChatGPT Reviewer Score
+
+Authoritative prior reviewer score: `91/100`. Independent Cycle 3 re-review: pending.
+
+## Provisional Score
+
+Using the updated non-final self-score, the next-cycle provisional calculation is
+`0.40 * 96 + 0.60 * 91 = 93.0`. This is not a final score and does not replace re-review.
 
 ## Critical-Gate Declaration
 
-No implementation critical gate failed. No confidential data was accessed and
-only T07-owned files changed. Real-data ingestion remains blocked by design.
+No implementation critical gate failed in local Cycle 3 validation. The prior
+cross-thread vocabulary findings are corrected on this branch but remain subject
+to independent re-review. No confidential data was accessed and only T07-owned
+files changed. Real-data ingestion remains blocked by design.
 
 ## Correction-Cycle History
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score |
 |---:|---:|---|---|---:|
 | 1 | 88 | Needed operational purpose separation, classification overlays, autonomy limits, and reusable approval evidence. | Added all four policy layers and the pilot gate. | 95 provisional. |
+| 3 | 95 | Reviewer found competing vocabularies, missing lifecycle metadata, ambiguous joint accountability, and consent-basis wording. | Established one canonical contract, lifecycle/version rules, mandatory approvers, and lawful-basis evidence. | 96 provisional; re-review pending. |
 
 ## Recommended Follow-up Issues
 

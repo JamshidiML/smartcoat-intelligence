@@ -1,6 +1,14 @@
 # Industrial Data Governance V1
 
-Status: Draft policy for controlled-pilot review
+Policy schema version: `smartcoat-governance-v1.1-draft`
+
+Approval status: Proposed; not yet effective
+
+Effective date: Pending named governance approval
+
+Review cadence: Before every pilot phase, on material change, and at least annually
+
+Supersession: A later approved policy must name this version and preserve its decision history
 
 Owner: Founder/Product Owner and designated Data Governance Lead
 
@@ -15,6 +23,53 @@ analytics, model training, recommendations, and sharing. It applies across every
 company, site, industry extension, user, service, model provider, and processor.
 It implements the security boundary in `SECURITY.md` and Decisions D-003,
 D-006, D-007, and D-014 without changing those sources.
+
+## Canonical Governance Vocabulary
+
+This proposal is the Cycle 3 source contract for downstream schemas, ingestion,
+readiness, and pilot documents. Machine values are lowercase and stable within
+this schema version.
+
+- operational authority: `l0_manual`, `l1_assist`, `l2_recommend`,
+  `l3_supervised_action`, `l4_bounded_automation`
+- confidentiality: `public`, `internal`, `confidential`, `restricted`, `strategic`
+- permitted-use purposes: `inventory`, `retrieval`, `analytics`, `human_review`,
+  `model_training`, `external_sharing`
+- purpose decision: `not_requested`, `in_review`, `approved`, `denied`, `expired`,
+  `revoked`
+- human-approval requirement: `not_required`, `required_single`, `required_joint`
+- human-approval status: `not_requested`, `pending`, `approved`, `rejected`,
+  `expired`, `revoked`
+
+L0-L4 is the only current operational-authority model. Future closed-loop factory
+control remains a North-Star research and architecture horizon; it is not an
+active competing A0-A5 taxonomy and grants no present authority.
+
+Canonical governance metadata includes `governance_schema_version`,
+`policy_version`, `approval_status`, `effective_at`, `expires_at`, `supersedes`,
+`approved_by`, `reviewed_at`, and `next_review_at`. Unknown or absent values fail
+closed for any operation that requires approval.
+
+```json
+{
+  "governance_schema_version": "smartcoat-governance-v1.1-draft",
+  "confidentiality": "restricted",
+  "operational_authority": "l2_recommend",
+  "purpose_decisions": {
+    "inventory": "approved",
+    "retrieval": "approved",
+    "analytics": "in_review",
+    "human_review": "approved",
+    "model_training": "denied",
+    "external_sharing": "denied"
+  },
+  "human_approval_requirement": "required_single",
+  "human_approval_status": "pending"
+}
+```
+
+This JSON is a compact vocabulary proposal, not IAM configuration or verified
+authorization.
 
 ## Governing Principles
 
@@ -44,14 +99,16 @@ D-006, D-007, and D-014 without changing those sources.
 
 ## Role and Responsibility Matrix
 
-R = responsible, A = accountable, C = consulted, I = informed.
+R = responsible, A = the single accountable role, M = a mandatory joint approver,
+C = consulted, I = informed. Multiple `M` roles mean every listed approval is
+required; they do not create multiple RACI-accountable owners.
 
 | Activity | Data owner | Data steward | Security/privacy | Legal/IP | Pilot owner | Platform operator | Human reviewer |
 |---|---|---|---|---|---|---|---|
 | Classify source and identify rights | A | R | C | C | I | I | I |
 | Define purpose and minimum fields | C | C | C | C | A/R | I | C |
 | Approve access and permitted use | A | R | C | C | C | I | I |
-| Approve restricted/strategic material | A | C | A | A | C | I | I |
+| Approve restricted/strategic material | A | C | M | M | C | I | I |
 | Prepare sanitized package and manifest | C | A/R | C | I | C | C | I |
 | Configure isolation and access | I | C | A | I | C | R | I |
 | Validate extraction and knowledge | C | C | I | I | A | I | R |
@@ -74,8 +131,10 @@ approval evidence, and separation of reviewer from automated output remain.
   access, retention, and rights analysis. Sensitive personal data is Restricted.
 - **Voice, meetings, email, and tacit knowledge:** never assume permission from
   attendance, employment, device access, or recording capability. Confirm notice,
-  consent or other lawful basis, labor/works-council obligations, purpose, and
-  recording/transcription retention before capture.
+  the applicable lawful basis, notice, labor/works-council obligations, purpose,
+  and recording/transcription retention before capture. Consent is one possible
+  basis, not an assumed default; the professional determination and evidence must
+  be recorded.
 - **Licensed standards, literature, test reports, and supplier documents:**
   verify copyright, database, redistribution, and machine-processing rights.
 - **Safety and regulatory records:** preserve authoritative evidence and route
@@ -91,14 +150,15 @@ Every approved package records at least:
 | `source_id`, owner, steward | Accountable identity without secret content |
 | `classification` and overlays | Base class plus personal, trade-secret, contractual, safety flags |
 | `collection_basis` | How and under what authority the source was obtained |
-| `allowed_purposes` | Separate booleans for inventory, retrieval, analytics, training, external sharing |
+| `purpose_decisions` | Separate canonical decisions for inventory, retrieval, analytics, human review, model training, external sharing |
 | `prohibited_purposes` | Explicit exclusions, including competitive or employee-evaluation uses |
 | `approved_users_services_models` | Need-to-know principals and processor/model boundary |
 | `geography` / `transfer_rules` | Storage, processing, and cross-border limits |
 | `effective_at`, `expires_at` | Approval validity window |
 | `retention_rule`, `deletion_authority` | Source and derived-artifact lifecycle |
 | `evidence_reference` | Approval, contract, consent, or legal-review reference |
-| `review_status` / `reviewer` | Human validation state for extracted knowledge |
+| `human_approval_requirement` / `human_approval_status` | Canonical approval requirement and current decision |
+| governance/version fields | Schema/policy version, status, effective/expiry, supersession, approval and review timestamps |
 
 Unknown values are not permissive defaults. A material mismatch produces
 `blocked`, not a warning-only state.
@@ -162,3 +222,9 @@ database rights; cross-border transfer and processor terms; regulated retention,
 deletion, incident-notification, product-safety, and recordkeeping duties; whether
 an AI system or use is legally high risk; and required impact assessments.
 
+## Cross-Thread Contract Targets
+
+The following owned artifacts must consume this vocabulary on their own branches:
+T01 Living Industry model, T05 technical-textile schemas, T06 readiness register,
+T08 ingestion manifest, and T09 pilot blueprint. Cross-references are integration
+targets, not evidence that those draft PRs are already accepted or merged.
