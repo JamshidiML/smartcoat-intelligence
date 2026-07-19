@@ -1,6 +1,6 @@
 # Technical Textiles Canonical Schema v1
 
-Status: Proposed controlled-pilot contract
+Status: Proposed controlled-pilot contract, schema `1.1.0`
 
 Issue: #19
 
@@ -29,6 +29,16 @@ Every representative object carries:
 - source provenance and transformation history
 - evidence and typed relationship references
 - created/updated timestamps
+
+The envelope is genuinely industry-agnostic: `object_type` is an extensible
+canonical identifier. Each Technical Textiles Hub child schema constrains its
+own type with `const`. The platform envelope therefore does not enumerate or
+depend on textile object types.
+
+Governance values consume T07's proposed `smartcoat-governance-v1.1-draft`
+contract: `public/internal/confidential/restricted/strategic` and separate
+purpose decisions for `inventory`, `retrieval`, `analytics`, `human_review`,
+`model_training`, and `external_sharing`.
 
 These fields map to the canonical object structure in
 `architecture/handbook/04_Information/02_Canonical_Data_Model.md`, provenance
@@ -134,6 +144,15 @@ Every measurement declares exactly one state:
 Null must not blur these states. A conflicting value must not be averaged or
 selected without a reviewed resolution.
 
+The machine contract enforces:
+
+- `known` requires one non-null authoritative `value` and forbids
+  `conflicting_values`;
+- `unknown`, `not_measured`, and `not_applicable` forbid `value`,
+  `normalized_value`, and `conflicting_values`;
+- `conflicting` requires at least two source values and forbids a single
+  authoritative `value` or `normalized_value`.
+
 ## Units and Normalization
 
 - Every numeric engineering value records a source unit unless dimensionless.
@@ -166,6 +185,8 @@ future unit service or semantic rule set must validate conversions.
 10. Failures and negative results are retained as first-class learning inputs.
 11. Causal claims remain hypotheses/root-cause candidates until reviewed.
 12. Conflicts are represented, not silently resolved.
+13. Lifecycle describes object progression; review status describes human trust.
+    `accepted` and `validated` review states require reviewer identity and time.
 
 ## Synthetic End-to-End Example
 
@@ -188,6 +209,21 @@ They are structurally realistic but scientifically and commercially meaningless.
 
 No change to application models is approved by this document.
 
+### End-to-End Contract Mapping
+
+```text
+T08 SourceManifest
+  -> validated metadata-only IngestionCandidate
+  -> industry-agnostic Platform Envelope
+  -> Technical Textiles Hub child object
+  -> KnowledgeObject and/or DecisionObject reference
+  -> EnterpriseEvent for capture, review, decision, or outcome transition
+```
+
+An approval reference in a manifest or envelope is declared metadata, not proof
+of authorization. Service/API IAM and governed human approval remain separate
+integration controls.
+
 ## Versioning and Extension
 
 - Schema version is semantic and mandatory.
@@ -200,13 +236,14 @@ No change to application models is approved by this document.
 - Future industry entities are added only when a validated use case requires
   them; v1 does not pre-model the whole enterprise ontology.
 
-## Accepted v1 Decisions
+## Proposed v1.1 Decisions
 
-- platform envelope and industry extension remain separate
+- platform envelope is industry-agnostic; each Hub child constrains its type
 - site is optional but organization is required
-- provenance, confidentiality, permitted uses, review, lifecycle, confidence,
+- provenance, canonical purpose decisions, review, lifecycle, confidence,
   evidence, and timestamps are universal
 - unknown and conflicting states are explicit
+- state conditionals prohibit incoherent authoritative/normalized values
 - formulation reasoning is required, not composition alone
 - binary evidence and commercial supplier details remain referenced and governed
 

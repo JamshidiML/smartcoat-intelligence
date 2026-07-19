@@ -3,7 +3,7 @@
   "$id": "urn:smartcoat:schema:technical-textiles:v1:material",
   "title": "Technical Textiles Material v1",
   "allOf": [
-    {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope"},
+    {"$ref": "urn:smartcoat:schema:platform:v1:envelope"},
     {
       "type": "object",
       "required": ["material_kind", "manufacturer_reference", "specification_references"],
@@ -33,13 +33,13 @@
             "required": ["property_name", "measurement"],
             "properties": {
               "property_name": {"type": "string", "minLength": 1},
-              "measurement": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"}
+              "measurement": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"}
             },
             "additionalProperties": false
           }
         },
         "storage_condition": {"type": ["string", "null"]},
-        "shelf_life": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"},
+        "shelf_life": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"},
         "alternative_material_references": {
           "type": "array",
           "items": {"type": "string", "minLength": 1}
@@ -54,12 +54,13 @@
       "object_type": "material",
       "canonical_name": "Synthetic Binder A",
       "description": "Generalized material used only for schema validation.",
-      "schema_version": "1.0.0",
+      "schema_version": "1.1.0",
+      "governance_schema_version": "smartcoat-governance-v1.1-draft",
       "organization_id": "org_synthetic",
       "site_id": "site_synthetic",
       "owner": {"owner_id": "role:material-steward", "role": "material_steward"},
       "confidentiality": "internal",
-      "permitted_uses": ["inventory_only", "human_review"],
+      "purpose_decisions": {"inventory": "approved", "retrieval": "approved", "analytics": "not_requested", "human_review": "approved", "model_training": "denied", "external_sharing": "denied"},
       "lifecycle_state": "reviewed",
       "review": {"status": "accepted", "reviewer_id": "role:reviewer", "reviewed_at": "2026-01-03T00:00:00Z"},
       "confidence": 0.9,

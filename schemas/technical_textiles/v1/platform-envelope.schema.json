@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope",
-  "title": "SmartCoat Platform Envelope v1",
+  "$id": "urn:smartcoat:schema:platform:v1:envelope",
+  "title": "SmartCoat Industry-Agnostic Platform Envelope v1.1",
   "type": "object",
   "required": [
     "object_id",
@@ -11,7 +11,8 @@
     "organization_id",
     "owner",
     "confidentiality",
-    "permitted_uses",
+    "governance_schema_version",
+    "purpose_decisions",
     "lifecycle_state",
     "review",
     "provenance",
@@ -26,11 +27,12 @@
     },
     "object_type": {
       "type": "string",
-      "enum": ["material", "formulation", "coating_trial", "test_result"]
+      "pattern": "^[a-z][a-z0-9_]*$"
     },
     "canonical_name": {"type": "string", "minLength": 1},
     "description": {"type": ["string", "null"]},
-    "schema_version": {"const": "1.0.0"},
+    "schema_version": {"const": "1.1.0"},
+    "governance_schema_version": {"const": "smartcoat-governance-v1.1-draft"},
     "organization_id": {"type": "string", "minLength": 1},
     "site_id": {"type": ["string", "null"]},
     "owner": {
@@ -44,16 +46,20 @@
     },
     "confidentiality": {
       "type": "string",
-      "enum": ["public", "internal", "confidential", "highly_confidential", "restricted"]
+      "enum": ["public", "internal", "confidential", "restricted", "strategic"]
     },
-    "permitted_uses": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "enum": ["inventory_only", "retrieval", "analytics", "human_review", "model_training"]
-      }
+    "purpose_decisions": {
+      "type": "object",
+      "required": ["inventory", "retrieval", "analytics", "human_review", "model_training", "external_sharing"],
+      "properties": {
+        "inventory": {"$ref": "#/$defs/purposeDecision"},
+        "retrieval": {"$ref": "#/$defs/purposeDecision"},
+        "analytics": {"$ref": "#/$defs/purposeDecision"},
+        "human_review": {"$ref": "#/$defs/purposeDecision"},
+        "model_training": {"$ref": "#/$defs/purposeDecision"},
+        "external_sharing": {"$ref": "#/$defs/purposeDecision"}
+      },
+      "additionalProperties": false
     },
     "lifecycle_state": {
       "type": "string",
@@ -63,11 +69,23 @@
       "type": "object",
       "required": ["status"],
       "properties": {
-        "status": {"enum": ["not_reviewed", "in_review", "accepted", "rejected", "needs_correction"]},
+        "status": {"enum": ["not_reviewed", "in_review", "accepted", "validated", "rejected", "needs_correction"]},
         "reviewer_id": {"type": ["string", "null"]},
         "reviewed_at": {"type": ["string", "null"], "format": "date-time"},
         "notes": {"type": ["string", "null"]}
       },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"enum": ["accepted", "validated"]}}},
+          "then": {
+            "required": ["reviewer_id", "reviewed_at"],
+            "properties": {
+              "reviewer_id": {"type": "string", "minLength": 1},
+              "reviewed_at": {"type": "string", "format": "date-time"}
+            }
+          }
+        }
+      ],
       "additionalProperties": false
     },
     "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
@@ -129,6 +147,9 @@
     "updated_at": {"type": "string", "format": "date-time"}
   },
   "$defs": {
+    "purposeDecision": {
+      "enum": ["not_requested", "in_review", "approved", "denied", "expired", "revoked"]
+    },
     "measurement": {
       "type": "object",
       "required": ["state"],
@@ -151,11 +172,36 @@
       "allOf": [
         {
           "if": {"properties": {"state": {"const": "known"}}},
-          "then": {"required": ["value"]}
+          "then": {
+            "required": ["value"],
+            "properties": {"value": {"type": ["number", "string", "boolean"]}},
+            "not": {"required": ["conflicting_values"]}
+          }
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["unknown", "not_measured", "not_applicable"]}}},
+          "then": {
+            "not": {
+              "anyOf": [
+                {"required": ["value"]},
+                {"required": ["normalized_value"]},
+                {"required": ["conflicting_values"]}
+              ]
+            }
+          }
         },
         {
           "if": {"properties": {"state": {"const": "conflicting"}}},
-          "then": {"required": ["conflicting_values"], "properties": {"conflicting_values": {"minItems": 2}}}
+          "then": {
+            "required": ["conflicting_values"],
+            "properties": {"conflicting_values": {"minItems": 2}},
+            "not": {
+              "anyOf": [
+                {"required": ["value"]},
+                {"required": ["normalized_value"]}
+              ]
+            }
+          }
         }
       ],
       "additionalProperties": false
@@ -163,16 +209,24 @@
   },
   "examples": [
     {
-      "object_id": "material:synthetic-material-a",
-      "object_type": "material",
-      "canonical_name": "Synthetic Material A",
-      "description": "Generalized test fixture; not a commercial material.",
-      "schema_version": "1.0.0",
+      "object_id": "knowledge_object:synthetic-platform-object-a",
+      "object_type": "knowledge_object",
+      "canonical_name": "Synthetic Platform Object A",
+      "description": "Industry-agnostic generalized platform-envelope fixture.",
+      "schema_version": "1.1.0",
+      "governance_schema_version": "smartcoat-governance-v1.1-draft",
       "organization_id": "org_synthetic",
       "site_id": "site_synthetic",
       "owner": {"owner_id": "role:material-steward", "role": "material_steward"},
       "confidentiality": "internal",
-      "permitted_uses": ["inventory_only", "human_review"],
+      "purpose_decisions": {
+        "inventory": "approved",
+        "retrieval": "not_requested",
+        "analytics": "not_requested",
+        "human_review": "approved",
+        "model_training": "denied",
+        "external_sharing": "denied"
+      },
       "lifecycle_state": "draft",
       "review": {"status": "not_reviewed"},
       "confidence": 0.8,

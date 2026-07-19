@@ -3,7 +3,7 @@
   "$id": "urn:smartcoat:schema:technical-textiles:v1:test-result",
   "title": "Technical Textiles Test Result v1",
   "allOf": [
-    {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope"},
+    {"$ref": "urn:smartcoat:schema:platform:v1:envelope"},
     {
       "type": "object",
       "required": ["sample_reference", "test_method", "property_name", "result", "assessment"],
@@ -21,7 +21,7 @@
           "additionalProperties": false
         },
         "property_name": {"type": "string", "minLength": 1},
-        "result": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"},
+        "result": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"},
         "test_conditions": {
           "type": "array",
           "items": {
@@ -29,7 +29,7 @@
             "required": ["condition_name", "measurement"],
             "properties": {
               "condition_name": {"type": "string", "minLength": 1},
-              "measurement": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"}
+              "measurement": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"}
             },
             "additionalProperties": false
           }
@@ -47,12 +47,13 @@
       "object_type": "test_result",
       "canonical_name": "Synthetic Trial A Result 1",
       "description": "Synthetic performance result for schema validation.",
-      "schema_version": "1.0.0",
+      "schema_version": "1.1.0",
+      "governance_schema_version": "smartcoat-governance-v1.1-draft",
       "organization_id": "org_synthetic",
       "site_id": "site_synthetic",
       "owner": {"owner_id": "role:quality-owner", "role": "quality_owner"},
       "confidentiality": "internal",
-      "permitted_uses": ["inventory_only", "human_review"],
+      "purpose_decisions": {"inventory": "approved", "retrieval": "approved", "analytics": "approved", "human_review": "approved", "model_training": "denied", "external_sharing": "denied"},
       "lifecycle_state": "reviewed",
       "review": {"status": "accepted", "reviewer_id": "role:test-reviewer", "reviewed_at": "2026-01-07T00:00:00Z"},
       "confidence": 0.9,

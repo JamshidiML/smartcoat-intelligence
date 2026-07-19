@@ -3,7 +3,7 @@
   "$id": "urn:smartcoat:schema:technical-textiles:v1:formulation",
   "title": "Technical Textiles Formulation v1",
   "allOf": [
-    {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope"},
+    {"$ref": "urn:smartcoat:schema:platform:v1:envelope"},
     {
       "type": "object",
       "required": ["formulation_version", "project_reference", "ingredients", "reasoning", "approval_status"],
@@ -24,7 +24,7 @@
             "required": ["material_reference", "quantity", "function"],
             "properties": {
               "material_reference": {"type": "string", "minLength": 1},
-              "quantity": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"},
+              "quantity": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"},
               "function": {"type": "string", "minLength": 1},
               "addition_order": {"type": ["integer", "null"], "minimum": 1}
             },
@@ -39,7 +39,7 @@
             "required": ["property_name", "target"],
             "properties": {
               "property_name": {"type": "string", "minLength": 1},
-              "target": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"}
+              "target": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"}
             },
             "additionalProperties": false
           }
@@ -56,12 +56,13 @@
       "object_type": "formulation",
       "canonical_name": "Synthetic Coating Formulation v1",
       "description": "Fictional two-component example; not an industrial recipe.",
-      "schema_version": "1.0.0",
+      "schema_version": "1.1.0",
+      "governance_schema_version": "smartcoat-governance-v1.1-draft",
       "organization_id": "org_synthetic",
       "site_id": "site_synthetic",
       "owner": {"owner_id": "role:rnd-owner", "role": "rnd_owner"},
       "confidentiality": "confidential",
-      "permitted_uses": ["inventory_only", "human_review"],
+      "purpose_decisions": {"inventory": "approved", "retrieval": "not_requested", "analytics": "not_requested", "human_review": "approved", "model_training": "denied", "external_sharing": "denied"},
       "lifecycle_state": "draft",
       "review": {"status": "in_review"},
       "confidence": 0.7,

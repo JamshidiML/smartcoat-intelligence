@@ -4,7 +4,7 @@ Status: Controlled-pilot proposal
 
 The JSON Schemas in this directory use JSON Schema Draft 2020-12:
 
-- `platform-envelope.schema.json`: universal identity, tenancy, governance,
+- `platform-envelope.schema.json`: industry-agnostic identity, tenancy, governance,
   provenance, evidence, review, lifecycle, relationship, timestamp, and
   measurement-state contract
 - `material.schema.json`: technical-textile material extension
@@ -26,13 +26,18 @@ every embedded example against its owning schema with format checking enabled.
 
 ## Compatibility
 
-Version `1.0.0` is a pilot schema contract, not a database migration or complete
+Version `1.1.0` is a pilot schema contract, not a database migration or complete
 enterprise ontology. Additive optional fields may be proposed in compatible v1
 revisions. Required-field, semantic, identifier, unit, or enum changes require
 a new schema version and a documented migration/mapping decision.
 
 ## Boundary
 
-The platform envelope is universal. Material, formulation, trial, and test
-fields are Technical Textiles Industry Hub extensions. Application domain
-models and persistence are not changed by this schema package.
+The platform envelope's object type is extensible and contains no textile enum.
+Material, formulation, trial, and test child schemas constrain their own object
+types as Technical Textiles Industry Hub extensions. Application domain models
+and persistence are not changed by this schema package.
+
+Governance values align with T07 schema `smartcoat-governance-v1.1-draft`.
+Purpose decisions are explicit for all six canonical purposes; schema presence
+does not verify authorization or replace IAM.

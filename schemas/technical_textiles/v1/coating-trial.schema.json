@@ -3,7 +3,7 @@
   "$id": "urn:smartcoat:schema:technical-textiles:v1:coating-trial",
   "title": "Technical Textiles Coating Trial v1",
   "allOf": [
-    {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope"},
+    {"$ref": "urn:smartcoat:schema:platform:v1:envelope"},
     {
       "type": "object",
       "required": [
@@ -43,7 +43,7 @@
             "properties": {
               "requirement_id": {"type": "string", "minLength": 1},
               "property_name": {"type": "string", "minLength": 1},
-              "target": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"},
+              "target": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"},
               "priority": {"enum": ["must", "should", "could"]}
             },
             "additionalProperties": false
@@ -88,7 +88,7 @@
             "required": ["condition_name", "measurement"],
             "properties": {
               "condition_name": {"type": "string", "minLength": 1},
-              "measurement": {"$ref": "urn:smartcoat:schema:technical-textiles:v1:platform-envelope#/$defs/measurement"}
+              "measurement": {"$ref": "urn:smartcoat:schema:platform:v1:envelope#/$defs/measurement"}
             },
             "additionalProperties": false
           }
@@ -150,12 +150,13 @@
       "object_type": "coating_trial",
       "canonical_name": "Synthetic Coating Trial A",
       "description": "Generalized end-to-end R&D trial fixture.",
-      "schema_version": "1.0.0",
+      "schema_version": "1.1.0",
+      "governance_schema_version": "smartcoat-governance-v1.1-draft",
       "organization_id": "org_synthetic",
       "site_id": "site_synthetic",
       "owner": {"owner_id": "role:rnd-owner", "role": "rnd_owner"},
       "confidentiality": "confidential",
-      "permitted_uses": ["inventory_only", "human_review"],
+      "purpose_decisions": {"inventory": "approved", "retrieval": "approved", "analytics": "not_requested", "human_review": "approved", "model_training": "denied", "external_sharing": "denied"},
       "lifecycle_state": "reviewed",
       "review": {"status": "accepted", "reviewer_id": "role:trial-reviewer", "reviewed_at": "2026-01-08T00:00:00Z"},
       "confidence": 0.8,
