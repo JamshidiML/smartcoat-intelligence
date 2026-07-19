@@ -39,6 +39,23 @@ recording aspirational numbers now would manufacture evidence.
 | Deletion/stop failure | Approved deletion or emergency stop cannot be verified | No live pilot |
 | User burden | Extra minutes, questions, duplicate entry, or workflow abandonment | Investigate by task and role |
 
+## Pre-Registered Stop and Pause Rules
+
+Numeric ceilings are approved at G0 after baseline measurement; leaving the
+numbers open here does not leave the response undefined.
+
+| Trigger | Pre-registration requirement | Mandatory response |
+|---|---|---|
+| Unacceptable correction rate | Define meaning-changing correction ceiling, observation window, and critical-field weighting before assisted results are opened | Pause assisted capture when the ceiling is crossed; review affected records and root cause before restart |
+| Retrieval failure | Define no-useful-result ceiling, required-result set where knowable, and harmful/unsupported-result severity | Pause retrieval claims and workflow expansion when the ceiling is crossed; a harmful unsupported critical result can stop immediately |
+| Confidentiality, purpose, or tenant incident | Target is zero; incident owner and containment route approved before access | Stop live use immediately, contain access, preserve audit evidence, notify the owner, and require explicit restart approval |
+| Weak baseline comparability | Pre-register scenario matching, role/task strata, timing convention, completion rubric, exclusions, and minimum comparable sample | Do not calculate an improvement claim; pause or repeat baseline/assisted collection rather than substitute unmatched observations |
+| Unreviewed promotion or deletion/stop failure | Target is zero and synthetic rehearsal must exercise both controls | Stop the pilot; no live restart until correction and independent verification |
+
+The stop owner may act within their remit without waiting for a group vote.
+Crossing a pause threshold is recorded as evidence and cannot be removed by
+changing the metric definition after results are visible.
+
 ## Secondary and Qualitative Evidence
 
 - field-level correction pattern and missing-information usefulness
@@ -52,7 +69,9 @@ recording aspirational numbers now would manufacture evidence.
 
 ## Study Design
 
-1. Define 8-12 representative sanitized scenarios and their expected evidence.
+1. Sponsor and Data Owner approve the planning assumption of 8-12 representative
+   sanitized scenarios, or replace it with a justified feasible count, and define
+   expected evidence.
 2. Observe each participant on baseline tasks before training on assisted flow.
 3. Run synthetic rehearsal and calibrate rubric reviewers.
 4. Collect assisted tasks over the operational period; label practice tasks.
@@ -67,6 +86,11 @@ denominator, raw event references, exclusions and reasons, calculation code or
 method, reviewer, date, result, uncertainty, guardrail status, and claim ID. Use
 only sanitized summaries in investor/customer material.
 
+An effect that misses its pre-registered threshold, has an insufficient
+comparable sample, or fails a guardrail is reported as unsupported or
+inconclusive. It cannot be upgraded by a testimonial, a post-hoc metric, or a
+different denominator.
+
 ## Exit Decision
 
 Scale requires all critical guardrails pass, primary quality metrics do not
@@ -74,4 +98,3 @@ regress, at least one efficiency/retrieval metric improves by its pre-registered
 threshold, and users/domain reviewers confirm practical value. Otherwise document
 the result as learning, not success. Sponsor, Data Owner, Security, and domain
 authority each retain a stop decision within their remit.
-

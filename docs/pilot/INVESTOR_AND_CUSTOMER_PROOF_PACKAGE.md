@@ -26,6 +26,36 @@ sanitized pilot data`, `observed user outcome`, and `future roadmap`.
 | User research | Protocol, roles, anonymized findings, negative feedback, adoption intent | Workflow fit and unresolved barriers |
 | Claim ledger | Claim, status, supporting artifact, limitation, owner, review date | Prevents narrative outrunning evidence |
 
+## Minimum Evidence by Claim Family
+
+| Claim family | Minimum admissible evidence | Claim rule |
+|---|---|---|
+| Workflow executed | Versioned build, pre-registered scenario, complete audit trace, named human approvals, and defect log | A scripted or prerecorded demonstration supports only a demo claim, not operational use |
+| Capture quality improved | Comparable baseline/assisted records, versioned blinded rubric, denominator/exclusions, independent reviewer result, and guardrail status | Publish the pre-registered effect and uncertainty; no improvement claim when threshold or comparability fails |
+| Time or effort reduced | Comparable task starts/ends, same timing convention, role/task strata, distributions, exclusions, and quality non-regression | Median alone is insufficient when quality regresses or sample support is inadequate |
+| Retrieval helped | Versioned query/scenario, eligible corpus, result set, citations, user relevance judgments, failures, and denominator | Retrieval availability is not retrieval value; unsupported critical results block the claim |
+| Prior learning was reused | Reviewed lesson citation, later decision record, human confirmation of influence, and counterfactual limitation | A view, click, or search result is not evidence of decision influence |
+| Governance worked | Approved package/purposes, role/access evidence, isolation/deletion/stop test, audit completeness, and incident log | Any unresolved critical incident blocks a positive governance claim |
+| Users accepted the workflow | Pre-registered instrument/interview protocol, all eligible participant outcomes, non-use/abandonment, role mix, and denominator | Testimonials may illustrate measured findings but cannot replace them |
+| Multi-company platform proof | Two independently governed company configurations, tenant-isolation tests, permitted interoperability contract, configuration/support effort, and separate company outcomes | Single-company success cannot be relabeled as Industry-Hub, interoperability, or cross-company proof |
+
+When minimum evidence is missing, statistically inadequate, operationally
+incomparable, or below its pre-registered threshold, the ledger status is
+`unsupported` or `inconclusive`. The claim is excluded from headlines, demos,
+sales assertions, and investment conclusions. Negative results remain in the
+package as learning; no proxy metric or post-hoc testimonial may replace the
+failed evidence.
+
+## Product Proof Versus Platform Proof
+
+Phase 1 evidence answers whether the single-company product workflow is usable,
+trusted, governed, and valuable. It may support bounded product claims only.
+Phase 2 begins only after a separate approval and answers whether reusable
+platform controls support two-company isolation and explicitly permitted
+interoperability. Platform proof requires its own baseline, security/legal
+evidence, company-specific outcomes, and claim ledger; it cannot inherit Phase 1
+success by narrative.
+
 ## Demonstration Narrative
 
 1. State the narrow problem and current maturity; show the baseline reconstruction task.
@@ -75,4 +105,3 @@ site, or add one use case. Include cost-to-configure, support load, user adoptio
 guardrails, unresolved defects, data readiness, technical gaps, and professional
 reviews. Cross-company analytics or model training is not an automatic scale path;
 it requires an independent product, governance, security, and legal decision.
-
