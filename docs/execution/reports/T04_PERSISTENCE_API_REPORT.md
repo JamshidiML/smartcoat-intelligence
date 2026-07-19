@@ -108,11 +108,11 @@ payloads and an isolated test target.
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | PR #26 isolation-mode deduction | 1 | IN PROGRESS | Mandatory `SMARTCOAT_TEST_SCHEMA` implemented and live-tested; independent re-review pending. |
-| C02 | PR #26 teardown-proof deduction | 1 | IN PROGRESS | Catalog absence assertions passed in fixture teardown and dedicated live probe; re-review pending. |
-| C03 | PR #26 opt-in deduction | 1 | IN PROGRESS | Exact lowercase `SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true` guard implemented and tested; re-review pending. |
-| C04 | PR #26 evidence/report deduction | 1 | IN PROGRESS | Exact command, local-versus-CI boundary, actual failures, and v2 evidence recorded; re-review pending. |
-| C05 | PR #26 migration-follow-up deduction | 1 | IN PROGRESS | Issue #35 opened with migration-to-model acceptance criteria; re-review pending. |
+| C01 | PR #26 isolation-mode deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed mandatory isolated-schema behavior and live evidence. |
+| C02 | PR #26 teardown-proof deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed catalog teardown assertions and absence evidence. |
+| C03 | PR #26 opt-in deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed the exact explicit live-test opt-in guard. |
+| C04 | PR #26 evidence/report deduction | 1 | RESOLVED | Cycle 3 reviewer accepted exact commands, failure disclosure, boundaries, and v2 evidence. |
+| C05 | PR #26 migration-follow-up deduction | 1 | RESOLVED | Cycle 3 reviewer confirmed migration correctness remains separately tracked in issue #35. |
 
 ## Codex Self-Score
 
@@ -129,22 +129,15 @@ payloads and an isolated test target.
 
 ## ChatGPT Reviewer Score
 
-| Category | Maximum | Awarded | Evidence | Deduction Reason |
-|---|---:|---:|---|---|
-| Correctness and evidence | 25 | 24 | Reviewer confirmed repository and list contracts. | Test-target lifecycle needed one more correction. |
-| Scope and acceptance criteria | 20 | 20 | Scope remained compliant. | None. |
-| Architecture and North-Star alignment | 15 | 15 | Canonical contract correction aligned. | None. |
-| Verification, tests, or validation | 15 | 14 | Live integration and cleanup passed. | Teardown absence was not asserted in test. |
-| Security, privacy, and data governance | 10 | 9 | Isolated schema support was added. | Explicit two-signal opt-in remained. |
-| Documentation and traceability | 10 | 9 | Evidence boundaries were documented. | Exact command, CI distinction, and migration follow-up remained. |
-| Maintainability and clarity | 5 | 4 | Fixture and cleanup improved. | `_test` fallback could leave tables. |
-| Total | 100 | 95 | GitHub PR #26 Cycle 2 review. | Five reviewer points remain authoritative. |
+Reviewer total: 100
+
+Reviewer evidence: GitHub PR #26 Cycle 3 independent review submitted 2026-07-19.
 
 ## Final Score
 
-Provisional weighted score: 95.4
+Provisional weighted score: 98.4
 
-Gate-adjusted score: 95.4
+Gate-adjusted score: 98.4
 
 ## Critical-Gate Declaration
 
@@ -165,7 +158,8 @@ Critical-gate result: PASS
 |---:|---:|---|---|---:|---|---|
 | 1 | 87 | Event contract mismatch, missing limits, override leak, and pending live validation. | Fixed mapping, validation, tests, docs, and ran PostgreSQL integration. | 85 | PR #26 Cycle 1 review after initial live evidence. | CLOSED |
 | 2 | 85 | Reviewer found unsafe target, cleanup timing, shallow lists, and overstated migration evidence. | Added schema guard, immediate registration, failure cleanup, list assertions, and evidence boundaries. | 96 | Twelve unit tests, MyPy, Ruff, and three live integration tests. | CLOSED |
-| 3 | 95 | Reviewer required mandatory schema, teardown test, explicit opt-in, exact command, migration follow-up, and v2 report. | Implemented both safety signals, strict guards, catalog teardown assertions, exact evidence, issue #35, and v2 normalization. | 96 | Twelve focused tests, MyPy, scoped Ruff/format, two guard tests, and five live PostgreSQL tests pass; independent re-review remains pending. | OPEN |
+| 3 | 95 | Reviewer required mandatory schema, teardown test, explicit opt-in, exact command, migration follow-up, and v2 report. | Implemented both safety signals, strict guards, catalog teardown assertions, exact evidence, issue #35, and v2 normalization. | 96 | Twelve focused tests, MyPy, scoped Ruff/format, two guard tests, and five live PostgreSQL tests passed before independent re-review. | CLOSED |
+| 4 | 100 | Cycle 3 independent review closed every T04 branch finding; controlled integration remained pending. | Recorded reviewer authority and resolved all confirmed correction items without claiming release integration. | 100 | PR #26 Cycle 3 review and preserved PostgreSQL, unit, type, lint, and teardown evidence. | OPEN |
 
 ## Recommended Follow-up Issues
 
