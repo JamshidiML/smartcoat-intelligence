@@ -5,12 +5,13 @@ from uuid import NAMESPACE_URL, uuid5
 from pydantic import ValidationError
 
 from smartcoat.ingestion.models import (
+    GovernancePurpose,
     IngestionCandidate,
     IngestionStatus,
     IngestionWorkflowResult,
     ManifestValidationIssue,
     ManifestValidationResult,
-    PermittedUse,
+    PurposeDecisionStatus,
     SourceManifest,
 )
 
@@ -46,19 +47,21 @@ def _validate_parsed_manifest(
     known_duplicate_keys: Iterable[str] | None = None,
 ) -> ManifestValidationResult:
     duplicate_key = manifest.duplicate_key
-    if (
-        PermittedUse.MODEL_TRAINING in manifest.permitted_uses
-        and manifest.model_training_approval_reference is None
-    ):
+    model_training_decision = manifest.purpose_decisions[GovernancePurpose.MODEL_TRAINING]
+    if model_training_decision in {
+        PurposeDecisionStatus.IN_REVIEW,
+        PurposeDecisionStatus.APPROVED,
+    }:
         return ManifestValidationResult(
             manifest_id=manifest.manifest_id,
             status=IngestionStatus.BLOCKED,
             warnings=[
                 ManifestValidationIssue(
-                    code="model_training_requires_approval",
+                    code="model_training_authorization_not_verified",
                     message=(
-                        "Model-training use requires an explicit governance approval reference "
-                        "before candidate creation."
+                        "A declared model-training decision or approval reference is metadata "
+                        "only; service/API authorization must be verified before candidate "
+                        "creation."
                     ),
                     field="model_training_approval_reference",
                 )
@@ -116,11 +119,11 @@ def _build_validated_candidate(
         raise ValueError("validation duplicate identity does not match this manifest")
     if manifest.dry_run is not True:
         raise ValueError("ingestion prototype candidates require dry_run=True")
-    if (
-        PermittedUse.MODEL_TRAINING in manifest.permitted_uses
-        and manifest.model_training_approval_reference is None
-    ):
-        raise ValueError("model-training use requires governance approval")
+    if manifest.purpose_decisions[GovernancePurpose.MODEL_TRAINING] in {
+        PurposeDecisionStatus.IN_REVIEW,
+        PurposeDecisionStatus.APPROVED,
+    }:
+        raise ValueError("model-training authorization is not verified by this prototype")
 
     return IngestionCandidate(
         candidate_id=uuid5(CANDIDATE_NAMESPACE, manifest.candidate_identity),
@@ -136,7 +139,8 @@ def _build_validated_candidate(
         organization_id=manifest.organization_id,
         site_id=manifest.site_id,
         confidentiality_level=manifest.confidentiality_level,
-        permitted_uses=manifest.permitted_uses,
+        governance_schema_version=manifest.governance_schema_version,
+        purpose_decisions=manifest.purpose_decisions,
         model_training_approval_reference=manifest.model_training_approval_reference,
         schema_target=manifest.schema_target,
         checksum_sha256=manifest.checksum_sha256,

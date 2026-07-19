@@ -30,16 +30,26 @@ class ConfidentialityLevel(StrEnum):
     PUBLIC = "public"
     INTERNAL = "internal"
     CONFIDENTIAL = "confidential"
-    HIGHLY_CONFIDENTIAL = "highly_confidential"
     RESTRICTED = "restricted"
+    STRATEGIC = "strategic"
 
 
-class PermittedUse(StrEnum):
-    INVENTORY_ONLY = "inventory_only"
+class GovernancePurpose(StrEnum):
+    INVENTORY = "inventory"
     RETRIEVAL = "retrieval"
     ANALYTICS = "analytics"
     HUMAN_REVIEW = "human_review"
     MODEL_TRAINING = "model_training"
+    EXTERNAL_SHARING = "external_sharing"
+
+
+class PurposeDecisionStatus(StrEnum):
+    NOT_REQUESTED = "not_requested"
+    IN_REVIEW = "in_review"
+    APPROVED = "approved"
+    DENIED = "denied"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
 
 
 class IngestionStatus(StrEnum):
@@ -79,14 +89,20 @@ class SourceManifest(BaseModel):
     site_id: str | None = None
     source_owner: str = Field(min_length=1)
     confidentiality_level: ConfidentialityLevel
-    permitted_uses: list[PermittedUse]
+    governance_schema_version: Literal["smartcoat-governance-v1.1-draft"]
+    purpose_decisions: dict[GovernancePurpose, PurposeDecisionStatus]
     schema_target: SchemaTarget
     checksum_sha256: str | None = None
     content_fingerprint: str | None = None
     source_created_at: datetime | None = None
     manifest_created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     dry_run: Literal[True] = True
-    model_training_approval_reference: str | None = None
+    model_training_approval_reference: str | None = Field(
+        default=None,
+        description=(
+            "Opaque declared metadata only; it is not verified authorization or an IAM control."
+        ),
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator(
@@ -131,12 +147,22 @@ class SourceManifest(BaseModel):
             raise ValueError("content_fingerprint must contain at least four distinct characters")
         return normalized
 
-    @field_validator("permitted_uses")
+    @field_validator("purpose_decisions")
     @classmethod
-    def permitted_uses_must_not_be_empty(cls, value: list[PermittedUse]) -> list[PermittedUse]:
-        if not value:
-            raise ValueError("at least one permitted use is required")
-        return list(dict.fromkeys(value))
+    def require_all_governance_purposes(
+        cls,
+        value: dict[GovernancePurpose, PurposeDecisionStatus],
+    ) -> dict[GovernancePurpose, PurposeDecisionStatus]:
+        expected = set(GovernancePurpose)
+        actual = set(value)
+        if actual != expected:
+            missing = sorted(purpose.value for purpose in expected - actual)
+            extra = sorted(str(purpose) for purpose in actual - expected)
+            raise ValueError(
+                f"purpose_decisions must contain every canonical purpose; "
+                f"missing={missing}, extra={extra}"
+            )
+        return value
 
     @model_validator(mode="after")
     def require_fingerprint_or_checksum(self) -> "SourceManifest":
@@ -208,7 +234,8 @@ class IngestionCandidate(BaseModel):
     organization_id: str
     site_id: str | None = None
     confidentiality_level: ConfidentialityLevel
-    permitted_uses: list[PermittedUse]
+    governance_schema_version: Literal["smartcoat-governance-v1.1-draft"]
+    purpose_decisions: dict[GovernancePurpose, PurposeDecisionStatus]
     model_training_approval_reference: str | None = None
     schema_target: SchemaTarget
     checksum_sha256: str | None = None

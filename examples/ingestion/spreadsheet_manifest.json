@@ -7,7 +7,15 @@
   "site_id": "site_synthetic",
   "source_owner": "R&D steward",
   "confidentiality_level": "internal",
-  "permitted_uses": ["inventory_only", "human_review"],
+  "governance_schema_version": "smartcoat-governance-v1.1-draft",
+  "purpose_decisions": {
+    "inventory": "approved",
+    "retrieval": "not_requested",
+    "analytics": "not_requested",
+    "human_review": "approved",
+    "model_training": "denied",
+    "external_sharing": "denied"
+  },
   "schema_target": {
     "name": "technical_textile_trial",
     "version": "v1"

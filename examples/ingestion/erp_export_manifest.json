@@ -6,8 +6,16 @@
   "organization_id": "org_synthetic",
   "site_id": "site_synthetic",
   "source_owner": "Operations steward",
-  "confidentiality_level": "highly_confidential",
-  "permitted_uses": ["inventory_only"],
+  "confidentiality_level": "strategic",
+  "governance_schema_version": "smartcoat-governance-v1.1-draft",
+  "purpose_decisions": {
+    "inventory": "approved",
+    "retrieval": "denied",
+    "analytics": "denied",
+    "human_review": "approved",
+    "model_training": "denied",
+    "external_sharing": "denied"
+  },
   "schema_target": {
     "name": "source_inventory_record",
     "version": "v1"

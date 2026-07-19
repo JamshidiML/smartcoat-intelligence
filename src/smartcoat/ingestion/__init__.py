@@ -2,11 +2,12 @@
 
 from smartcoat.ingestion.models import (
     ConfidentialityLevel,
+    GovernancePurpose,
     IngestionStatus,
     IngestionWorkflowResult,
     ManifestValidationIssue,
     ManifestValidationResult,
-    PermittedUse,
+    PurposeDecisionStatus,
     SchemaTarget,
     SourceFormat,
     SourceManifest,
@@ -16,12 +17,13 @@ from smartcoat.ingestion.validation import ManifestRegistry
 
 __all__ = [
     "ConfidentialityLevel",
+    "GovernancePurpose",
     "IngestionStatus",
     "IngestionWorkflowResult",
     "ManifestRegistry",
     "ManifestValidationIssue",
     "ManifestValidationResult",
-    "PermittedUse",
+    "PurposeDecisionStatus",
     "SchemaTarget",
     "SourceFormat",
     "SourceManifest",

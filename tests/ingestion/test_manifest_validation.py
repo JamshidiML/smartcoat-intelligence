@@ -6,14 +6,28 @@ import pytest
 import smartcoat.ingestion as ingestion_api
 from smartcoat.ingestion.models import (
     ConfidentialityLevel,
+    GovernancePurpose,
     IngestionStatus,
-    PermittedUse,
+    PurposeDecisionStatus,
     SchemaTarget,
     SourceFormat,
     SourceManifest,
     SourceType,
 )
 from smartcoat.ingestion.validation import ManifestRegistry, validate_manifest
+
+
+def canonical_purpose_decisions(**updates: str) -> dict[str, str]:
+    decisions = {
+        "inventory": "approved",
+        "retrieval": "not_requested",
+        "analytics": "not_requested",
+        "human_review": "approved",
+        "model_training": "denied",
+        "external_sharing": "denied",
+    }
+    decisions.update(updates)
+    return decisions
 
 
 def valid_manifest_payload() -> dict:
@@ -28,7 +42,8 @@ def valid_manifest_payload() -> dict:
         "site_id": "site_synthetic",
         "source_owner": "R&D steward",
         "confidentiality_level": "internal",
-        "permitted_uses": ["inventory_only", "human_review"],
+        "governance_schema_version": "smartcoat-governance-v1.1-draft",
+        "purpose_decisions": canonical_purpose_decisions(),
         "schema_target": {"name": "technical_textile_trial", "version": "v1"},
         "checksum_sha256": "a" * 64,
         "source_created_at": "2026-01-02T03:04:05Z",
@@ -77,34 +92,36 @@ def test_dry_run_false_cannot_create_candidate() -> None:
     assert result.candidate is None
 
 
-def test_unapproved_model_training_is_blocked_from_candidate_creation() -> None:
+def test_declared_model_training_approval_is_blocked_without_authorization() -> None:
     manifest = valid_manifest(
-        permitted_uses=[PermittedUse.INVENTORY_ONLY, PermittedUse.MODEL_TRAINING]
+        purpose_decisions=canonical_purpose_decisions(model_training="approved")
     )
 
     result = ManifestRegistry().process(manifest)
 
     assert result.validation.status == IngestionStatus.BLOCKED
-    assert result.validation.warnings[0].code == "model_training_requires_approval"
+    assert result.validation.warnings[0].code == "model_training_authorization_not_verified"
     assert result.candidate is None
 
 
-def test_approved_model_training_can_reach_validated_workflow() -> None:
+def test_approval_reference_is_metadata_and_does_not_authorize_candidate() -> None:
     manifest = valid_manifest(
-        permitted_uses=[PermittedUse.INVENTORY_ONLY, PermittedUse.MODEL_TRAINING],
+        purpose_decisions=canonical_purpose_decisions(model_training="approved"),
         model_training_approval_reference="synthetic-approval-001",
     )
 
     result = ManifestRegistry().process(manifest)
 
-    assert result.validation.status == IngestionStatus.VALIDATED
-    assert result.candidate is not None
-    assert result.candidate.model_training_approval_reference == "synthetic-approval-001"
+    assert result.validation.status == IngestionStatus.BLOCKED
+    assert result.candidate is None
+    assert result.validation.warnings[0].field == "model_training_approval_reference"
 
 
 def test_repeated_blocked_manifest_remains_blocked_and_registered() -> None:
     registry = ManifestRegistry()
-    manifest = valid_manifest(permitted_uses=[PermittedUse.MODEL_TRAINING])
+    manifest = valid_manifest(
+        purpose_decisions=canonical_purpose_decisions(model_training="in_review")
+    )
 
     first = registry.process(manifest)
     second = registry.process(manifest)
@@ -115,7 +132,7 @@ def test_repeated_blocked_manifest_remains_blocked_and_registered() -> None:
     assert second.candidate is None
     assert {warning.code for warning in second.validation.warnings} == {
         "blocked_manifest_repeated",
-        "model_training_requires_approval",
+        "model_training_authorization_not_verified",
     }
 
 
@@ -153,7 +170,7 @@ def test_same_checksum_in_two_organizations_is_not_duplicate() -> None:
     assert first.candidate.candidate_id != second.candidate.candidate_id
 
 
-def test_site_is_provenance_but_not_part_of_duplicate_scope() -> None:
+def test_same_source_at_two_sites_is_one_organization_duplicate() -> None:
     registry = ManifestRegistry()
 
     first = registry.process(valid_manifest(site_id="site_alpha"))
@@ -201,10 +218,15 @@ def test_candidate_preserves_required_provenance() -> None:
     assert candidate.organization_id == manifest.organization_id
     assert candidate.site_id == manifest.site_id
     assert candidate.confidentiality_level == ConfidentialityLevel.INTERNAL
-    assert candidate.permitted_uses == [
-        PermittedUse.INVENTORY_ONLY,
-        PermittedUse.HUMAN_REVIEW,
-    ]
+    assert candidate.governance_schema_version == "smartcoat-governance-v1.1-draft"
+    assert candidate.purpose_decisions == {
+        GovernancePurpose.INVENTORY: PurposeDecisionStatus.APPROVED,
+        GovernancePurpose.RETRIEVAL: PurposeDecisionStatus.NOT_REQUESTED,
+        GovernancePurpose.ANALYTICS: PurposeDecisionStatus.NOT_REQUESTED,
+        GovernancePurpose.HUMAN_REVIEW: PurposeDecisionStatus.APPROVED,
+        GovernancePurpose.MODEL_TRAINING: PurposeDecisionStatus.DENIED,
+        GovernancePurpose.EXTERNAL_SHARING: PurposeDecisionStatus.DENIED,
+    }
     assert candidate.schema_target == SchemaTarget(
         name="technical_textile_trial",
         version="v1",
@@ -260,6 +282,26 @@ def test_stateless_validation_does_not_create_candidate() -> None:
     assert result.accepted is True
 
 
+def test_missing_canonical_purpose_is_rejected() -> None:
+    payload = valid_manifest_payload()
+    del payload["purpose_decisions"]["external_sharing"]
+
+    result = ManifestRegistry().process(payload)
+
+    assert result.validation.status == IngestionStatus.REJECTED
+    assert any(issue.field == "purpose_decisions" for issue in result.validation.errors)
+
+
+def test_retired_confidentiality_value_is_rejected() -> None:
+    payload = valid_manifest_payload()
+    payload["confidentiality_level"] = "highly_confidential"
+
+    result = ManifestRegistry().process(payload)
+
+    assert result.validation.status == IngestionStatus.REJECTED
+    assert any(issue.field == "confidentiality_level" for issue in result.validation.errors)
+
+
 def test_package_api_exposes_only_validated_candidate_workflow() -> None:
     assert "ManifestRegistry" in ingestion_api.__all__
     assert "create_candidate" not in ingestion_api.__all__
@@ -270,3 +312,6 @@ def test_package_api_exposes_only_validated_candidate_workflow() -> None:
 def test_manifest_enum_values_remain_stable() -> None:
     assert SourceType.SPREADSHEET.value == "spreadsheet"
     assert SourceFormat.CSV.value == "csv"
+    assert ConfidentialityLevel.STRATEGIC.value == "strategic"
+    assert GovernancePurpose.EXTERNAL_SHARING.value == "external_sharing"
+    assert PurposeDecisionStatus.REVOKED.value == "revoked"
