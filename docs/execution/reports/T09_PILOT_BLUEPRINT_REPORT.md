@@ -34,7 +34,7 @@ part of the branch diff. All five changed paths are owned by issue #23.
 - Python 3.12 inline assertions checked dependency rows, cross-thread targets,
   stop contracts, claim contracts, use cases, autonomy vocabulary, and scorecard.
 - `rg -n "l2_recommend|planning assumptions|Phase 1|Phase 2" docs/pilot`
-- `git diff --check`
+- `git diff --check origin/release/1.7-project-reset`
 - `git diff --name-only origin/release/1.7-project-reset...HEAD`
 
 ## Actual Results
@@ -146,7 +146,7 @@ Critical-gate result: PASS
 | 1 | 87 | Needed a narrow workflow, baseline, guardrails, claim ledger, and capability gaps. | Added demonstrator, package, metric protocol, proof artifacts, and gates. | 95 | Initial cross-document and scope checks. | CLOSED |
 | 2 | 95 | Reviewer required canonical L2, two-company phasing, assumption labels, dependencies, evidence rules, stop criteria, and traceability. | Recorded 93 reviewer score and seven-point correction burden. | 93 | PR #33 independent review. | CLOSED |
 | 3 | 93 | Seven reviewer points represented all eight correction requests. | Added two phases, approval-dependent assumptions, eight-step map, claim/stop rules, T05-T08 references, and v2 report. | 95 | Cross-document assertions, autonomy scan, score, scope, and diff checks passed. | CLOSED |
-| 4 | 100 | Cycle 3 independent review closed every T09 branch finding; controlled integration remained pending. | Recorded reviewer authority and resolved all confirmed correction items without claiming pilot execution. | 100 | PR #33 Cycle 3 review and preserved cross-document, autonomy, score, scope, and diff evidence. | OPEN |
+| 4 | 100 | Cycle 3 review closed prior findings; candidate diff validation then found one extra EOF blank line in an owned pilot file. | Recorded reviewer authority, removed the whitespace defect on T09, and retained all pilot non-claims. | 100 | PR #33 Cycle 3 review, branch validation, and release-base diff check. | OPEN |
 
 ## Recommended Follow-up Issues
 

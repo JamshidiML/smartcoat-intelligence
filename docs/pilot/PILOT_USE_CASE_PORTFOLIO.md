@@ -42,4 +42,3 @@ live use regardless of product acceptance.
 The portfolio does not promise automatic formulation, supplier choice, root
 cause, compliance, product release, production optimization, machine control, or
 business execution. These are human decisions and separate future product cases.
-
