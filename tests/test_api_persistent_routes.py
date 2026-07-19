@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 
 from smartcoat.api.main import app
@@ -26,11 +27,16 @@ def override_event_service() -> EventService:
     return EventService()
 
 
-app.dependency_overrides[get_knowledge_service] = override_knowledge_service
-app.dependency_overrides[get_decision_service] = override_decision_service
-app.dependency_overrides[get_event_service] = override_event_service
-
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def service_overrides() -> None:
+    app.dependency_overrides[get_knowledge_service] = override_knowledge_service
+    app.dependency_overrides[get_decision_service] = override_decision_service
+    app.dependency_overrides[get_event_service] = override_event_service
+    yield
+    app.dependency_overrides.clear()
 
 
 def test_health_route() -> None:
@@ -53,6 +59,12 @@ def test_create_knowledge_route() -> None:
     assert response.json()["title"] == "API knowledge object"
 
 
+def test_list_knowledge_route_rejects_zero_limit() -> None:
+    response = client.get("/knowledge?limit=0")
+
+    assert response.status_code == 422
+
+
 def test_get_missing_knowledge_route() -> None:
     response = client.get(f"/knowledge/{uuid4()}")
 
@@ -72,6 +84,12 @@ def test_create_decision_route() -> None:
     assert response.json()["title"] == "API decision object"
 
 
+def test_list_decision_route_rejects_excessive_limit() -> None:
+    response = client.get("/decisions?limit=501")
+
+    assert response.status_code == 422
+
+
 def test_create_event_route() -> None:
     payload = EnterpriseEvent(
         title="API event object",
@@ -83,3 +101,9 @@ def test_create_event_route() -> None:
 
     assert response.status_code == 200
     assert response.json()["title"] == "API event object"
+
+
+def test_list_event_route_rejects_zero_limit() -> None:
+    response = client.get("/events?limit=0")
+
+    assert response.status_code == 422

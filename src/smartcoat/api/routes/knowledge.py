@@ -1,6 +1,7 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from smartcoat.api.dependencies.database import get_db_session
@@ -10,18 +11,24 @@ from smartcoat.storage.repositories.knowledge_repository import KnowledgeReposit
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
+SessionDependency = Annotated[Session, Depends(get_db_session)]
+ListLimit = Annotated[int, Query(ge=1, le=500)]
+
 
 def get_knowledge_service(
-    session: Session = Depends(get_db_session),
+    session: SessionDependency,
 ) -> KnowledgeService:
     repository = KnowledgeRepository(session)
     return KnowledgeService(repository=repository)
 
 
+KnowledgeServiceDependency = Annotated[KnowledgeService, Depends(get_knowledge_service)]
+
+
 @router.post("", response_model=KnowledgeObject)
 def create_knowledge_object(
     payload: KnowledgeObject,
-    service: KnowledgeService = Depends(get_knowledge_service),
+    service: KnowledgeServiceDependency,
 ) -> KnowledgeObject:
     return service.create(payload)
 
@@ -29,7 +36,7 @@ def create_knowledge_object(
 @router.get("/{knowledge_id}", response_model=KnowledgeObject)
 def get_knowledge_object(
     knowledge_id: UUID,
-    service: KnowledgeService = Depends(get_knowledge_service),
+    service: KnowledgeServiceDependency,
 ) -> KnowledgeObject:
     item = service.get(knowledge_id)
     if item is None:
@@ -39,7 +46,7 @@ def get_knowledge_object(
 
 @router.get("", response_model=list[KnowledgeObject])
 def list_knowledge_objects(
-    limit: int = 100,
-    service: KnowledgeService = Depends(get_knowledge_service),
+    service: KnowledgeServiceDependency,
+    limit: ListLimit = 100,
 ) -> list[KnowledgeObject]:
     return service.list(limit=limit)
