@@ -10,21 +10,33 @@ Branch: `thread/18-01-release-contracts`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/50
 
-Final status: `READY FOR INDEPENDENT RE-REVIEW`
+Final status: `100/100 — READY FOR APPROVAL`
+
+Codex self-score: 100/100
+
+Reviewer score: 100/100
+
+Weighted score: 100.0/100
+
+Gate-adjusted score: 100.0/100
 
 ## Objective
 
-Validate and correct the six Release 1.8 T01 ADR proposals against the current
+Validate, correct, and administratively close the six Release 1.8 T01 ADRs against the current
 domain, platform-envelope, governance, Enterprise Event, persistence, API, and
 accepted ADR contracts. Apply the eight architecture directions from
 independent PR review `4749452113`, preserve implementation boundaries, and
-record correction evidence without changing product code, schemas,
-persistence, migrations, API routes, dependencies, tests, CI, or the Proposed
-status of any ADR.
+record correction and final acceptance evidence without changing product code,
+schemas, persistence, migrations, API routes, dependencies, tests, CI, or the
+accepted contract substance of any ADR.
 
 Starting branch SHA: `ab7a7a78a4228f9303955e45653b5665571c6b8d`.
 
 Release-base SHA: `fb3c2859922681998dd6b68cba75462bccbc0f5f`.
+
+Corrected reviewed head: `18bf2ef63766e17e5e5c67c5eb1e50664be94d3c`.
+
+Final independent review ID: `4749587624`.
 
 ## Files Changed
 
@@ -36,6 +48,7 @@ The T01 branch contains these issue-owned paths relative to the release branch:
 - `architecture/ADR/ADR-0023_Cursor_Based_Knowledge_Pagination.md`
 - `architecture/ADR/ADR-0024_Minimum_Domain_Context_References.md`
 - `architecture/ADR/ADR-0025_Structured_Evidence_And_Provenance_Compatibility.md`
+- `architecture/indexes/ADR_INDEX.md`
 - `docs/execution/reports/release_1_8/T01_RELEASE_CONTRACTS_REPORT.md`
 
 The initial validation cycle added only the report. Correction Cycle 1 modifies
@@ -44,8 +57,10 @@ the six proposed ADRs and the authorized active-release/status sections of:
 - `AGENTS.md`
 - `docs/project/PROJECT_STATE.md`
 
-No implementation path is modified. Relative to the release branch, the T01
-diff is exactly these nine paths.
+Administrative closure changes exactly the six ADRs, the existing ADR index,
+and this report relative to the independently accepted head. No implementation
+path is modified. Relative to the release branch, the complete T01 diff is
+exactly these ten paths.
 
 ## Methods and Commands Executed
 
@@ -63,21 +78,47 @@ diff is exactly these nine paths.
 - `rg -n -i '\b(A[0-5]|highly_confidential|pending_review|under_review|published|archived|soft_deleted|tenant_id|company_id)\b' <T01 ADR and current-contract paths>`
 - `rg -n 'payload: KnowledgeObject|lifecycle_state|@router\.(post|put|patch|delete)|response_model=list\[KnowledgeObject\]|expected_revision|revision|next_cursor|evidence: list\[str\]|related_entities: list\[UUID\]' src/smartcoat/domain src/smartcoat/services src/smartcoat/storage src/smartcoat/api/routes/knowledge.py`
 - `rg -n 'class EventType|KNOWLEDGE_|session\.commit|@router\.post|previous_state|new_state|previous_revision|resulting_revision|correlation|reason|append' <event, service, repository, route, and event-model paths>`
-- `python scripts/validate_execution_reports.py docs/execution/reports/release_1_8/T01_RELEASE_CONTRACTS_REPORT.md`
+- `python3 scripts/validate_execution_reports.py docs/execution/reports/release_1_8/T01_RELEASE_CONTRACTS_REPORT.md` (incompatible system runtime; failed invocation preserved)
+- `/Users/mohsenjamshidi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/validate_execution_reports.py docs/execution/reports/release_1_8/T01_RELEASE_CONTRACTS_REPORT.md`
 - PR #50 and review `4749452113` retrieval through the GitHub connector
+- PR #50 and final review `4749587624` retrieval through the GitHub connector
 - `/Users/mohsenjamshidi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -c '<Correction Cycle 1 contract assertion harness>'`
 - `/Users/mohsenjamshidi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -c '<Markdown local-link validator>'`
 - `/Users/mohsenjamshidi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -c '<owned-path and untracked-file validator>'`
 - `/Users/mohsenjamshidi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -c '<secret, environment, binary, and confidential-data validator>'`
+- `/Users/mohsenjamshidi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -c '<corrected secret, environment, binary, personal-data, and confidential-data validator>'`
+- `/Users/mohsenjamshidi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -c '<23-record Accepted ADR index validator>'`
+- `/Users/mohsenjamshidi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -c '<reviewed-head contract-substance comparison>'`
+- `git diff --name-only 18bf2ef63766e17e5e5c67c5eb1e50664be94d3c`
 
 Long inline Python scanner bodies are retained in the execution transcript. The
-commands used Python 3.12.13 from the bundled workspace runtime and wrote no
-repository files.
+successful Python validations used Python 3.12.13 from the bundled workspace
+runtime and wrote no repository files. The incompatible system-Python
+invocation is preserved below and supplies no validation evidence.
 
 ## Actual Results
 
+The final closure rows appear first. Rows that mention Proposed ADRs, the 89/100
+review, failed invocations, or earlier gate failures are preserved historical
+evidence from the original review and correction cycles.
+
 | Method or Command | Actual Result | Evidence |
 |---|---|---|
+| Final independent review | PASS | Review `4749587624` accepted corrected head `18bf2ef63766e17e5e5c67c5eb1e50664be94d3c` within T01 scope at 100/100 and confirmed G1-G8 PASS. |
+| Administrative ADR acceptance | PASS | ADR-0020 through ADR-0025 each state `Status: Accepted`; parent issue #39 and contract substance are preserved. |
+| Accepted ADR index closure | PASS | 23 Accepted ADR files, 23 indexed records, zero missing, zero duplicate, and all record targets exist. |
+| ADR-0024 accepted interpretation | PASS | Same-key differences in `id_kind`, required `source_system`, `version`, or another identity-bearing normalized field deterministically conflict; no silent merge, replacement, or selection. |
+| Administrative closure ownership | PASS | Exactly eight closure paths differ from the accepted head; the complete PR contains exactly ten T01-authorized paths and no unexpected or untracked file. |
+| Final Markdown-link validation | PASS | 400 Markdown files, 118 local links, and 0 broken local targets. |
+| Final contract scans | PASS | Lifecycle/review, evidence/provenance, identity/governance, cursor, context conflict, and active-release authority assertions pass. |
+| Final report-v2 validation | PASS | The machine-valid workflow status is `100/100 — READY FOR APPROVAL`; reviewer outcome remains separately `ACCEPTED WITHIN T01 SCOPE`. |
+| Final safety and diff validation | PASS | `git diff --check` exits zero; secret, `.env`, binary, credential, personal-data, and confidential-data scans find no prohibited artifact. |
+| Third closure vocabulary harness | FAIL: discarded matcher | Seven contract groups passed, but a plain-text matcher did not account for Markdown code markers around `EnterpriseEvent`. No complete cross-contract result is claimed from this invocation. |
+| Second closure vocabulary harness | FAIL: discarded methodology | Literal case-sensitive and line-wrap-sensitive phrase checks produced false failures after evaluating the files. Exact enum extraction and normalized-text assertions replaced this invocation; no contract result is claimed from it. |
+| First closure vocabulary harness | FAIL: Python did not evaluate contracts | The harness searched for non-zero-padded ADR filenames and raised `StopIteration` before any assertion. No vocabulary or cross-contract result is claimed from it. |
+| First contract-substance comparison | FAIL: discarded locator | A hand-typed ADR-0024 insertion locator assumed different line wrapping and raised `AssertionError`. It made no edits and supplied no contract-substance result. |
+| First closure report-v2 invocation | FAIL: incompatible runtime | The macOS system Python does not support the validator's `zip(..., strict=True)` call. The invocation raised `TypeError`; no report-v2 result is claimed from it. |
+| First closure personal-data scan | FAIL: discarded methodology | The broad phone-number expression matched numeric GitHub review IDs `4749587624` and `4749452113`. Manual inspection confirmed that no phone data was present; no safety result is claimed from this invocation. |
 | PR #50 and review preflight | PASS | PR is open, draft, unmerged, based on `release/1.8-knowledge-capture-core`, and reviewed head and remote both equal `960050e494571b024ec0193077a779bb30b0c8b3`; review `4749452113` records 89/100 and D01-D08. |
 | First correction assertion invocation | FAIL: Python did not execute | Shell interpreted Markdown backticks in a double-quoted `python -c` argument. The failed invocation is retained and no contract result is claimed from it. |
 | Corrected ADR naming and status scan | PASS | Exactly ADR-0020 through ADR-0025 exist in scope, all six state `Status: Proposed`, and none appears in the Accepted ADR index. |
@@ -165,23 +206,23 @@ historical inputs to Correction Cycle 1, not claims about the corrected files.
   Evidence: every ADR retains bounded application claims; scans found no secret,
   environment file, binary, confidential industrial detail, or real dataset.
 - [x] ADR and release indexes remain valid.
-  Evidence: local links pass, numbering is sequential, and Proposed ADRs are
-  correctly absent from the Accepted ADR index.
+  Evidence: local links pass, numbering is unique, and all 23 Accepted ADRs,
+  including ADR-0020 through ADR-0025, are present exactly once in the index.
 - [x] Report-v2 evidence and the independent-review correction loop are used.
   Evidence: this report preserves the original findings, records review
-  `4749452113` and 89/100, records all eight correction groups and executed
-  evidence, and leaves corrected-head acceptance to independent re-review.
+  `4749452113` and 89/100, records all correction groups and executed evidence,
+  and records final review `4749587624` and 100/100 on the corrected head.
 
 ## Cross-Contract Matrix
 
-| Proposed ADR | Current domain models | Platform envelope and governance | Enterprise Event | Persistence and API | Review result |
+| Accepted ADR | Current domain models | Platform envelope and governance | Enterprise Event | Persistence and API | Review result |
 |---|---|---|---|---|---|
-| ADR-0020 lifecycle commands | Existing seven-value `LifecycleState` is preserved; current caller-writable model is identified as an implementation gap | Envelope review status is a read-only projection with every valid lifecycle/history mapping defined | `EnterpriseEvent` remains canonical; T07 owns typed Knowledge audit profile and fields | Explicit commands, generic-write rejection, T05 Unit of Work, single commit, rollback, audit read-only, and forgery rejection are normative | READY: contract is internally consistent; implementation remains in owner threads |
-| ADR-0021 revision and mutation | UUID identity stays canonical; positive revision and deterministic no-op/stale semantics are defined | Derived envelope ID, organization, structured owner, confidentiality, and fail-closed legacy boundaries are defined | Previous/resulting revision belongs to the T07 typed profile | T05 owns migration mechanics and one transaction boundary; repositories may flush but not commit | READY: identity, mutation, migration ownership, and transaction authority are explicit |
-| ADR-0022 deletion and deprecation | Existing lifecycle is preserved; only never-left-draft objects are deletable | Organization and governed-object inbound references fail closed; production legal/retention behavior remains excluded | Safe append-only events and a content-free deletion tombstone remain | Revision predicate, inbound-reference check, row/content delete, audit append, and one commit are atomic under T05 | READY: required audit no longer makes draft deletion unreachable |
-| ADR-0023 cursor pagination | Future page model receives fixed non-null UTC/UUID position semantics | Every request reapplies organization, confidentiality, and permission checks; digest is not a security boundary | Not applicable to event representation | Exact keyset predicate, canonical filter fingerprint, page-size rule, six error codes, and mutation limitation are normative | READY: independent T06 and T09 implementations have deterministic inputs and errors |
-| ADR-0024 minimum context | Replaces untyped UUIDs with a bounded embedded `ContextReference` contract | Identity kind, source boundary, organization inheritance, and cross-organization prohibition are explicit | Context audit effects remain within the T07 profile | Unique key, UUID normalization, duplicate/version rejection, and no-silent-merge behavior are explicit | READY: full ontology and standalone CRUD remain separately gated |
-| ADR-0025 evidence and provenance | Structured EvidenceReference and nine exact provenance fields are canonical for the application | Current envelope remains a proposal/adapter target and receives evidence IDs only; legacy gaps are null, incomplete, and never falsely conformant | Evidence IDs and provenance can be referenced by the T07 profile without creating another event family | T03 owns required-field implementation; T05 owns exact migration; collisions reject deterministically | READY: schema authority, adapter, compatibility, and downstream ownership are explicit |
+| ADR-0020 lifecycle commands | Existing seven-value `LifecycleState` is preserved; current caller-writable model is identified as an implementation gap | Envelope review status is a read-only projection with every valid lifecycle/history mapping defined | `EnterpriseEvent` remains canonical; T07 owns typed Knowledge audit profile and fields | Explicit commands, generic-write rejection, T05 Unit of Work, single commit, rollback, audit read-only, and forgery rejection are normative | ACCEPTED: contract is internally consistent; implementation remains in owner threads |
+| ADR-0021 revision and mutation | UUID identity stays canonical; positive revision and deterministic no-op/stale semantics are defined | Derived envelope ID, organization, structured owner, confidentiality, and fail-closed legacy boundaries are defined | Previous/resulting revision belongs to the T07 typed profile | T05 owns migration mechanics and one transaction boundary; repositories may flush but not commit | ACCEPTED: identity, mutation, migration ownership, and transaction authority are explicit |
+| ADR-0022 deletion and deprecation | Existing lifecycle is preserved; only never-left-draft objects are deletable | Organization and governed-object inbound references fail closed; production legal/retention behavior remains excluded | Safe append-only events and a content-free deletion tombstone remain | Revision predicate, inbound-reference check, row/content delete, audit append, and one commit are atomic under T05 | ACCEPTED: required audit no longer makes draft deletion unreachable |
+| ADR-0023 cursor pagination | Future page model receives fixed non-null UTC/UUID position semantics | Every request reapplies organization, confidentiality, and permission checks; digest is not a security boundary | Not applicable to event representation | Exact keyset predicate, canonical filter fingerprint, page-size rule, six error codes, and mutation limitation are normative | ACCEPTED: independent T06 and T09 implementations have deterministic inputs and errors |
+| ADR-0024 minimum context | Replaces untyped UUIDs with a bounded embedded `ContextReference` contract | Identity kind, source boundary, organization inheritance, and cross-organization prohibition are explicit | Context audit effects remain within the T07 profile | Unique key, UUID normalization, identity-field conflicts, duplicate/version rejection, and no-silent-merge behavior are explicit | ACCEPTED: full ontology and standalone CRUD remain separately gated |
+| ADR-0025 evidence and provenance | Structured EvidenceReference and nine exact provenance fields are canonical for the application | Current envelope remains a proposal/adapter target and receives evidence IDs only; legacy gaps are null, incomplete, and never falsely conformant | Evidence IDs and provenance can be referenced by the T07 profile without creating another event family | T03 owns required-field implementation; T05 owns exact migration; collisions reject deterministically | ACCEPTED: schema authority, adapter, compatibility, and downstream ownership are explicit |
 
 ## Original Contract Findings and Cycle 1 Resolutions
 
@@ -284,25 +325,29 @@ Definition Pack and issue #38.
 
 ## Architecture Impact
 
-Correction Cycle 1 modifies the six Proposed ADRs but does not accept them. It
-encodes the independent D01-D07 directions as one v2 contract package: lifecycle
+Correction Cycle 1 encoded the independent D01-D07 directions as one v2 contract
+package: lifecycle
 is authoritative; review is projected; UUID application identity is preserved;
 evidence/provenance is canonical behind an explicit envelope adapter; mutations
 and typed Enterprise Event audit append commit atomically under T05; pagination
 and context behavior are deterministic; and legacy gaps fail closed.
 
+Final review `4749587624` accepted that package within T01 scope and confirmed
+the ADR-0024 identity-bearing-field conflict interpretation. Administrative
+closure changes ADR-0020 through ADR-0025 to Accepted and indexes all six.
+
 Accepted ADR-0005, ADR-0015, ADR-0016, ADR-0017, and ADR-0019 remain unchanged:
 domain models remain canonical, services own behavior, repositories own
-persistence, mappers remain bidirectional, and routes remain thin. No dependent
-thread may treat ADR-0020 through ADR-0025 as Accepted until independent
-re-review authorizes that status change and Wave 1.
+persistence, mappers remain bidirectional, and routes remain thin. Acceptance
+authorizes downstream implementation against these contracts after PR #50
+merges; it does not claim that any implementation is complete.
 
 ## Security and Data Impact
 
 Only repository contracts and generalized examples were read. No raw file,
 industrial record, customer or supplier fact, formulation, price, email,
-credential, personal data, or confidential dataset was introduced. The six ADRs
-remain proposals and do not authorize production IAM, tenant isolation, real
+credential, personal data, or confidential dataset was introduced. The six
+Accepted ADRs do not authorize production IAM, tenant isolation, real
 data, file ingestion, legal deletion, or external evidence authenticity claims.
 
 Pattern scans found no secret assignment, private-key marker, `.env` path,
@@ -319,11 +364,13 @@ supplier occur only in scope and exclusion language and were manually reviewed.
   scanner or legal/confidentiality review.
 - The current report-v2 validator knows G1 through G6 only. G7 and G8 are
   declared in a separate Release 1.8 table below.
-- Reviewer score 89/100 applies to reviewed head `960050e494571b024ec0193077a779bb30b0c8b3`,
-  not to the corrected final SHA. Independent re-review is still required.
-- The provisional weighted score uses the retained 89 only because the scoring
-  contract requires the recorded reviewer score; it is not corrected-head
-  acceptance. The prior 79 cap remains authoritative until independent re-review.
+- Reviewer score 89/100 and the prior 79 cap remain historical evidence for
+  reviewed head `960050e494571b024ec0193077a779bb30b0c8b3`.
+- Final review `4749587624` applies to corrected head
+  `18bf2ef63766e17e5e5c67c5eb1e50664be94d3c` and records 100/100 within T01 scope.
+- Acceptance does not mean implementation is complete. Production IAM,
+  production tenancy, real-industrial-data authorization, and a legal-retention
+  policy do not exist through this closure.
 - No T02 through T10 implementation was started.
 
 ## Lost Points and Correction Items
@@ -338,47 +385,46 @@ supplier occur only in scope and exclusion language and were manually reviewed.
 | C06 | Cursor determinism | 1 | RESOLVED | ADR-0023 defines fixed ordering, normalized position, canonical fingerprint, exact keyset predicate, named errors, digest limits, and mutation behavior. |
 | C07 | Context identity and duplicates | 1 | RESOLVED | ADR-0024 defines fields, identity kinds, normalization, unique key, duplicate/version rejection, organization inheritance, and standalone-entity gate. |
 | C08 | Active-release documents | 1 | RESOLVED | Authorized status sections mark Release 1.7 completed and Release 1.8 active and link the Definition Pack and issue #38. |
-| C09 | Independent corrected-head re-review | 11 | OPEN | The reviewed head's authoritative 89/100 leaves eleven reviewer points open until independent ChatGPT reviews the final SHA, assigns a new score, and accepts or returns further corrections. Codex cannot self-resolve this item. |
+| C09 | Independent corrected-head re-review | 11 | RESOLVED | Final review `4749587624` scored corrected head `18bf2ef63766e17e5e5c67c5eb1e50664be94d3c` at 100/100 within T01 scope and confirmed G1-G8 PASS. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 24 | D01-D08 are encoded and every requested contract assertion passes. | One point remains C09 because the corrected head has not received independent re-review. |
-| Scope and acceptance criteria | 20 | 20 | All issue #39 documentation criteria are evidenced; only nine authorized paths changed and no dependent implementation began. | None. |
+| Correctness and evidence | 25 | 25 | D01-D08 are encoded, every requested contract assertion passes, and final review `4749587624` accepts the corrected head. | None. |
+| Scope and acceptance criteria | 20 | 20 | All issue #39 criteria are evidenced; closure changes exactly eight authorized paths, the complete T01 diff contains ten authorized paths, and no dependent implementation began. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Canonical domain, human trust, explicit adapter, atomic audit, governance, and bounded-context rules align. | None. |
 | Verification, tests, or validation | 15 | 15 | Links, ADR status, eight contract scans, ownership, diff, report-v2, and safety checks pass; failed invocation is retained. | None. |
 | Security, privacy, and data governance | 10 | 10 | Synthetic/generalized boundary held and prohibited-artifact scans passed. | None. |
-| Documentation and traceability | 10 | 10 | Original findings, review ID/score, eight corrections, matrix, checks, gates, and history are preserved and updated. | None. |
+| Documentation and traceability | 10 | 10 | Original findings, both review IDs and scores, all nine corrections, matrix, checks, gates, and history are preserved and updated. | None. |
 | Maintainability and clarity | 5 | 5 | Exact machine vocabulary, downstream ownership, deterministic errors, and scope boundaries are explicit. | None. |
-| Total | 100 | 99 | All Codex-executable correction work is complete. | One point is assigned to open item C09; Codex does not self-approve the proposed ADRs. |
+| Total | 100 | 100 | All T01 contract, validation, review, and administrative-closure requirements are complete within scope. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer score: 89/100
+Independent reviewer outcome: ACCEPTED WITHIN T01 SCOPE
 
-Reviewer total: 89
+Independent reviewer score: 100/100
 
-Reviewer evidence: Review `4749452113` scored head `960050e494571b024ec0193077a779bb30b0c8b3`; the score is retained pending corrected-head re-review.
+Independent review ID: 4749587624
 
-Review ID: `4749452113`
+Corrected reviewed head: 18bf2ef63766e17e5e5c67c5eb1e50664be94d3c
 
-Reviewed head: `960050e494571b024ec0193077a779bb30b0c8b3`
+Reviewer total: 100
 
-Reviewer status at that head: `CORRECTION REQUIRED`
+Reviewer evidence: Review `4749587624` independently accepted corrected head `18bf2ef63766e17e5e5c67c5eb1e50664be94d3c` within T01 scope and confirmed G1-G8 PASS.
 
-The 89/100 score is retained as required but does not review or accept the
-corrected final SHA. Independent re-review remains required before any ADR may
-be accepted or Wave 1 authorized.
+Historical reviewer score: Review `4749452113` scored prior head
+`960050e494571b024ec0193077a779bb30b0c8b3` at 89/100 and required C01-C08.
+That prior score and correction history remain preserved evidence.
 
 ## Final Score
 
-Provisional weighted score: 93.0
+Provisional weighted score: 100.0
 
-Gate-adjusted score: 79
+Gate-adjusted score: 100.0
 
-Calculation: `0.40 x 99 + 0.60 x 89 = 93.0`; G3 failure caps the
-provisional score at 79 pending independent corrected-head re-review.
+Calculation: `0.40 x 100 + 0.60 x 100 = 100.0`; all critical gates pass.
 
 ## Critical-Gate Declaration
 
@@ -386,12 +432,12 @@ provisional score at 79 pending independent corrected-head re-review.
 |---|---|---|
 | G1 Verified claims | PASS | Every claim is tied to executed output or a named repository contract; failed scanner attempts are retained. |
 | G2 Confidential data | PASS | Secret, environment, binary, identifier, and confidential-data checks found no prohibited artifact. |
-| G3 Approved scope and architecture | FAIL | Review `4749452113` authorized D01-D08 and the edits remain in scope, but the corrected architecture has not yet passed independent re-review and all six ADRs remain Proposed. |
+| G3 Approved scope and architecture | PASS | Review `4749587624` accepts the corrected architecture within T01 scope; administrative closure changes all six reviewed ADRs to Accepted without changing their contract substance. |
 | G4 Required validation | PASS | All T01-requested validation categories ran; non-applicable code and database tests are marked SKIP. |
-| G5 File ownership | PASS | Branch/worktree diff is exactly six T01 ADRs, the report, `AGENTS.md`, and `docs/project/PROJECT_STATE.md`; no unexpected file exists. |
-| G6 Acceptance completeness | PASS | All issue #39 documentation acceptance criteria and C01-C08 are evidenced complete; C09 is independent review, not missing Codex correction work. |
+| G5 File ownership | PASS | Closure diff is exactly six T01 ADRs, the ADR index, and the report; the complete T01 diff has ten authorized paths and no unexpected file. |
+| G6 Acceptance completeness | PASS | All issue #39 acceptance criteria and C01-C09 are evidenced complete. |
 
-Critical-gate result: FAIL
+Critical-gate result: PASS
 
 ## Release 1.8 Additional Gates
 
@@ -406,24 +452,24 @@ Critical-gate result: FAIL
 |---:|---:|---|---|---:|---|---|
 | 1 | 100 | Seven contract groups were incomplete or contradictory; three first-pass scanner invocations, one methodology, and one report EOF check also failed. | Re-ran corrected scanners, fixed the report-only EOF defect, built the cross-contract matrix, converted all 21 lost points into C01-C07, and made no unauthorized ADR decision. | 79 | PR/worktree preflight, 112 local links, ADR sequence/status, vocabulary scans, matrix, corrected diff, ownership, security, and report-v2 validation. | BLOCKED |
 | 2 | 79 | Independent Correction Cycle 1 review `4749452113` scored the reviewed head 89/100, issued D01-D08, split pagination/context into C06/C07, and authorized C08 status synchronization. | Encoded D01-D07 in all six Proposed ADRs; updated only authorized release-status sections; resolved C01-C08; rebuilt matrix, scores, gates, and evidence. | 99 | 400 Markdown files, 112 local links, six Proposed ADRs, eight passing contract scan groups, exact nine-path ownership, report-v2, diff, and safety validation. | OPEN |
+| 3 | 99 | Final review `4749587624` accepted corrected head `18bf2ef63766e17e5e5c67c5eb1e50664be94d3c` at 100/100 within T01 scope and confirmed G1-G8 PASS. | Resolved C09, changed six reviewed ADR statuses to Accepted, preserved the ADR-0024 conflict interpretation, indexed all 23 Accepted ADRs, and completed report-v2 closure. | 100 | Six Accepted status checks, 23-file/index parity, 118 local links, exact closure ownership, contract scans, report-v2, diff, and safety validation. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Keep C01 through C09 and their evidence in issue #39 and PR #50 so T01 remains
-  the single owner of shared Release 1.8 contracts and review history.
+- Preserve C01 through C09 and their evidence in closed issue #39 and merged PR
+  #50 as the authoritative T01 contract and review history.
 - Keep issue #35 independently traceable and incorporate its migration-to-model
   acceptance criteria only after T01 chooses the migration authority.
 - Keep issue #36 independently traceable; do not mix repository-wide Ruff debt
   into this ADR correction cycle.
-- Do not start T02 through T10 until independent review confirms the corrected
-  T01 head, accepts or otherwise disposes of the six Proposed ADRs, and
-  explicitly authorizes Wave 1.
+- Wave 1 becomes authorized only after this validated closure commit merges into
+  `release/1.8-knowledge-capture-core`.
 
 ## Original Blockers and Issued Decisions
 
 The five blocker analyses below are preserved from the initial report. Review
-`4749452113` supplied the decisions now encoded in the ADRs, so none remains a
-human-decision blocker for independent re-review.
+`4749452113` supplied the correction decisions, and final review `4749587624`
+accepted the corrected contracts, so none remains a human-decision blocker.
 
 ### B01 Lifecycle and review authority - RESOLVED
 
@@ -527,8 +573,4 @@ enforcement remains explicitly outside scope.
 
 ## Blockers
 
-No human-decision blocker remains in T01 Correction Cycle 1. C09 remains open
-because independent ChatGPT must review the corrected final SHA. Wave 1 remains
-unauthorized, all six ADRs remain Proposed, and PR #50 remains draft.
-
-Recommendation: `READY FOR INDEPENDENT RE-REVIEW`.
+None.

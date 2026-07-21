@@ -1,6 +1,6 @@
 # ADR-0025 Structured Evidence and Provenance Compatibility
 
-Status: Proposed
+Status: Accepted
 
 Parent issue: #39
 

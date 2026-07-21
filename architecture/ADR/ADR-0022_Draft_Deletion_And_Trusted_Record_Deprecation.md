@@ -1,6 +1,6 @@
 # ADR-0022 Draft Deletion and Trusted Record Deprecation
 
-Status: Proposed
+Status: Accepted
 
 Parent issue: #39
 

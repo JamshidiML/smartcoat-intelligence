@@ -1,6 +1,6 @@
 # ADR-0020 Governed Knowledge Lifecycle Commands
 
-Status: Proposed
+Status: Accepted
 
 Parent issue: #39
 

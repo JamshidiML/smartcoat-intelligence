@@ -1,6 +1,6 @@
 # ADR-0024 Minimum Domain Context References
 
-Status: Proposed
+Status: Accepted
 
 Parent issue: #39
 
@@ -46,6 +46,11 @@ Within one Knowledge Object, the unique link key is
 reference is rejected as an exact duplicate. Supplying a different `version`
 for the same unique key is rejected as a conflicting version. No input path may
 silently merge, replace, or select one of those references.
+
+When two references share that unique link key but differ in any
+identity-bearing normalized field, including `id_kind`, required
+`source_system`, or `version`, the result is a deterministic conflict. No input
+path may silently merge, replace, or select one of the conflicting references.
 
 Every reference inherits `organization_id` from its Knowledge Object. Release
 1.8 prohibits a reference to a target known to belong to another organization.

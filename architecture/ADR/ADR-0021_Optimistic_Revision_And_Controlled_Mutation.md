@@ -1,6 +1,6 @@
 # ADR-0021 Optimistic Revision and Controlled Mutation
 
-Status: Proposed
+Status: Accepted
 
 Parent issue: #39
 

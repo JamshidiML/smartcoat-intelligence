@@ -1,6 +1,6 @@
 # ADR-0023 Cursor-Based Knowledge Pagination
 
-Status: Proposed
+Status: Accepted
 
 Parent issue: #39
 
