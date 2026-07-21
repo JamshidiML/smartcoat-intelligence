@@ -1,0 +1,28 @@
+{
+  "source_type": "voice_transcript",
+  "source_format": "txt",
+  "source_system": "synthetic_meeting_capture",
+  "source_reference": "synthetic://voice/transcript-placeholder.txt",
+  "organization_id": "org_synthetic",
+  "site_id": "site_synthetic",
+  "source_owner": "Knowledge steward",
+  "confidentiality_level": "confidential",
+  "governance_schema_version": "smartcoat-governance-v1.1-draft",
+  "purpose_decisions": {
+    "inventory": "approved",
+    "retrieval": "not_requested",
+    "analytics": "not_requested",
+    "human_review": "approved",
+    "model_training": "denied",
+    "external_sharing": "denied"
+  },
+  "schema_target": {
+    "name": "tacit_knowledge_capture",
+    "version": "v1"
+  },
+  "content_fingerprint": "synthetic-voice-transcript-placeholder-v1",
+  "dry_run": true,
+  "metadata": {
+    "description": "Synthetic placeholder only; no employee voice or transcript content."
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "source_type": "image",
+  "source_format": "png",
+  "source_system": "synthetic_image_archive",
+  "source_reference": "synthetic://images/coating-surface-example.png",
+  "organization_id": "org_synthetic",
+  "site_id": "site_synthetic",
+  "source_owner": "Lab steward",
+  "confidentiality_level": "internal",
+  "governance_schema_version": "smartcoat-governance-v1.1-draft",
+  "purpose_decisions": {
+    "inventory": "approved",
+    "retrieval": "not_requested",
+    "analytics": "not_requested",
+    "human_review": "approved",
+    "model_training": "denied",
+    "external_sharing": "denied"
+  },
+  "schema_target": {
+    "name": "evidence_attachment",
+    "version": "v1"
+  },
+  "content_fingerprint": "synthetic-image-coating-surface-example-v1",
+  "dry_run": true,
+  "metadata": {
+    "description": "No image binary is included."
+  }
+}
