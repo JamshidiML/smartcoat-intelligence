@@ -6,7 +6,7 @@ Parent issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/38
 
 Branch: `release/1.8-knowledge-capture-core`
 
-Status: Definition and issue setup
+Status: Definition pack ready; implementation not started
 
 ## Release Objective
 
@@ -58,16 +58,16 @@ Critical-gate failure caps the thread at 79 until correction and independent re-
 
 | Thread | Issue | Scope | Primary Dependency | Status |
 |---|---|---|---|---|
-| T01 | Pending | Release contracts, ADRs, lifecycle semantics | Release definition | Not started |
-| T02 | Pending | Knowledge Object v2 | T01 | Not started |
-| T03 | Pending | Evidence and provenance | T01, T02 | Not started |
-| T04 | Pending | Lifecycle and controlled mutation | T01, T02 | Not started |
-| T05 | Pending | Persistence, migrations, repository CRUD | T02, T03, T04, #35 | Not started |
-| T06 | Pending | Filtering, sorting, cursor pagination | T02, T05 | Not started |
-| T07 | Pending | Audit events and history | T04, T05 | Not started |
-| T08 | Pending | Minimum domain context references | T01, T02 | Not started |
-| T09 | Pending | API contracts and end-to-end route behavior | T03–T08 | Not started |
-| T10 | Pending | Engineering gates, #36, integration and release evidence | All threads | Not started |
+| T01 | [#39](https://github.com/JamshidiML/smartcoat-intelligence/issues/39) | Release contracts, ADRs, lifecycle semantics | Release definition | Not started |
+| T02 | [#40](https://github.com/JamshidiML/smartcoat-intelligence/issues/40) | Knowledge Object v2 | T01 | Not started |
+| T03 | [#41](https://github.com/JamshidiML/smartcoat-intelligence/issues/41) | Evidence and provenance | T01, T02 | Not started |
+| T04 | [#42](https://github.com/JamshidiML/smartcoat-intelligence/issues/42) | Lifecycle and controlled mutation | T01, T02 | Not started |
+| T05 | [#43](https://github.com/JamshidiML/smartcoat-intelligence/issues/43) | Persistence, migrations, repository CRUD | T02, T03, T04, #35 | Not started |
+| T06 | [#44](https://github.com/JamshidiML/smartcoat-intelligence/issues/44) | Filtering, sorting, cursor pagination | T02, T05 | Not started |
+| T07 | [#45](https://github.com/JamshidiML/smartcoat-intelligence/issues/45) | Audit events and history | T04, T05 | Not started |
+| T08 | [#46](https://github.com/JamshidiML/smartcoat-intelligence/issues/46) | Minimum domain context references | T01, T02 | Not started |
+| T09 | [#47](https://github.com/JamshidiML/smartcoat-intelligence/issues/47) | API contracts and end-to-end route behavior | T03–T08 | Not started |
+| T10 | [#48](https://github.com/JamshidiML/smartcoat-intelligence/issues/48) | Engineering gates, #36, integration and release evidence | All threads | Not started |
 
 ## Planned Integration Order
 
