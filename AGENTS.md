@@ -45,19 +45,26 @@ Historical documents and chat-derived ideas are not automatically active require
 
 Current active release:
 
-**Release 1.7 — Project Reset & Engineering Baseline**
+**Release 1.8 - Knowledge Capture Core**
+
+Release 1.7 - Project Reset & Engineering Baseline is completed.
+
+Canonical Release 1.8 scope:
+
+- `docs/project/RELEASE_1_8_DEFINITION_PACK.md`
+- parent issue [#38](https://github.com/JamshidiML/smartcoat-intelligence/issues/38)
 
 Primary goals:
 
-- synchronize documentation and implementation
-- establish a reliable engineering baseline
-- add or improve CI
-- validate tests, linting, typing, and local development
-- inspect and correct persistence and Docker inconsistencies
-- prove the API-to-PostgreSQL path with integration testing
-- prepare a stable base for Release 1.8
+- deliver Knowledge Object v2 and deterministic controlled mutation
+- add structured evidence, provenance, and minimum context references
+- enforce human-controlled lifecycle and immutable audit contracts
+- align persistence and migrations and prove the PostgreSQL path
+- provide filter-bound cursor pagination and explicit API errors
+- preserve synthetic-data, security, governance, and review gates
 
-Do not add major new product capabilities during Release 1.7 unless the issue explicitly requires them.
+Do not expand beyond the Definition Pack or begin a dependent implementation
+wave until its prerequisite contracts have passed independent review.
 
 ---
 

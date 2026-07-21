@@ -2,9 +2,9 @@
 
 Version: 1.0
 
-Status: Active Baseline
+Status: Release 1.8 Active
 
-Last updated: 2026-07-10
+Last updated: 2026-07-22
 
 ---
 
@@ -154,36 +154,29 @@ This is the Knowledge Capture MVP.
 
 ## Immediate Release
 
+Release 1.7 - Project Reset & Engineering Baseline is completed.
+
 Current release in progress:
 
-**Release 1.7 — Project Reset & Engineering Baseline**
+**Release 1.8 - Knowledge Capture Core**
+
+Canonical scope:
+
+- `docs/project/RELEASE_1_8_DEFINITION_PACK.md`
+- parent issue [#38](https://github.com/JamshidiML/smartcoat-intelligence/issues/38)
 
 Primary outcomes:
 
-- create one reliable project state
-- reconcile chat history and repository reality
-- synchronize documentation with implementation
-- establish issue, branch, pull-request, review, and merge workflow
-- add Codex operating instructions
-- identify and fix baseline technical inconsistencies
-- add continuous integration
-- prove the persistent API path with integration testing
-- lock the next MVP scope
+- implement a governed Knowledge Object v2 backend contract
+- provide structured evidence, provenance, and minimum context references
+- enforce explicit lifecycle transitions, revision checks, and safe mutation
+- align persistence and migrations with one atomic audit transaction boundary
+- provide deterministic filtering and cursor pagination
+- prove the end-to-end PostgreSQL workflow with synthetic data
 
 ---
 
 ## Next Product Releases
-
-### Release 1.8 — Knowledge Capture Core
-
-Expected focus:
-
-- complete CRUD behavior
-- lifecycle transitions
-- filtering and pagination
-- evidence and provenance handling
-- project, experiment, material, formulation, and test-result minimum models
-- audit events
 
 ### Release 1.9 — Human Review Interface
 

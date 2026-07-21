@@ -1,8 +1,9 @@
 # ADR Index
 
-All 17 ADR files currently present are **Accepted** architecture decisions and
-are **Merged** into the Release 1.7 integration baseline. A draft thread document
-does not become an accepted ADR merely by linking to this index.
+All 23 ADR files listed below are **Accepted** architecture decisions.
+ADR-0003 through ADR-0019 are merged into the Release 1.7 integration baseline.
+ADR-0020 through ADR-0025 are accepted Release 1.8 T01 contracts. A draft thread
+document does not become an accepted ADR merely by linking to this index.
 
 | ADR | Decision | Record |
 |---|---|---|
@@ -23,6 +24,12 @@ does not become an accepted ADR merely by linking to this index.
 | 0017 | Bidirectional Persistence Mappers | [ADR-0017](../ADR/ADR-0017_Bidirectional_Persistence_Mappers.md) |
 | 0018 | Mapper Datetime Fallback For Unpersisted Records | [ADR-0018](../ADR/ADR-0018_Mapper_Datetime_Fallback_For_Unpersisted_Records.md) |
 | 0019 | API Uses Repository-Backed Services | [ADR-0019](../ADR/ADR-0019_API_Uses_Repository_Backed_Services.md) |
+| 0020 | Governed Knowledge Lifecycle Commands | [ADR-0020](../ADR/ADR-0020_Governed_Knowledge_Lifecycle_Commands.md) |
+| 0021 | Optimistic Revision And Controlled Mutation | [ADR-0021](../ADR/ADR-0021_Optimistic_Revision_And_Controlled_Mutation.md) |
+| 0022 | Draft Deletion And Trusted Record Deprecation | [ADR-0022](../ADR/ADR-0022_Draft_Deletion_And_Trusted_Record_Deprecation.md) |
+| 0023 | Cursor-Based Knowledge Pagination | [ADR-0023](../ADR/ADR-0023_Cursor_Based_Knowledge_Pagination.md) |
+| 0024 | Minimum Domain Context References | [ADR-0024](../ADR/ADR-0024_Minimum_Domain_Context_References.md) |
+| 0025 | Structured Evidence And Provenance Compatibility | [ADR-0025](../ADR/ADR-0025_Structured_Evidence_And_Provenance_Compatibility.md) |
 
 New ADRs must follow [ADR Governance](../governance/03_ADR_Governance.md) and be
 added here in the same change that introduces the accepted record.
