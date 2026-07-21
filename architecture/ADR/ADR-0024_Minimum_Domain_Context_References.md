@@ -24,20 +24,36 @@ The supported context types are:
 - `process_conditions`
 - `test_result`
 
-A minimum context reference shall preserve:
+A `ContextReference` shall contain:
 
-- `reference_id` as a stable UUID or governed external identifier;
 - `context_type` from the canonical vocabulary;
-- `display_name` or label;
+- `reference_id` as a normalized string;
+- `id_kind`, either `uuid` or `external`;
+- `source_system`, required when `id_kind=external` and otherwise optional;
+- `display_name`;
 - optional `version`;
-- optional `source_system` and `source_reference`;
-- optional relationship role;
-- optional evidence reference;
-- optional compact governed attributes only when needed for the first vertical slice.
+- optional `relationship_role`;
+- optional `source_reference`;
+- optional `evidence_reference`; and
+- optional bounded `attributes` needed for the first vertical slice.
 
-The Knowledge Object may contain multiple typed context references. Duplicate identity and conflicting version behavior must be deterministic.
+When `id_kind=uuid`, `reference_id` is validated and normalized to lowercase
+hyphenated UUID text. External identifiers preserve their governed canonical
+form and require `source_system` so their identity boundary is explicit.
 
-Standalone application entities and independent CRUD endpoints require:
+Within one Knowledge Object, the unique link key is
+`(context_type, reference_id, relationship_role)`. Repeating the same normalized
+reference is rejected as an exact duplicate. Supplying a different `version`
+for the same unique key is rejected as a conflicting version. No input path may
+silently merge, replace, or select one of those references.
+
+Every reference inherits `organization_id` from its Knowledge Object. Release
+1.8 prohibits a reference to a target known to belong to another organization.
+An absent or unverifiable organization boundary fails closed rather than being
+treated as cross-organization permission.
+
+Standalone application entities and independent CRUD endpoints shall not be
+introduced without:
 
 1. a demonstrated Release 1.8 use case that cannot be satisfied by a reference;
 2. an issue-level scope change;
@@ -56,7 +72,8 @@ Typed references improve meaning and retrieval over raw UUID lists while preserv
 - Knowledge Object filtering may use context type and reference ID.
 - Persistence may initially use deliberate JSONB for bounded reference value objects, with indexes justified by query requirements.
 - Relationship integrity is application-enforced unless a standalone entity is later approved.
-- Tests must cover types, identity, duplicates, versions, serialization, and compatibility.
+- Tests must cover types, identity normalization, exact duplicates, version
+  conflicts, organization isolation, serialization, and compatibility.
 
 ## Rejected Alternatives
 

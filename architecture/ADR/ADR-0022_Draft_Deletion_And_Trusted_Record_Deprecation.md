@@ -19,9 +19,24 @@ A Knowledge Object may be hard-deleted through the normal application contract o
 - lifecycle state is `draft`;
 - the caller supplies the current `expected_revision`;
 - the object has never entered `captured`, `reviewed`, `validated`, `approved`, `rejected`, or `deprecated` state;
-- it is not referenced by a trusted Knowledge Object, Decision Object, or retained audit relationship;
+- no inbound reference exists from another Knowledge Object, Decision Object,
+  or governed domain object;
 - the delete command records actor and reason;
 - an audit tombstone or equivalent retained deletion event is created without preserving confidential content.
+
+Required create and update audit events do not disqualify a draft from this
+deletion path. The object row and its content are deleted atomically while safe,
+append-only audit events remain. The deletion tombstone records only the actor,
+reason, object ID, object revision, server timestamp, and safe metadata needed
+to identify the deletion. It shall not copy title, description, evidence,
+context attributes, or other confidential content.
+
+T05's shared Unit of Work owns the transaction: load the object, validate
+lifecycle and revision, verify inbound-reference eligibility, delete with the
+revision predicate, append the typed Knowledge deletion event from the
+canonical `EnterpriseEvent` family, and commit once. Participating repositories
+may flush but shall not independently commit. Failure rolls back both deletion
+and audit append.
 
 ### Non-draft records
 
@@ -33,7 +48,10 @@ Rejected knowledge remains auditable and may reopen only through the explicit li
 
 ### Future governed erasure
 
-Legal erasure, retention expiration, administrative purge, and cryptographic deletion are future governed capabilities. They must not be simulated through repository delete calls.
+This is application-object deletion. It is not legal erasure, backup deletion,
+production retention compliance, retention expiration, administrative purge,
+or cryptographic deletion. Those are future governed capabilities and shall not
+be simulated through repository delete calls.
 
 ## Rationale
 

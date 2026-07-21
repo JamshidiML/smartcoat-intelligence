@@ -14,12 +14,30 @@ Offset pagination is easy to expose but can produce duplicates, omissions, and i
 
 The canonical Release 1.8 Knowledge Object collection endpoint shall use opaque cursor-based pagination.
 
-The default ordering shall be:
+The fixed ordering is `updated_at DESC, object_id DESC`. Both fields are
+non-null. `updated_at` is timezone-aware UTC and is serialized in normalized
+RFC 3339 form at microsecond precision, for example
+`2026-07-22T09:30:00.123456Z`. `object_id` is serialized as a lowercase,
+hyphenated UUID.
 
-1. `updated_at` descending;
-2. `object_id` descending as a stable tie-breaker.
+The cursor shall be opaque to clients, URL-safe, validated, and free of secrets
+or raw sensitive payloads. Its decoded contract contains exactly:
 
-The cursor shall encode only the minimum normalized ordering position and contract version. It shall be opaque to clients, URL-safe, validated, and free of secrets or raw sensitive payloads.
+- cursor contract version;
+- normalized position timestamp;
+- normalized position UUID;
+- fixed sort identifier; and
+- SHA-256 fingerprint of the normalized effective semantic filters and sort.
+
+Effective filters are normalized after documented defaults are applied. Their
+fingerprint input is UTF-8 canonical JSON with lexicographically ordered field
+names, canonical enum values, lowercase hyphenated UUIDs, UTC timestamps at
+microsecond precision, and duplicate-free sorted values for filters whose
+semantics are set-based. Omitted and null filters normalize to the documented
+effective default. The fixed sort identifier is included in that input. The
+cursor must match the exact effective semantic filters and sort of the request.
+`page_size` may change within documented bounds and is not part of the cursor
+position or filter fingerprint.
 
 The response shall include:
 
@@ -33,11 +51,25 @@ Requirements:
 
 - page size is bounded and defaults explicitly;
 - combined filters use AND semantics;
-- invalid or unsupported cursors fail deterministically;
-- a cursor is valid only for the compatible sort/filter contract version;
+- malformed encoding or shape returns `invalid_cursor_malformed`;
+- an unsupported contract version returns `invalid_cursor_version`;
+- a filter fingerprint mismatch returns `cursor_filter_mismatch`;
+- a sort identifier mismatch returns `cursor_sort_mismatch`;
+- an invalid position timestamp returns `invalid_cursor_timestamp`;
+- an invalid position UUID returns `invalid_cursor_object_id`;
 - unchanged datasets produce no duplicate or missing records across traversal;
-- records changed between page requests may move position, and this limitation must be documented rather than hidden;
+- the next-page keyset predicate is
+  `updated_at < cursor.updated_at OR (updated_at = cursor.updated_at AND object_id < cursor.object_id)`;
+- records inserted, updated, or deleted between page requests may move, appear,
+  or be omitted because Release 1.8 does not provide snapshot isolation across
+  requests; clients requiring a stable snapshot must restart against an
+  independently approved snapshot contract; and
 - database queries use keyset predicates and supporting indexes when justified.
+
+The SHA-256 filter fingerprint is unkeyed. It detects request-contract mismatch
+but is not an authorization, authenticity, tamper-proofing, or security
+boundary. Authentication, organization isolation, confidentiality, and
+permission checks are reapplied independently on every page request.
 
 Offset pagination may remain only as a temporary compatibility behavior if an explicit migration decision requires it. It shall not be presented as the canonical scalable contract.
 
@@ -49,8 +81,10 @@ Cursor pagination provides deterministic traversal and better long-term database
 
 - Query models and API responses change from a plain list to a page envelope.
 - Repository queries need stable keyset ordering.
-- Filters and sort version affect cursor validity.
-- Tests must cover ties, boundaries, malformed cursors, filter changes, empty pages, and complete traversal.
+- Exact effective filters and the fixed sort identifier affect cursor validity.
+- Tests must cover ties, boundaries, every deterministic cursor error, filter
+  changes, sort mismatch, page-size changes, empty pages, mutation between
+  pages, and complete traversal of an unchanged dataset.
 
 ## Rejected Alternatives
 
