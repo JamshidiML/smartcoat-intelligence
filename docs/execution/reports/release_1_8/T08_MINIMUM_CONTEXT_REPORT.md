@@ -8,9 +8,9 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/46
 
 Branch: `thread/18-08-minimum-context`
 
-Draft PR: `Pending (pre-PR)`
+Draft PR: `https://github.com/JamshidiML/smartcoat-intelligence/pull/51`
 
-Final status: `CORRECTION IN PROGRESS`
+Final status: `READY FOR INDEPENDENT REVIEW`
 
 ## Objective
 
@@ -80,6 +80,7 @@ No PostgreSQL command ran because T08 owns no persistence change.
 | Full-source MyPy | PASS | No issues in 45 source files. |
 | PostgreSQL validation | SKIP | T08 changes no persistence layer and makes no PostgreSQL evidence claim. |
 | Report-v2 validation | PASS | The complete pre-PR report passes the unchanged report-v2 validator. |
+| First post-PR Markdown wrapper invocation | NOT RUN | Shell quoting passed escaped newlines to Python and produced a syntax error before the validator body executed; no link-validation result is claimed from it. |
 | Markdown-link validation | PASS | 401 repository Markdown files, 118 local links, and zero broken local targets. |
 | Owned-path, safety, and diff checks | PASS | Exactly five T08-owned paths, zero unexpected files, zero prohibited artifacts, and zero whitespace errors. |
 
