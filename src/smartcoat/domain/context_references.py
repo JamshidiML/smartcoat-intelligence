@@ -325,6 +325,19 @@ def validate_context_references(
     return validated
 
 
+class KnowledgeContext(BaseModel):
+    """Standalone ADR-0024 context boundary for later Knowledge Object v2 composition."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    references: list[ContextReference]
+
+    @model_validator(mode="after")
+    def validate_reference_collection(self) -> KnowledgeContext:
+        validate_context_references(self.references)
+        return self
+
+
 def validate_context_organization_boundary(
     *,
     containing_organization_id: str,

@@ -3,12 +3,14 @@ from uuid import UUID, uuid4
 import pytest
 from pydantic import ValidationError
 
+from smartcoat.api.main import app
 from smartcoat.domain.context_references import (
     ContextIdKind,
     ContextReference,
     ContextReferenceCollectionError,
     ContextReferenceOrganizationError,
     ContextType,
+    KnowledgeContext,
     validate_context_organization_boundary,
     validate_context_references,
 )
@@ -184,44 +186,90 @@ def test_multiple_valid_references_preserve_input_order() -> None:
     assert validate_context_references([first, second]) == [first, second]
 
 
-def test_knowledge_object_validates_typed_context() -> None:
+def test_knowledge_context_constructs_typed_references() -> None:
     reference = external_reference()
 
-    knowledge = KnowledgeObject(
-        title="Synthetic observation",
-        knowledge_type=KnowledgeObjectType.OBSERVATION,
-        context_references=[reference.model_dump()],
-    )
+    context = KnowledgeContext(references=[reference.model_dump()])
 
-    assert knowledge.context_references == [reference]
-    assert isinstance(knowledge.context_references[0], ContextReference)
+    assert context.references == [reference]
+    assert isinstance(context.references[0], ContextReference)
 
 
-def test_knowledge_object_rejects_duplicate_context() -> None:
+def test_knowledge_context_rejects_duplicate_context() -> None:
     reference = external_reference()
 
     with pytest.raises(ValidationError, match="context_reference_exact_duplicate"):
-        KnowledgeObject(
-            title="Synthetic observation",
-            knowledge_type=KnowledgeObjectType.OBSERVATION,
-            context_references=[reference, reference.model_copy(deep=True)],
+        KnowledgeContext(
+            references=[reference, reference.model_copy(deep=True)],
         )
 
 
-def test_legacy_related_entities_remain_separate_and_opaque() -> None:
-    legacy_id = uuid4()
-    reference = external_reference()
+def test_knowledge_context_rejects_identity_conflict() -> None:
+    first = external_reference(version="v1")
+    second = external_reference(version="v2")
 
+    with pytest.raises(ValidationError, match="context_reference_identity_conflict"):
+        KnowledgeContext(references=[first, second])
+
+
+def test_knowledge_context_rejects_link_key_conflict() -> None:
+    first = external_reference(display_name="Synthetic project A")
+    second = external_reference(display_name="Synthetic project B")
+
+    with pytest.raises(ValidationError, match="context_reference_link_key_conflict"):
+        KnowledgeContext(references=[first, second])
+
+
+def test_knowledge_context_preserves_valid_input_order() -> None:
+    first = external_reference(reference_id="SYN-PROJECT-001")
+    second = external_reference(
+        context_type=ContextType.TEST_RESULT,
+        reference_id="SYN-RESULT-001",
+        display_name="Synthetic result",
+        relationship_role="result",
+    )
+
+    context = KnowledgeContext(references=[first, second])
+
+    assert context.references == [first, second]
+
+
+def test_knowledge_context_serialization_round_trip() -> None:
+    context = KnowledgeContext(
+        references=[external_reference(version="v1")],
+    )
+
+    restored = KnowledgeContext.model_validate_json(context.model_dump_json())
+
+    assert restored == context
+
+
+def test_knowledge_context_forbids_extra_fields() -> None:
+    with pytest.raises(ValidationError, match="extra_forbidden"):
+        KnowledgeContext.model_validate({"references": [], "unexpected": "synthetic"})
+
+
+def test_current_knowledge_object_does_not_expose_context_references() -> None:
+    legacy_id = uuid4()
     knowledge = KnowledgeObject(
-        title="Synthetic compatibility example",
+        title="Synthetic Release 1.7 compatibility example",
         knowledge_type=KnowledgeObjectType.OBSERVATION,
-        context_references=[reference],
         related_entities=[legacy_id],
     )
 
-    assert knowledge.context_references == [reference]
+    assert "context_references" not in KnowledgeObject.model_fields
+    assert "context_references" not in KnowledgeObject.model_json_schema()["properties"]
     assert knowledge.related_entities == [legacy_id]
-    assert reference.reference_id != str(legacy_id)
+
+
+def test_current_openapi_does_not_advertise_context_references() -> None:
+    openapi = app.openapi()
+    request_schema = openapi["paths"]["/knowledge"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    schema_name = request_schema["$ref"].rsplit("/", maxsplit=1)[-1]
+
+    assert "context_references" not in openapi["components"]["schemas"][schema_name]["properties"]
 
 
 def test_vertical_slice_fixture_represents_all_minimum_context() -> None:
@@ -235,13 +283,9 @@ def test_vertical_slice_fixture_represents_all_minimum_context() -> None:
         for index, context_type in enumerate(ContextType, start=1)
     ]
 
-    knowledge = KnowledgeObject(
-        title="Synthetic first vertical slice",
-        knowledge_type=KnowledgeObjectType.OBSERVATION,
-        context_references=references,
-    )
+    context = KnowledgeContext(references=references)
 
-    assert [item.context_type for item in knowledge.context_references] == list(ContextType)
+    assert [item.context_type for item in context.references] == list(ContextType)
 
 
 def test_attributes_are_bounded_and_normalized() -> None:

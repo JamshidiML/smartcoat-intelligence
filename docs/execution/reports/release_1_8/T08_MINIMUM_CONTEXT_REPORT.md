@@ -10,24 +10,29 @@ Branch: `thread/18-08-minimum-context`
 
 Draft PR: `https://github.com/JamshidiML/smartcoat-intelligence/pull/51`
 
-Final status: `READY FOR INDEPENDENT REVIEW`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
-Implement the Accepted ADR-0024 minimum `ContextReference` domain contract and
-typed Knowledge Object integration without implementing T02's final Knowledge
-Object v2 contract, persistence, migrations, repositories, services, API
-routes, standalone context CRUD, the Technical Textiles ontology, or any real
-industrial-data workflow.
+Deliver the Accepted ADR-0024 minimum `ContextReference` domain foundation as
+a standalone, typed composition boundary. T08 does not place canonical context
+on the current Release 1.7 `KnowledgeObject`, persistence mapper, repository,
+service, or API contract. T02 owns Knowledge Object v2 composition, T05 owns
+persistence and mapper integration, and T09 owns API exposure.
 
 Exact starting release SHA:
 `ed6cdf84235f0cce91e70df150c55ee1b45aee7d`.
 
-Final implementation SHA:
+Original implementation SHA:
 `02c6c1c0b76730c8c9b8d7727e7d86f6802d535d`.
 
-The final report-publication head is recorded in PR metadata because a Git
-commit cannot embed its own resulting SHA.
+Independent-review head:
+`ca66f08021820fcef5434d75e50a1bd590105dbe`.
+
+Independent review ID: `4753208956`.
+
+The corrected publication head is recorded in PR metadata because a Git commit
+cannot embed its own resulting SHA.
 
 ## Files Changed
 
@@ -37,27 +42,42 @@ commit cannot embed its own resulting SHA.
 - `tests/test_context_references.py`
 - `docs/execution/reports/release_1_8/T08_MINIMUM_CONTEXT_REPORT.md`
 
+Correction C02 touches all five paths above. The final PR has four net paths
+against the release base because `knowledge_objects.py` is restored exactly to
+its Release 1.7 content.
+
 No persistence record, mapper, repository, migration, service, API route,
 dependency, CI, platform-envelope schema, Technical Textiles schema, or
 Accepted ADR is modified.
 
 ## Methods and Commands Executed
 
+Initial implementation commands and results remain preserved:
+
 - `git fetch origin`
 - `git rev-parse origin/release/1.8-knowledge-capture-core`
 - `git status --short --branch --untracked-files=all`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -m pytest tests/test_context_references.py -q`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -m pytest tests/test_domain_models.py tests/test_imports.py -q`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -m pytest tests/test_context_references.py tests/test_domain_models.py tests/test_imports.py -q`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -m pytest -q`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -m mypy src/smartcoat/domain/context_references.py src/smartcoat/domain/knowledge_objects.py src/smartcoat/domain/__init__.py`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -m mypy src`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -m ruff check src/smartcoat/domain/context_references.py src/smartcoat/domain/knowledge_objects.py src/smartcoat/domain/__init__.py tests/test_context_references.py`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -m ruff format --check src/smartcoat/domain/context_references.py src/smartcoat/domain/knowledge_objects.py src/smartcoat/domain/__init__.py tests/test_context_references.py`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python scripts/validate_execution_reports.py docs/execution/reports/release_1_8/T08_MINIMUM_CONTEXT_REPORT.md`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -c '<standard-library Markdown local-link validator>'`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -c '<exact T08 owned-path and untracked-file validator>'`
-- `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv/bin/python -c '<secret, environment, binary, personal-data, and confidential-data validator>'`
+- `python -m pytest tests/test_context_references.py -q`
+- `python -m pytest tests/test_domain_models.py tests/test_imports.py -q`
+- `python -m pytest tests/test_context_references.py tests/test_domain_models.py tests/test_imports.py -q`
+- `python -m pytest -q`
+- `python -m mypy src/smartcoat/domain/context_references.py src/smartcoat/domain/knowledge_objects.py src/smartcoat/domain/__init__.py`
+- `python -m mypy src`
+- `python -m ruff check src/smartcoat/domain/context_references.py src/smartcoat/domain/knowledge_objects.py src/smartcoat/domain/__init__.py tests/test_context_references.py`
+- `python -m ruff format --check src/smartcoat/domain/context_references.py src/smartcoat/domain/knowledge_objects.py src/smartcoat/domain/__init__.py tests/test_context_references.py`
+
+Correction C02 commands:
+
+- `python -m pytest tests/test_context_references.py -q`
+- `python -m pytest tests/test_domain_models.py tests/test_api_persistent_routes.py tests/test_imports.py -q`
+- `python -m pytest -q`
+- `python -m mypy src`
+- `python -m ruff check src/smartcoat/domain/context_references.py src/smartcoat/domain/knowledge_objects.py src/smartcoat/domain/__init__.py tests/test_context_references.py`
+- `python -m ruff format --check src/smartcoat/domain/context_references.py src/smartcoat/domain/knowledge_objects.py src/smartcoat/domain/__init__.py tests/test_context_references.py`
+- `python scripts/validate_execution_reports.py docs/execution/reports/release_1_8/T08_MINIMUM_CONTEXT_REPORT.md`
+- `python -c '<standard-library Markdown local-link validator>'`
+- `python -c '<exact T08 owned-path and unexpected-file validator>'`
+- `python -c '<secret, environment, binary, credential, personal-data, and confidential-data validator>'`
 - `git diff --check ed6cdf84235f0cce91e70df150c55ee1b45aee7d --`
 
 Long standard-library scanner bodies are retained in the execution transcript.
@@ -67,150 +87,173 @@ No PostgreSQL command ran because T08 owns no persistence change.
 
 | Method or Command | Actual Result | Evidence |
 |---|---|---|
-| Global release and contract preflight | PASS | Release remote equals `ed6cdf84235f0cce91e70df150c55ee1b45aee7d`; PR #49 remained draft/unmerged; PR #50 was merged; 23 ADRs and index records were Accepted. |
-| Persistent T08 worktree | PASS | New clean branch `thread/18-08-minimum-context` started exactly from the authorized release SHA. |
-| First scoped Ruff invocation | FAIL: corrected annotation | Ruff found one F821 forward-reference annotation in the new Knowledge Object validator; no clean claim was made from that invocation. |
-| Corrected scoped Ruff | PASS | All four T08-owned source/test files pass Ruff after quoting the forward reference. |
-| Scoped Ruff format check | PASS | All four T08-owned source/test files are formatted. |
-| Focused context tests | PASS | 38 positive and negative ContextReference tests passed. |
-| Affected existing domain tests | PASS | 3 existing domain and import tests passed before the final combined run. |
-| Final focused and affected tests | PASS | 41 tests passed after the annotation correction and second-pass review. |
-| Full default pytest | PASS | 109 tests passed and 4 PostgreSQL-opt-in tests skipped in the initial 4.82-second run and final 0.69-second rerun. |
-| Affected-source MyPy | PASS | No issues in the three affected source files. |
+| Global preflight | PASS | Release remote remained `ed6cdf84235f0cce91e70df150c55ee1b45aee7d`; PR #49 remained draft and unmerged; PR #51 matched the reviewed head. |
+| Initial scoped Ruff invocation | FAIL: corrected annotation | Initial implementation found one F821 annotation issue; it was corrected and the successful rerun remains historical evidence. |
+| Initial focused and affected tests | PASS | 41 tests passed on the original implementation head. |
+| Initial full default pytest | PASS | 109 tests passed and 4 PostgreSQL-opt-in tests skipped. |
+| Initial full-source MyPy | PASS | No issues in 45 source files. |
+| Independent review `4753208956` | FAIL: CORRECTION REQUIRED | Reviewer scored the reviewed head 84/100 and 79/100 gate-adjusted because the current API could accept a field that mappers silently discarded. |
+| C02 premature exposure removal | PASS | Current `KnowledgeObject` is restored to its exact Release 1.7 public shape; T08 adds no replacement field. |
+| Standalone composition boundary | PASS | `KnowledgeContext` forbids extra fields, parses typed references, validates collections automatically, and preserves valid input order. |
+| First C02 scoped Ruff invocation | FAIL: corrected annotation style | UP037 identified one unnecessary quoted return annotation in the new standalone validator; it was removed before final validation. |
+| Corrected scoped Ruff | PASS | All four T08-owned source and test files pass Ruff. |
+| Scoped Ruff format check | PASS | All four T08-owned source and test files are formatted. |
+| Focused context tests | PASS | 44 ContextReference and KnowledgeContext tests passed. |
+| Affected domain/API/import tests | PASS | 11 tests passed, including current-model and OpenAPI non-exposure assertions. |
+| Full default pytest | PASS | 115 tests passed and 4 PostgreSQL-opt-in tests skipped. |
 | Full-source MyPy | PASS | No issues in 45 source files. |
 | PostgreSQL validation | SKIP | T08 changes no persistence layer and makes no PostgreSQL evidence claim. |
-| Report-v2 validation | PASS | The complete pre-PR report passes the unchanged report-v2 validator. |
-| First post-PR Markdown wrapper invocation | NOT RUN | Shell quoting passed escaped newlines to Python and produced a syntax error before the validator body executed; no link-validation result is claimed from it. |
-| Markdown-link validation | PASS | 401 repository Markdown files, 118 local links, and zero broken local targets. |
-| Owned-path, safety, and diff checks | PASS | Exactly five T08-owned paths, zero unexpected files, zero prohibited artifacts, and zero whitespace errors. |
+| First C02 report-v2 invocation | FAIL: corrected score semantics | The validator rejected a nonstandard correction status, narrative pending-score suffixes, and an ambiguous historical reviewer section; no pass is claimed from that invocation. |
+| Report-v2 validation | PASS | The corrected report passes the unchanged report-v2 validator. |
+| Historical post-PR Markdown wrapper invocation | NOT RUN | The initial publication cycle recorded a shell-quoting syntax failure before its validator body executed; no link result was claimed from it. |
+| Markdown-link validation | PASS | Repository-local Markdown targets resolve after C02. |
+| Owned-path, safety, and diff checks | PASS | C02 touches exactly five authorized paths; the final PR has four authorized net paths because the current model is restored; no unexpected or prohibited artifact and no whitespace error remain. |
 
 ## ADR-0024 Contract Mapping
 
-| Accepted contract | Implementation evidence |
+| Accepted contract | Corrected implementation evidence |
 |---|---|
-| Seven minimum context types | `ContextType` contains project, experiment/trial, material, fabric/substrate, formulation reference, process conditions, and test result exactly. |
-| UUID and external identity kinds | `ContextIdKind` contains uuid and external; UUID text is parsed and canonicalized while external IDs retain trimmed governed text and require source system. |
-| Required and optional fields | `ContextReference` implements all ADR-0024 fields with deterministic blank and type validation. |
-| Bounded attributes | Maximum key, collection, string, nesting, and serialized-byte limits prohibit bytes, deep payloads, and recognized credential content. |
-| Unique link key | Collection validation uses context type, normalized reference ID, and normalized relationship role. |
-| Duplicate and conflict behavior | Exact duplicate, identity conflict, and same-link-key metadata conflict have typed stable codes; no merge, replacement, version choice, or last-write behavior exists. |
-| Organization inheritance | References own no organization field; a pure comparison helper rejects known cross-organization links and fails closed when verification is required but unavailable. |
-| Knowledge Object integration | `context_references` is typed and validated on Knowledge Object creation and validation. |
-| Legacy compatibility | `related_entities` remains an opaque separate UUID list; no context type, display name, authority, or merge is inferred. |
-| Ontology boundary | No standalone context entity, CRUD route, persistence table, or Technical Textiles model is introduced. |
+| Seven minimum context types | `ContextType` contains exactly project, experiment/trial, material, fabric/substrate, formulation reference, process conditions, and test result. |
+| UUID and external identity kinds | UUID text is parsed and canonicalized; external IDs preserve governed text and require a non-blank source system. |
+| Required and optional fields | `ContextReference` implements the ADR fields with deterministic blank and type validation. |
+| Bounded attributes | Key, collection, string, nesting, and serialized-byte limits reject bytes, deep payloads, and recognized credential content. |
+| Duplicate and conflict behavior | Exact duplicates, identity conflicts, and same-link-key metadata conflicts produce typed stable codes without merge or replacement. |
+| Organization inheritance | References own no organization field; the pure comparison helper rejects cross-organization and required-but-unverifiable links. |
+| Composition boundary | `KnowledgeContext.references` is the standalone automatically validated value object that T02 may place inside Knowledge Object v2. |
+| Current-model boundary | Current `KnowledgeObject` fields, JSON Schema, and OpenAPI do not advertise canonical context. |
+| Legacy compatibility | Current `related_entities` remains unchanged and opaque; no UUID is reinterpreted or merged. |
+| Ontology boundary | No standalone context entity, CRUD route, persistence table, or Technical Textiles application model is introduced. |
 
 ## Acceptance-Criteria Evidence
 
+The following executed-test evidence maps every corrected acceptance criterion:
+
 - [x] Every minimum context type has one explicit enum value. Evidence: the
   seven-value parameterized test passes.
-- [x] UUID references normalize and invalid UUIDs fail clearly. Evidence:
-  canonical serialization and stable Pydantic error-code tests pass.
+- [x] UUID references normalize and invalid UUIDs fail with stable codes.
+  Evidence: canonical UUID and negative-code tests pass.
 - [x] External references require a non-blank source system. Evidence: positive,
   missing, and blank cases pass.
-- [x] Display name and optional text fields reject blank values. Evidence: all
+- [x] Required and optional text fields reject blank values. Evidence: all
   field-specific negative tests pass.
 - [x] Attributes are shallow, finite, size-bounded, and credential-aware.
-  Evidence: scalar, shallow object/list, bytes, deep nesting, key, and value
-  tests pass.
-- [x] Duplicate and identity/version/source conflicts are deterministic.
-  Evidence: exact duplicate, version, id-kind, source-system, and metadata-key
-  conflict tests assert stable typed codes.
-- [x] Valid collections preserve input order. Evidence: the two-reference order
-  test passes and validation performs no sorting.
-- [x] Organization boundaries fail closed when required. Evidence: same,
-  different, unverifiable-required, and explicitly deferred cases pass.
-- [x] Knowledge Object integration is typed and tested. Evidence: Pydantic
-  construction and duplicate rejection tests pass.
-- [x] Legacy UUID compatibility is explicit and non-merging. Evidence: a model
-  with both channels preserves each independently without inference.
-- [x] A synthetic first vertical slice represents all seven context categories.
-  Evidence: the generalized fixture test passes with no real data.
-- [x] Existing default behavior remains test-clean. Evidence: full pytest and
-  full-source MyPy pass; scoped Ruff and format pass.
+  Evidence: scalar, structure, bytes, depth, size, and credential tests pass.
+- [x] Duplicate, identity, version, source-system, and link-key conflicts are
+  deterministic. Evidence: direct and standalone-model conflict tests pass.
+- [x] `KnowledgeContext` construction, extra-field rejection, automatic
+  duplicate/conflict checks, input ordering, and serialization round trip pass.
+  Evidence: all focused standalone-model assertions pass.
+- [x] The synthetic seven-context bundle is represented by `KnowledgeContext`
+  with generalized values only. Evidence: the ordered seven-value fixture passes.
+- [x] Current `KnowledgeObject.model_fields`, JSON Schema, and POST
+  `/knowledge` OpenAPI schema contain no `context_references`. Evidence: the
+  model and OpenAPI regression assertions pass.
+- [x] Current `related_entities` behavior remains unchanged. Evidence: the
+  Release 1.7 compatibility assertion passes.
+- [x] Full pytest, full MyPy, scoped Ruff, and scoped format checks pass.
+  Evidence: 115 passed/4 skipped, MyPy 45 files, and clean scoped Ruff results.
 
 ## Architecture Impact
 
-The new module is a Pydantic-only domain value-object boundary. It imports no
-FastAPI, SQLAlchemy, repository, service, migration, platform schema, or
-Technical Textiles implementation. `ContextReference` is embedded rather than
-promoted to standalone entities, preserving ADR-0024 and the narrow MVP.
+T08 now delivers only a Pydantic domain foundation. `ContextReference` and
+`KnowledgeContext` import no FastAPI, SQLAlchemy, repository, service,
+migration, platform schema, or Technical Textiles implementation.
 
-Canonical `context_references` and legacy `related_entities` may temporarily
-coexist, but their authorities are deliberately separate:
+The corrected ownership boundary is explicit:
 
-- `context_references` is canonical typed context;
-- `related_entities` is an opaque Release 1.7 UUID compatibility channel;
-- no arbitrary UUID receives an invented type, label, source, or version;
-- neither channel is merged into the other;
-- final Knowledge Object v2 coexistence/deprecation policy remains T02-owned;
-- persistence mapping remains T05-owned and API presentation remains T09-owned.
+- T08 owns the standalone minimum-context value objects and validation;
+- T02 owns composition inside the versioned Knowledge Object v2 contract;
+- T05 owns migration, persistence-record, and mapper integration;
+- T09 owns request, response, and OpenAPI exposure;
+- issue #46 remains open until T02 integration is independently accepted.
+
+No current API schema or mapper advertises canonical context because of T08.
+The Release 1.7 `KnowledgeObject` public shape is unchanged from the release
+baseline.
 
 ## Security and Data Impact
 
 Tests use only synthetic generalized identifiers and generated UUIDs. Bounded
 attributes reject raw bytes, non-finite values, deep structures, oversized
 payloads, credential-like keys, and recognized secret/token patterns. This is
-defense in depth, not a claim that pattern matching can identify every secret.
+defense in depth, not a complete secret-detection or authorization boundary.
 
-Organization validation compares boundary metadata supplied by an authorized
-application use case. It does not perform lookup, implement IAM, prove tenancy,
-or authorize real data. No confidential industrial data was ingested.
+Organization validation compares boundary metadata supplied by a later
+authorized application use case. It does not implement IAM, prove tenancy,
+perform external lookup, or authorize real data. No confidential industrial
+data was ingested.
 
 ## Known Limitations
 
-- Current persistence mappers and records do not store `context_references`.
-  Non-empty canonical context must not be treated as persistence/API
-  round-trip capable until T05 and T09 integrate the accepted field.
-- Exact Knowledge Object v2 authority, organization field, and final legacy
-  deprecation behavior remain T02 scope.
-- Organization verification requires trusted metadata supplied by a later
-  application use case; no external lookup infrastructure is invented.
-- Attribute secret-pattern checks reduce obvious risk but do not replace a
-  dedicated secret scanner, authorization, or data-governance review.
-- No PostgreSQL, migration, repository, mapper, service, or API result is
-  claimed by this T08 branch.
+- Knowledge Object v2 does not yet compose `KnowledgeContext`; that remains
+  T02 scope and issue #46 remains open.
+- Persistence, mapper, and live PostgreSQL integration remain T05 scope.
+- API exposure and explicit request/response contracts remain T09 scope.
+- Organization verification requires trusted metadata from a later use case.
+- Secret-pattern checks remain defense in depth.
+- No PostgreSQL, migration, repository, mapper, service, or API implementation
+  result is claimed by T08.
 
 ## Lost Points and Correction Items
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
+| C02 | Independent review `4753208956` | 21 | RESOLVED | Removed premature KnowledgeObject exposure; added standalone KnowledgeContext; added model, JSON Schema, and OpenAPI regressions; reran the full validation matrix. |
 
-No self-score points remain lost within the authorized T08 domain scope. The
-first Ruff finding was corrected and revalidated before publication.
+The previous reviewer score of 84/100 and gate-adjusted score of 79/100 remain
+attached to reviewed head `ca66f08021820fcef5434d75e50a1bd590105dbe`.
+They are not rewritten by this correction.
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 25 | Stable field, identity, duplicate, conflict, organization, and attribute contracts are covered by executed tests. | None. |
-| Scope and acceptance criteria | 20 | 20 | The five owned files satisfy issue #46 without entering T02, persistence, API, ontology, or CRUD scope. | None. |
-| Architecture and North-Star alignment | 15 | 15 | Embedded typed context implements ADR-0024 and preserves canonical-domain and narrow-MVP rules. | None. |
-| Verification, tests, or validation | 15 | 15 | Focused, affected, full pytest, affected/full MyPy, scoped Ruff/format, report, links, ownership, safety, and diff checks pass. | None. |
-| Security, privacy, and data governance | 10 | 10 | Synthetic fixtures, bounded attributes, fail-closed organization comparison, and no-real-data boundaries are tested and documented. | None. |
-| Documentation and traceability | 10 | 10 | Starting and implementation SHAs, ADR mapping, commands, failures, results, compatibility, and limitations are explicit. | None. |
-| Maintainability and clarity | 5 | 5 | Enums, typed errors, pure validators, stable codes, bounded constants, and isolated exports keep the contract reviewable. | None. |
-| Total | 100 | 100 | All authorized T08 criteria are complete and ready for independent review. | None. |
+| Correctness and evidence | 25 | 25 | Field, identity, conflict, organization, bounded-attribute, standalone-composition, and non-exposure behavior are tested. | None after C02. |
+| Scope and acceptance criteria | 20 | 20 | Exactly five T08-owned paths change; no dependent layer or current public model gains context. | None after C02. |
+| Architecture and North-Star alignment | 15 | 15 | The corrected composition boundary prevents silent persistence loss and preserves downstream ownership. | None after C02. |
+| Verification, tests, or validation | 15 | 15 | Focused, affected, full pytest, full MyPy, scoped Ruff/format, report, links, ownership, safety, and diff checks pass. | None. |
+| Security, privacy, and data governance | 10 | 10 | Synthetic fixtures and bounded security checks preserve the no-real-data boundary. | None. |
+| Documentation and traceability | 10 | 10 | Original results, review ID, 84/79 scores, C02, failures, ownership, limitations, and current evidence are retained. | None. |
+| Maintainability and clarity | 5 | 5 | One standalone value object centralizes collection validation without coupling to application layers. | None. |
+| Total | 100 | 100 | C02 is implemented and locally ready for independent re-review. | Independent acceptance remains pending. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending independent review.
+Reviewer status: Pending independent re-review.
+
+Independent reviewer outcome on previous head: CORRECTION REQUIRED
+
+Historical independent reviewer score: 84/100
+
+Independent review ID: 4753208956
+
+Reviewed head: ca66f08021820fcef5434d75e50a1bd590105dbe
+
+Historical gate-adjusted score: 79/100
+
+Corrected-head reviewer score remains pending.
 
 ## Final Score
+
+Codex corrected-head self-score: 100/100
 
 Provisional weighted score: Pending
 
 Gate-adjusted score: Pending
 
+The historical 84/100 reviewer and 79/100 gate-adjusted results remain evidence
+for the previous head only.
+
 ## Critical-Gate Declaration
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Every implementation claim maps to code, tests, or an executed validation result. |
-| G2 Confidential data | PASS | Synthetic fixtures and final prohibited-artifact scans preserve the data boundary. |
-| G3 Approved scope and architecture | PASS | ADR-0024 is implemented without changing Accepted substance or dependent-layer ownership. |
+| G1 Verified claims | PASS | Corrected-head claims map to code, tests, or executed validation; failed invocations remain recorded. |
+| G2 Confidential data | PASS | Synthetic fixtures and prohibited-artifact scans preserve the data boundary. |
+| G3 Approved scope and architecture | PASS | Premature public-model exposure is removed; T02/T05/T09 ownership is explicit. |
 | G4 Required validation | PASS | Focused, affected, full, type, lint, format, report, link, ownership, safety, and diff checks ran. |
-| G5 File ownership | PASS | Only the context domain module, necessary Knowledge Object/export integration, focused tests, and T08 report change. |
-| G6 Acceptance completeness | PASS | Every T08 acceptance item is checked with evidence and no in-scope defect remains. |
+| G5 File ownership | PASS | C02 touches five authorized paths; the PR has four authorized net paths because the current model is restored exactly. |
+| G6 Acceptance completeness | PASS | C02 and the authorized corrected T08 acceptance items are evidenced; independent re-review remains external. |
 
 Critical-gate result: PASS
 
@@ -218,27 +261,29 @@ Critical-gate result: PASS
 
 | Gate | Status | Applicability Evidence |
 |---|---|---|
-| G7 Persistence alignment and PostgreSQL evidence | PASS | T08 changes no persistence and claims no PostgreSQL result; T05 integration remains explicitly required before round-trip acceptance. |
-| G8 Lifecycle, trust, and audit bypass prevention | PASS | T08 does not modify lifecycle, review, trust, mutation, audit, service, or route behavior. |
+| G7 Persistence alignment and PostgreSQL evidence | PASS | T08 exposes no canonical context through the persisted current model and claims no PostgreSQL result. |
+| G8 Lifecycle, trust, and audit bypass prevention | PASS | Removing premature exposure eliminates the reviewed silent-loss path; no lifecycle, audit, service, or route behavior changes. |
 
 ## Correction-Cycle History
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
-| 1 | 99 | Initial scoped Ruff found one unresolved forward-reference annotation in the Knowledge Object validator. | Quoted the return annotation without changing behavior and reran all scoped checks. | 100 | 41 focused/affected tests, scoped Ruff/format, affected MyPy, full pytest, and full-source MyPy pass. | CLOSED |
+| 1 | 99 | Initial scoped Ruff found one unresolved forward-reference annotation in the original Knowledge Object validator. | Quoted the annotation and reran scoped and full checks. | 100 | 41 focused/affected tests, scoped Ruff/format, full pytest, and full MyPy passed. | CLOSED |
+| 2 | 79 | Review `4753208956` found that current API input could expose canonical context that mappers silently discarded. | Restored current KnowledgeObject shape; introduced standalone KnowledgeContext; replaced integration tests with composition and API/OpenAPI non-exposure regressions; corrected one UP037 annotation finding. | 100 | 44 focused tests, 11 affected tests, 115 passed/4 skipped full suite, MyPy 45 files, scoped Ruff/format, report, links, ownership, diff, and safety checks passed. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- T02 should own final Knowledge Object v2 authority, organization metadata,
-  and the explicit deprecation path for `related_entities`.
-- T05 should persist canonical context with migration/model/mapper and live
-  PostgreSQL round-trip evidence.
-- T09 should expose context through explicit request/response contracts only
-  after persistence compatibility exists.
-- Issue #46 and this draft PR should remain open until independent review.
+- T02 should compose `KnowledgeContext` only in the explicit versioned
+  Knowledge Object v2 contract.
+- T05 should add migration, record, mapper, and live PostgreSQL round-trip
+  evidence before persistence support is claimed.
+- T09 should expose context only after the versioned domain and persistence
+  contracts are ready.
+- Issue #46 remains open until T02 integration is independently accepted.
 
 ## Blockers
 
-None.
+None within the corrected T08 scope. Independent re-review is required before
+merge or Wave 1B authorization.
 
-Recommendation: READY FOR INDEPENDENT REVIEW
+Recommendation: READY FOR INDEPENDENT RE-REVIEW
