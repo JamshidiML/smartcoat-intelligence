@@ -8,9 +8,9 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/48
 
 Branch: `thread/18-10-quality-baseline`
 
-Draft PR: `Pending (pre-PR)`
+Draft PR: `https://github.com/JamshidiML/smartcoat-intelligence/pull/52`
 
-Final status: `CORRECTION IN PROGRESS`
+Final status: `BLOCKED — HUMAN DECISION REQUIRED`
 
 ## Objective
 
@@ -66,6 +66,7 @@ No automatic fix or formatting command was run.
 | Product and configuration tests | SKIP | This measurement-only branch changes no executable or configuration file. |
 | First report-v2 invocation | FAIL: section table ambiguity | Auxiliary measurement and G7-G8 tables were initially nested inside v2-owned sections; no report-validation pass is claimed from that invocation. |
 | Report-v2 validation | PASS | The corrected pre-PR report passes the unchanged v2 validator; the first failed invocation remains recorded separately. |
+| First post-PR Markdown wrapper invocation | NOT RUN | Shell quoting passed escaped newlines to Python and produced a syntax error before the validator body executed; no link-validation result is claimed from it. |
 | Markdown-link validation | PASS | 401 Markdown files, 118 local links, and zero broken local targets. |
 | Owned-path, safety, and diff checks | PASS | Exactly one authorized report path, zero unexpected files, zero prohibited artifacts, and zero whitespace errors. |
 
