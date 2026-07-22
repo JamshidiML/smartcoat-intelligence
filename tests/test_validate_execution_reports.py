@@ -348,6 +348,40 @@ def test_invalid_final_status_is_rejected() -> None:
     assert_has_error(report, "invalid Final status")
 
 
+@pytest.mark.parametrize(
+    "branch",
+    (
+        "thread/18-08-minimum-context",
+        "fix/18-36-ruff-format-baseline",
+    ),
+)
+def test_allowed_execution_report_branch_prefixes_are_accepted(branch: str) -> None:
+    report = make_report().replace("thread/99-synthetic", branch)
+    assert validate_text(report) == []
+
+
+@pytest.mark.parametrize(
+    "branch",
+    (
+        "main",
+        "bare-branch-name",
+        "release/1.8-knowledge-capture-core",
+        "feature/example",
+        "docs/example",
+        "refactor/example",
+    ),
+)
+def test_unapproved_execution_report_branch_prefixes_are_rejected(branch: str) -> None:
+    report = make_report().replace("thread/99-synthetic", branch)
+    assert_has_error(report, "Branch must start with an allowed prefix: thread/, fix/")
+
+
+def test_branch_prefix_error_names_every_allowed_prefix() -> None:
+    errors = validate_text(make_report().replace("thread/99-synthetic", "main"))
+    branch_errors = [error for error in errors if error.startswith("Branch must start")]
+    assert branch_errors == ["Branch must start with an allowed prefix: thread/, fix/"]
+
+
 def test_cli_returns_nonzero_for_invalid_report(tmp_path: Path) -> None:
     report = tmp_path / "invalid.md"
     report.write_text("# Invalid\n", encoding="utf-8")
@@ -386,4 +420,18 @@ def test_actual_thread_reports_validate_when_configured() -> None:
     paths = [Path(value) for value in configured.split(os.pathsep)]
     assert len(paths) == 10
     failures = {str(path): validate_path(path) for path in paths if validate_path(path)}
+    assert failures == {}
+
+
+def test_all_committed_v2_reports_remain_valid() -> None:
+    repository_root = Path(__file__).parents[1]
+    reports = sorted((repository_root / "docs" / "execution" / "reports").rglob("*.md"))
+    v2_reports = [
+        path
+        for path in reports
+        if "Report schema version: `smartcoat-execution-report-v2.0`"
+        in path.read_text(encoding="utf-8")
+    ]
+    assert v2_reports
+    failures = {str(path): validate_path(path) for path in v2_reports if validate_path(path)}
     assert failures == {}

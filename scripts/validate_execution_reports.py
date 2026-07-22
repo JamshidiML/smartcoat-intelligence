@@ -20,6 +20,10 @@ RUBRIC = {
 }
 
 REPORT_SCHEMA_VERSION = "smartcoat-execution-report-v2.0"
+ALLOWED_BRANCH_PREFIXES = (
+    "thread/",
+    "fix/",
+)
 REQUIRED_METADATA = (
     "Report schema version",
     "Thread ID",
@@ -417,8 +421,9 @@ def validate_text(text: str, repository_root: Path | None = None) -> list[str]:
         errors.append("Thread ID must use TNN format")
     if not re.match(r"https://github\.com/.+?/issues/\d+$", report.metadata["Issue"]):
         errors.append("Issue must be a GitHub issue URL")
-    if not report.metadata["Branch"].startswith("thread/"):
-        errors.append("Branch must start with thread/")
+    branch = report.metadata["Branch"]
+    if not any(branch.startswith(prefix) for prefix in ALLOWED_BRANCH_PREFIXES):
+        errors.append("Branch must start with an allowed prefix: thread/, fix/")
     draft_pr = report.metadata["Draft PR"]
     pre_pr = draft_pr == "Pending (pre-PR)"
     if pre_pr and status != "CORRECTION IN PROGRESS":
