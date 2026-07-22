@@ -1,7 +1,21 @@
 """Domain models for SmartCoat canonical enterprise objects."""
 
+from smartcoat.domain.context_references import (
+    ContextIdKind,
+    ContextReference,
+    ContextType,
+    KnowledgeContext,
+)
 from smartcoat.domain.decision_objects import DecisionObject
 from smartcoat.domain.events import EnterpriseEvent
 from smartcoat.domain.knowledge_objects import KnowledgeObject
 
-__all__ = ["KnowledgeObject", "DecisionObject", "EnterpriseEvent"]
+__all__ = [
+    "ContextIdKind",
+    "ContextReference",
+    "ContextType",
+    "DecisionObject",
+    "EnterpriseEvent",
+    "KnowledgeContext",
+    "KnowledgeObject",
+]
