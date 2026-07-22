@@ -1,5 +1,9 @@
 from smartcoat.storage.database.base import Base
-from smartcoat.storage.database.models import DecisionObjectRecord, EnterpriseEventRecord, KnowledgeObjectRecord
+from smartcoat.storage.database.models import (
+    DecisionObjectRecord,
+    EnterpriseEventRecord,
+    KnowledgeObjectRecord,
+)
 from smartcoat.storage.database.session import engine
 
 

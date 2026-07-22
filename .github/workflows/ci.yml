@@ -40,5 +40,14 @@ jobs:
       - name: Verify installed dependency compatibility
         run: python -m pip check
 
+      - name: Run Ruff checks
+        run: python -m ruff check .
+
+      - name: Verify Ruff formatting
+        run: python -m ruff format --check .
+
+      - name: Run MyPy
+        run: python -m mypy src
+
       - name: Run unit and route tests
         run: python -m pytest
