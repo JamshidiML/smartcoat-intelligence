@@ -10,7 +10,7 @@ Branch: `fix/18-36-ruff-format-baseline`
 
 Draft PR: `https://github.com/JamshidiML/smartcoat-intelligence/pull/53`
 
-Final status: `BLOCKED — HUMAN DECISION REQUIRED`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -25,6 +25,20 @@ Mechanical remediation commit: `cfd0086`.
 
 CI-gate candidate SHA:
 `1fbe0e2d559a0980f913a03ca8ed03429bdcd960`.
+
+Previous protected head:
+`1f15ee549da99296e0f5c03386e13f52bfe10025`.
+
+Previous independent review ID: `4754026136`.
+
+Previous-head reviewer result:
+`99/100 — implementation accepted, report-contract correction required`.
+
+Integrated release SHA:
+`79853868b102b844d1cd2b92854d5ec6e101df1f`.
+
+Release-integration merge commit:
+`3c2a231a2f8d007e10bb08c1ee4ef45942f071fd`.
 
 The final report-publication head and its equivalent CI result are recorded in
 PR metadata because a Git commit cannot embed its own resulting SHA.
@@ -63,6 +77,10 @@ behavior, or product contract is modified.
 - `python -c '<standard-library Markdown local-link validator>'`
 - `python -c '<exact seven-path ownership and unexpected-file validator>'`
 - `python -c '<secret, environment, binary, credential, personal-data, and confidential-data validator>'`
+- `git merge --no-ff origin/release/1.8-knowledge-capture-core -m "Merge release/1.8-knowledge-capture-core into issue #36 remediation"`
+- `python -m pytest tests/test_validate_execution_reports.py -q -k branch_prefix`
+- `python -m pytest tests/test_validate_execution_reports.py -q`
+- `python scripts/validate_execution_reports.py $(find docs/execution/reports -type f -name '*.md' -print | sort)`
 
 All Python commands used the constrained shared Python 3.12 environment at
 `/Users/mohsenjamshidi/Documents/Smartcoat/worktrees/release-1.8/.venv`.
@@ -85,10 +103,19 @@ All Python commands used the constrained shared Python 3.12 environment at
 | Post-CI-edit local matrix | PASS | Pytest 71/4, MyPy 44 files, Ruff zero, format 55, and pip check all passed again. |
 | CI gate preservation | PASS | Existing pip check and pytest steps remain; Ruff, Ruff format, and MyPy were added in a separate CI-only commit. |
 | GitHub Actions candidate | PASS | SmartCoat CI run 39 completed successfully on `1fbe0e2d559a0980f913a03ca8ed03429bdcd960`; all new and retained steps passed. |
-| Report-v2 validation | FAIL: branch-prefix contract mismatch | The unchanged validator requires report metadata Branch to begin with `thread/`, while the authorized exact branch is `fix/18-36-ruff-format-baseline`. |
+| Previous-head report-v2 validation | FAIL: branch-prefix contract mismatch | The previous validator required report metadata Branch to begin with `thread/`, while the authorized exact branch is `fix/18-36-ruff-format-baseline`. |
 | Markdown-link validation | PASS | Repository-local Markdown links resolve. |
 | Ownership, diff, and safety checks | PASS | Exactly seven authorized paths, no unexpected artifact, no whitespace error, and no prohibited secret, environment, binary, personal, or confidential data remain. |
 | PostgreSQL validation | SKIP | No persistence behavior or migration changed; default PostgreSQL-opt-in tests remained skipped and no PostgreSQL claim is made. |
+| Previous independent review `4754026136` | FAIL: report-contract correction required | Reviewer awarded 99/100 to protected head `1f15ee549da99296e0f5c03386e13f52bfe10025`; implementation was accepted and the truthful `fix/` report remained the only correction. |
+| Release integration | PASS | Normal merge commit `3c2a231a2f8d007e10bb08c1ee4ef45942f071fd` integrates T08 and validator corrections from release `79853868b102b844d1cd2b92854d5ec6e101df1f` without rewriting PR #53 history. |
+| Current Ruff and format | PASS | Ruff reports zero findings and all 57 files are formatted. |
+| Current MyPy and pytest | PASS | MyPy reports no issues in 45 source files; full pytest reports 125 passed and 4 PostgreSQL-opt-in tests skipped. |
+| Current pip compatibility | PASS | `pip check` reports no broken requirements. |
+| Current validator tests | PASS | 9 focused branch-prefix tests passed; the complete module reports 40 passed and 1 environment-configured test skipped. |
+| Current all-report validation | PASS | All 15 committed execution reports pass the merged report-v2 validator. |
+| Current PR #53 report-v2 | PASS | The merged validator accepts the truthful `fix/18-36-ruff-format-baseline` metadata; no branch or report metadata was falsified. |
+| Current links, ownership, diff, and safety | PASS | 404 tracked Markdown files and 118 local targets pass; the net PR diff is exactly seven paths with zero prohibited, binary, credential, personal-data, confidential-data, whitespace, or untracked findings. |
 
 GitHub Actions evidence:
 https://github.com/JamshidiML/smartcoat-intelligence/actions/runs/29915528863
@@ -105,7 +132,7 @@ https://github.com/JamshidiML/smartcoat-intelligence/actions/runs/29915528863
 | Ruff total | 11 | Four files |
 | Ruff format failures | 3 | `init_db.py`, `ingestion/validation.py`, `database/models.py` |
 
-### After
+### Original Remediation Head After
 
 | Gate | Result |
 |---|---|
@@ -114,6 +141,20 @@ https://github.com/JamshidiML/smartcoat-intelligence/actions/runs/29915528863
 | `python -m mypy src` | PASS, 44 source files |
 | `python -m pytest -q` | PASS, 71 passed and 4 skipped |
 | `python -m pip check` | PASS, no broken requirements |
+
+### Current Corrected Head After Release Integration
+
+| Gate | Result |
+|---|---|
+| `python -m ruff check .` | PASS, zero findings |
+| `python -m ruff format --check .` | PASS, all 57 files formatted |
+| `python -m mypy src` | PASS, 45 source files |
+| `python -m pytest -q` | PASS, 125 passed and 4 skipped |
+| `python -m pip check` | PASS, no broken requirements |
+| Focused validator tests | PASS, 9 tests |
+| Complete validator tests | PASS, 40 passed and 1 configured skip |
+| All execution reports | PASS, 15 reports |
+| PR #53 report-v2 | PASS with truthful `fix/` metadata |
 
 ## Acceptance-Criteria Evidence
 
@@ -139,8 +180,12 @@ The following evidence maps the issue #36 and authorized Option A criteria:
 - [x] No confidential industrial data is used. Evidence: generalized code
   changes and final safety scans contain no real dataset or prohibited artifact.
 - [x] Issue #36 remains open and PR #53 remains draft and unmerged.
-- [ ] Report-v2 passes on the exact authorized branch. Evidence: the validator
-  rejects the honest `fix/` metadata because it only accepts `thread/`.
+- [x] Report-v2 passes on the exact authorized branch. Evidence: merged PR #54
+  accepts exactly `thread/` and `fix/`; the honest PR #53 report passes.
+- [x] Release integration preserves all required histories. Evidence: merge
+  commit `3c2a231a2f8d007e10bb08c1ee4ef45942f071fd` has the previous protected
+  head and current release as its two parents and the net diff remains seven
+  paths.
 
 ## Architecture Impact
 
@@ -157,6 +202,10 @@ The CI workflow preserves installation, pip compatibility, and pytest. It adds
 repository-wide Ruff, Ruff-format, and MyPy gates before tests. No application
 architecture, API, schema, migration, or runtime ownership boundary changes.
 
+The release integration brings in the T08 foundation and the accepted
+validator-prefix correction through one normal merge commit. It preserves the
+five mechanical fixes, CI gates, PR #53 report history, and all source commits.
+
 ## Security and Data Impact
 
 The remediation uses repository source and generalized quality metadata only.
@@ -165,13 +214,16 @@ data, or real dataset is added. No dependency or permissions scope changes.
 
 ## Known Limitations
 
-- The unchanged report-v2 validator hard-codes `thread/` as the only accepted
-  branch prefix, while this authorization requires the exact `fix/` branch.
+- The previous report-v2 validator hard-coded `thread/` as the only accepted
+  branch prefix. That historical blocker is resolved by merged PR #54, which
+  accepts exactly `thread/` and `fix/`.
 - Live PostgreSQL was not run because no persistence behavior or migration
   changed; four opt-in tests remain explicitly skipped in default mode.
 - CI run 39 validates the executable and CI candidate before this report-only
   publication commit. The final report-head CI result is recorded in PR
   metadata and the orchestration return.
+- Corrected-head independent re-review is still required before PR #53 can be
+  approved or merged, and issue #36 remains open.
 - This is issue #36 remediation only, not final T10 integration, Release 1.8
   completion, production readiness, or Wave 1B authorization.
 
@@ -179,7 +231,7 @@ data, or real dataset is added. No dependency or permissions scope changes.
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | Report-v2 branch-prefix contract | 1 | BLOCKED | Keep the required honest `fix/` branch and unchanged validator; human authorization is required to align one contract without falsifying evidence or widening this seven-file PR. |
+| C01 | Report-v2 branch-prefix contract | 1 | RESOLVED | Merged PR #54 accepts exactly `thread/` and `fix/`; this truthful `fix/` report now passes without branch or metadata falsification. |
 
 ## Codex Self-Score
 
@@ -188,15 +240,23 @@ data, or real dataset is added. No dependency or permissions scope changes.
 | Correctness and evidence | 25 | 25 | Exact before/after findings, behavior equivalence, local commands, and CI steps are evidenced. | None. |
 | Scope and acceptance criteria | 20 | 20 | The PR contains exactly five measured files, CI, and this report with no prohibited change. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Mechanical maintenance and quality gates preserve product and ownership boundaries. | None. |
-| Verification, tests, or validation | 15 | 14 | All runtime and quality checks pass, but report-v2 rejects the required branch prefix. | One point for the unresolved contract mismatch. |
+| Verification, tests, or validation | 15 | 15 | Runtime, quality, validator, all-report, report-v2, link, ownership, diff, safety, and CI-candidate evidence pass. | None. |
 | Security, privacy, and data governance | 10 | 10 | Safety scans and generalized inputs preserve the no-confidential-data boundary. | None. |
 | Documentation and traceability | 10 | 10 | Start SHA, before/after counts, commits, commands, CI, ownership, and blocker are explicit. | None. |
 | Maintainability and clarity | 5 | 5 | Repository-wide clean gates replace known debt without ignores or configuration weakening. | None. |
-| Total | 100 | 99 | Implementation and CI are ready; one machine-report contract conflict remains. | Report-v2 branch-prefix mismatch. |
+| Total | 100 | 100 | The corrected branch is fully validated and ready for corrected-head independent re-review. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending independent review.
+Reviewer status: Pending independent re-review.
+
+Historical previous-head reviewer outcome: IMPLEMENTATION ACCEPTED; REPORT-CONTRACT CORRECTION REQUIRED
+
+Historical previous-head reviewer score: 99/100
+
+Historical independent review ID: 4754026136
+
+Historical reviewed head: 1f15ee549da99296e0f5c03386e13f52bfe10025
 
 ## Final Score
 
@@ -211,11 +271,11 @@ Gate-adjusted score: Pending
 | G1 Verified claims | PASS | Before/after outputs, commit separation, and GitHub Actions evidence are recorded. |
 | G2 Confidential data | PASS | Final scans find no prohibited secret, environment, binary, personal, or confidential artifact. |
 | G3 Approved scope and architecture | PASS | Only Option A mechanical files, CI gates, and the required report change. |
-| G4 Required validation | FAIL | Runtime, quality, CI, links, ownership, diff, and safety pass; report-v2 cannot accept the required `fix/` branch. |
+| G4 Required validation | PASS | Runtime, quality, validator, reports, CI candidate, links, ownership, diff, safety, and truthful report-v2 validation pass. |
 | G5 File ownership | PASS | Exactly seven authorized paths are present. |
-| G6 Acceptance completeness | FAIL | The code and CI criteria are complete, but report-v2 remains blocked on incompatible branch vocabulary. |
+| G6 Acceptance completeness | PASS | The code, CI, release integration, exact ownership, and truthful report-v2 criteria are complete for independent re-review. |
 
-Critical-gate result: FAIL
+Critical-gate result: PASS
 
 ## Release 1.8 Additional Gates
 
@@ -230,18 +290,18 @@ Critical-gate result: FAIL
 |---:|---:|---|---|---:|---|---|
 | 1 | 100 | Exact baseline contained 11 Ruff findings, 3 format failures, and no CI enforcement. | Applied five-file mechanical remediation and added three gates in a separate CI-only commit after local success. | 100 | 71/4 pytest, MyPy 44 files, Ruff zero, format 55, pip check, and CI run 39 pass. | CLOSED |
 | 2 | 100 | Report-v2 accepts only `thread/` metadata while the authorized exact branch is `fix/18-36-ruff-format-baseline`. | Preserved honest branch evidence and did not modify the validator or create an unauthorized replacement branch. | 99 | Report-v2 exposes the single branch-prefix failure; all other publication checks pass. | BLOCKED |
+| 3 | 99 | Review `4754026136` accepted implementation but required a separate report-contract correction. | Merged release `79853868b102b844d1cd2b92854d5ec6e101df1f`, including T08 and accepted PR #54, through merge commit `3c2a231a2f8d007e10bb08c1ee4ef45942f071fd`; reran the full matrix. | 100 | Ruff zero, format 57, MyPy 45, pytest 125/4, pip, validator 40/1, all 15 reports, truthful report-v2, links, seven-path ownership, diff, and safety pass. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Keep issue #36 open until the remediation PR is independently accepted,
-  merged, and post-merge gates pass.
-- Resolve report-v2 branch-prefix policy in a separately authorized scope or
-  authorize a compliant branch mapping without rewriting this branch history.
+- Keep issue #36 open until the corrected PR #53 head is independently
+  re-reviewed, authorized, merged, and post-merge gates pass.
+- Preserve the merged report-v2 contract and truthful `fix/` metadata.
 - Keep issue #48 open for final T10 integration after all implementation waves.
 - Do not start T02 until both corrected T08 and issue #36 remediation are
   independently accepted and merged.
 
-## Blockers
+## Historical Previous-Head Blocker
 
 Question: Should report-v2 be separately authorized to accept the required
 `fix/` branch prefix, or should a different exact branch be authorized?
@@ -257,6 +317,13 @@ the explicitly required branch and PR identity; C leaves a required machine
 gate failed.
 
 Recommended decision: Choose A in a separately owned correction so this
-seven-file remediation PR remains bounded and its branch history remains intact.
+seven-file remediation PR remains bounded and its branch history remains
+intact. Option A was selected, independently accepted, and merged as PR #54.
 
-Recommendation: BLOCKED — HUMAN DECISION REQUIRED
+## Blockers
+
+None.
+
+## Recommendation
+
+READY FOR INDEPENDENT RE-REVIEW
