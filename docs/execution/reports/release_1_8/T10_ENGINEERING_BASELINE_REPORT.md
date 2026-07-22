@@ -10,7 +10,15 @@ Branch: `thread/18-10-quality-baseline`
 
 Draft PR: `https://github.com/JamshidiML/smartcoat-intelligence/pull/52`
 
-Final status: `BLOCKED — HUMAN DECISION REQUIRED`
+Final status: `100/100 — READY FOR APPROVAL`
+
+Codex self-score: 100/100
+
+Reviewer score: 100/100
+
+Weighted score: 100.0/100
+
+Gate-adjusted score: 100.0/100
 
 ## Objective
 
@@ -18,7 +26,8 @@ Measure and classify the existing Ruff and formatting debt at exact Release 1.8
 SHA `ed6cdf84235f0cce91e70df150c55ee1b45aee7d`, evaluate issue #36 remediation
 options, and recommend a bounded strategy without modifying source, tests,
 configuration, CI, dependencies, migrations, or product behavior. This is not
-final T10 integration or Release 1.8 completion.
+final T10 integration or Release 1.8 completion. Independent review
+`4753214879` accepted this bounded baseline and authorized Option A.
 
 ## Files Changed
 
@@ -69,6 +78,9 @@ No automatic fix or formatting command was run.
 | First post-PR Markdown wrapper invocation | NOT RUN | Shell quoting passed escaped newlines to Python and produced a syntax error before the validator body executed; no link-validation result is claimed from it. |
 | Markdown-link validation | PASS | 401 Markdown files, 118 local links, and zero broken local targets. |
 | Owned-path, safety, and diff checks | PASS | Exactly one authorized report path, zero unexpected files, zero prohibited artifacts, and zero whitespace errors. |
+| Independent review `4753214879` | PASS: ACCEPTED WITHIN T10 BASELINE SCOPE | Reviewer scored the accepted head 100/100 and authorized bounded remediation Option A. |
+| First administrative-closure report-v2 invocation | FAIL: blocker vocabulary | The machine validator required the complete-status Blockers section to contain only `None`; scope caveats remained in Known Limitations and the section was corrected. |
+| Baseline administrative closure | PASS | Scores are 100/100, G1-G8 pass, and no blocker remains within baseline scope; issues #36 and #48 remain open. |
 
 ## Measurement Detail
 
@@ -158,8 +170,8 @@ small but cross-owned debt set and proposes a future decision.
 | C. Baseline debt and enforce changed files only | Reduces conflicts but preserves known debt and requires custom changed-file gate logic. | CI becomes more complex and repository-wide clean commands still fail. | Not preferred for only 11 findings and 3 format files. |
 | D. Temporarily defer mandatory gates | No immediate conflicts, but debt can grow and expiry enforcement becomes administrative. | Leaves lint and formatting outside CI and weakens usability. | Least maintainable; use only if active branch conflict becomes unavoidable. |
 
-Recommended option A is deliberately bounded: after independent approval and
-before Wave 1B/T02, create one dedicated issue #36 remediation PR touching only
+Accepted option A is deliberately bounded: before Wave 1B/T02, create one
+dedicated issue #36 remediation PR touching only
 the five measured files. Apply reviewed mechanical changes, run full pytest and
 MyPy, prove clean repository-wide Ruff and format commands, and enable CI gates
 only after those commands pass. Do not blanket-ignore findings or reformat
@@ -181,6 +193,9 @@ authorized. The future remediation must preserve the same boundary.
   should use the repository's constrained install before enabling CI gates.
 - This report does not prove a remediation diff, full tests after remediation,
   or passing Ruff/format gates because no remediation was authorized.
+- Independent acceptance applies only to this bounded baseline report and
+  Option A sequencing; it is not final T10 integration or Release 1.8 approval.
+- Issues #36 and #48 remain open.
 - T10 final integration, PostgreSQL, migration, product, and release-completion
   validation remain outside this bounded baseline.
 
@@ -204,17 +219,31 @@ unreported implementation defect.
 | Security, privacy, and data governance | 10 | 10 | Measurement used repository metadata only and preserves the synthetic/no-confidential-data boundary. | None. |
 | Documentation and traceability | 10 | 10 | Issue #36 history, exact release SHA, commands, counts, options, risks, and decision blocker are recorded. | None. |
 | Maintainability and clarity | 5 | 5 | Option A is bounded to five measured files with explicit sequencing and gate criteria. | None. |
-| Total | 100 | 100 | The bounded engineering-baseline objective is complete and ready for an independent policy decision. | None. |
+| Total | 100 | 100 | The bounded baseline is independently accepted and administratively ready for approval. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending independent review.
+Independent reviewer outcome: ACCEPTED WITHIN T10 BASELINE SCOPE — OPTION A AUTHORIZED
+
+Independent reviewer score: 100/100
+
+Independent review ID: 4753214879
+
+Accepted head: 46ec3d864616b1c922d8aeeef50ae0d23dc27721
+
+Reviewer total: 100
+
+Reviewer evidence: Review `4753214879` accepted the exact baseline measurement,
+confirmed the bounded report scope, and authorized Option A without treating it
+as final T10 integration.
 
 ## Final Score
 
-Provisional weighted score: Pending
+Provisional weighted score: 100.0
 
-Gate-adjusted score: Pending
+Gate-adjusted score: 100.0
+
+Calculation: `0.40 x 100 + 0.60 x 100 = 100.0`; G1-G8 pass.
 
 ## Critical-Gate Declaration
 
@@ -222,10 +251,10 @@ Gate-adjusted score: Pending
 |---|---|---|
 | G1 Verified claims | PASS | Every count comes from an executed command on the exact clean release SHA. |
 | G2 Confidential data | PASS | Only code-quality metadata and generalized source paths were inspected. |
-| G3 Approved scope and architecture | PASS | The branch makes no policy or code change; independent review retains decision authority. |
+| G3 Approved scope and architecture | PASS | Review `4753214879` accepted the bounded baseline and authorized Option A without authorizing final integration. |
 | G4 Required validation | PASS | Both no-fix measurements and all report publication checks are executed and recorded. |
 | G5 File ownership | PASS | The branch contains only the authorized T10 report. |
-| G6 Acceptance completeness | PASS | Every bounded baseline criterion is evidenced; remediation remains a separate decision. |
+| G6 Acceptance completeness | PASS | Every bounded baseline criterion is evidenced and the independent decision is recorded; remediation remains separate work. |
 
 Critical-gate result: PASS
 
@@ -240,33 +269,18 @@ Critical-gate result: PASS
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
-| 1 | 100 | The release has 11 Ruff findings and 3 format failures, while CI does not enforce either gate. | Classified every finding and proposed four bounded strategies without applying fixes. | 100 | Exact-SHA Ruff output, JSON counts, format diff, CI inspection, and publication checks. | OPEN |
+| 1 | 100 | The release has 11 Ruff findings and 3 format failures, while CI does not enforce either gate. | Classified every finding and proposed four bounded strategies without applying fixes. | 100 | Exact-SHA Ruff output, JSON counts, format diff, CI inspection, and publication checks. | CLOSED |
+| 2 | 100 | Independent policy selection was required before issue #36 remediation could begin. | Review `4753214879` accepted the bounded baseline, authorized Option A, and retained issues #36 and #48 as open follow-up work. | 100 | Reviewer score 100/100, accepted-head identity, unchanged measurements, and final publication validation. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Keep issue #36 open for the independently approved remediation strategy and
+- Keep issue #36 open for the independently approved Option A remediation and
   its required full tests, MyPy, clean Ruff/format, and CI evidence.
 - Keep issue #48 open for final T10 integration after T02 through T09 are
   independently accepted and integrated.
-- Do not create a new issue until independent review decides whether issue #36
-  should use option A, B, C, or D.
+- Start the dedicated issue #36 remediation branch only after this baseline PR
+  is merged into the Release 1.8 branch.
 
 ## Blockers
 
-Recommendation: BLOCKED — HUMAN DECISION REQUIRED
-
-Question: Which issue #36 remediation strategy is approved before Wave 1B/T02?
-
-Options: A, one dedicated five-file remediation PR before further
-implementation; B, staged fixes by owned directory; C, baseline existing debt
-and enforce changed files only; D, defer mandatory gates with an explicit
-expiry condition.
-
-Consequences: Option A resolves a small measured baseline with one review and
-the least future T02/T05 conflict; B delays repository-wide clean gates; C adds
-custom CI complexity while preserving debt; D leaves known gates disabled and
-risks debt growth.
-
-Recommended decision: Approve option A with the exact five-file boundary,
-full pytest and MyPy, constrained Ruff/format proof, no blanket ignores, and CI
-gate adoption only after both repository-wide commands pass.
+None.
