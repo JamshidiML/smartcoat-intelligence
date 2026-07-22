@@ -8,9 +8,9 @@ Issue: https://github.com/JamshidiML/smartcoat-intelligence/issues/48
 
 Branch: `thread/18-10-report-validator-prefix`
 
-Draft PR: `Pending (pre-PR)`
+Draft PR: `https://github.com/JamshidiML/smartcoat-intelligence/pull/54`
 
-Final status: `CORRECTION IN PROGRESS`
+Final status: `READY FOR INDEPENDENT REVIEW`
 
 ## Objective
 
@@ -20,6 +20,9 @@ path checks, URL checks, blocker rules, or any unrelated validator behavior.
 
 Exact starting post-T08 release SHA:
 `7ae355376c4b29907b110744419bc6c9a765dfaa`.
+
+Initial publication SHA:
+`ecef3525bc657a6a1a8560c2960f3d578a1eb7f1`.
 
 The pre-change validator accepted only metadata branches beginning with
 `thread/`. PR #53 is required to use the authorized branch
@@ -69,7 +72,7 @@ automatic Ruff fix or formatter write was run.
 | Exact allowed-prefix implementation | PASS | `ALLOWED_BRANCH_PREFIXES` contains only `thread/` and `fix/`; validation uses `any(branch.startswith(prefix) for prefix in ALLOWED_BRANCH_PREFIXES)`. |
 | Focused branch-prefix tests | PASS | 9 tests passed: two accepted branches, six rejected branch families, and exact allowed-prefix error wording. |
 | Complete validator test module | PASS | 40 tests passed; one environment-configured ten-report integration test skipped because its variable was not set. |
-| Existing committed report regression | PASS | All 13 committed execution reports passed the changed validator, and the in-test report discovery regression passed. |
+| Existing committed report regression | PASS | All 13 pre-existing execution reports and this current report passed the changed validator; the in-test discovery regression also passed. |
 | Full default pytest | PASS | 125 tests passed and 4 PostgreSQL-opt-in tests skipped. |
 | Full-source MyPy | PASS | No issues found in 45 source files. |
 | Scoped Ruff and format | PASS | The modified validator and focused test file passed Ruff and were already formatted. |
@@ -77,8 +80,9 @@ automatic Ruff fix or formatter write was run.
 | Repository-wide Ruff format | FAIL: unchanged issue #36 baseline | The same 3 pre-existing files would be reformatted; PR #53 remains the separate remediation and is unchanged. |
 | Pip compatibility | PASS | `pip check` reported no broken requirements; the disabled-cache warning did not affect dependency validation. |
 | PostgreSQL validation | SKIP | This validator-only correction changes no persistence, migration, repository, mapper, or database behavior. |
-| Report-v2 validation | PASS: pre-PR contract | The report passes as `CORRECTION IN PROGRESS` with `Pending (pre-PR)`; final validation will rerun after the actual draft PR URL is recorded. |
-| Markdown, ownership, safety, and diff checks | NOT RUN: pending publication state | Final three-path, local-link, prohibited-data, unexpected-file, binary, and whitespace checks run after the report is finalized. |
+| Report-v2 validation | PASS | The finalized report passes as `READY FOR INDEPENDENT REVIEW` with the actual draft PR #54 URL. |
+| Markdown-link validation | PASS | All 403 Markdown files were scanned; 118 repository-local targets resolve and none are broken. |
+| Exact ownership, safety, and diff checks | PASS | Exactly three authorized paths change; no unexpected or untracked file, prohibited path, binary diff, credential, personal-data, confidential-data signature, or whitespace error remains. |
 
 ## Acceptance-Criteria Evidence
 
@@ -146,7 +150,7 @@ three-path boundary.
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | PR #53 report-v2 branch conflict | 0 | RESOLVED | Added the exact two-prefix contract and focused positive, negative, message, and all-report regressions. |
+| C01 | PR #53 report-v2 branch conflict | 1 | RESOLVED | Added the exact two-prefix contract and focused positive, negative, message, and all-report regressions. |
 
 No Codex self-score points are lost within the authorized validator-correction
 scope. Independent reviewer scoring remains pending.
@@ -198,7 +202,7 @@ Critical-gate result: PASS
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
-| 1 | 99 | PR #53 used an authorized `fix/` branch that truthful report-v2 metadata rejected. | Added the exact `thread/` and `fix/` tuple, deterministic validation, and focused regressions. | 100 | 9 focused tests, 40 validator tests, 13 report regressions, 125 full tests, MyPy, scoped quality, and pip passed. | CLOSED |
+| 1 | 99 | PR #53 used an authorized `fix/` branch that truthful report-v2 metadata rejected. | Added the exact `thread/` and `fix/` tuple, deterministic validation, and focused regressions. | 100 | 9 focused tests, 40 validator tests, 13 pre-existing report regressions plus the current report, 125 full tests, MyPy, scoped quality, and pip passed. | CLOSED |
 
 ## Recommended Follow-up Issues
 
