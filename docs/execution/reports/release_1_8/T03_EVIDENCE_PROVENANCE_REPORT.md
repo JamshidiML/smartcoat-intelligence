@@ -10,7 +10,7 @@ Branch: `thread/18-03-evidence-provenance`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/57
 
-Final status: `READY FOR INDEPENDENT REVIEW`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -19,20 +19,31 @@ Implement the canonical metadata-only `EvidenceReference` and expanded
 deterministic duplicate and conflict behavior, bounded integrity declarations,
 ordered transformation history, an explicit detached composition with the
 accepted T02 Knowledge Object v2 core, ID-only platform-envelope projection,
-and honest Release 1.7 compatibility adapters.
+and honest Release 1.7 compatibility adapters. Correction Cycle 1 adds an
+alias-free canonical evidence snapshot and complete type-preserving metadata
+comparison in response to independent findings T03-C01 and T03-C02.
 
 Exact starting release SHA:
 `f62f4bbc5554f6d19eb1bd2f60b2f7f74bbf8776`.
 
-Final implementation SHA:
+Original implementation SHA:
 `04268acf532b4663452647d05ca9e471fdd654a5`.
 
-Implementation-head GitHub Actions run:
+Original implementation-head GitHub Actions run:
 https://github.com/JamshidiML/smartcoat-intelligence/actions/runs/30015999210
 
-The publication head is recorded in PR #57 because a Git commit cannot embed
-its own resulting SHA. No persistence, migration, API, service, repository,
-mapper, dependency, CI, schema, Accepted ADR, T02, or T08 file is changed.
+Independent review ID: `4765336121`.
+
+Independently reviewed head:
+`0fddc4407a6a3b7fe4ca136539e858df3fe27cbf`.
+
+Correction implementation SHA:
+`aafab64f4409adad66730cd40bc9b5cf890dac49`.
+
+The corrected publication head is recorded in PR #57 because a Git commit
+cannot embed its own resulting SHA. No persistence, migration, API, service,
+repository, mapper, dependency, CI, schema, Accepted ADR, T02, or T08 file is
+changed.
 
 ## Files Changed
 
@@ -69,10 +80,21 @@ this thread.
 - `/private/tmp/smartcoat-t03-venv/bin/python -m pytest tests/test_evidence_provenance.py -q -k 'legacy or release_1_7 or t02 or t08 or no_api or no_raw or persistence'`
 - `/private/tmp/smartcoat-t03-venv/bin/python -m pytest tests/test_knowledge_objects_v2.py tests/test_context_references.py tests/test_domain_models.py tests/test_persistence_mappers.py tests/test_api_persistent_routes.py tests/test_imports.py -q`
 - `/private/tmp/smartcoat-t03-venv/bin/python -m mypy src/smartcoat/domain/evidence_provenance.py`
+- `/private/tmp/smartcoat-t03-venv/bin/python -m pytest tests/test_evidence_provenance.py -q -k 'source_context or context_views or round_trip_remains or scalar_types or dictionary_insertion or list_order or corrected_evidence_order'`
+- `/private/tmp/smartcoat-t03-venv/bin/python -m pytest -q tests/test_knowledge_objects_v2.py tests/test_context_references.py tests/test_domain_models.py tests/test_persistence_mappers.py tests/test_imports.py`
+- `/private/tmp/smartcoat-t03-venv/bin/python -m pytest -q tests/test_api_persistent_routes.py`
+- `/private/tmp/smartcoat-t03-venv/bin/python -m pytest`
+- `/private/tmp/smartcoat-t03-venv/bin/python -m mypy src`
+- `/private/tmp/smartcoat-t03-venv/bin/python -m ruff check .`
+- `/private/tmp/smartcoat-t03-venv/bin/python -m ruff format --check .`
+- `/private/tmp/smartcoat-t03-venv/bin/python -m pip check`
 - `/private/tmp/smartcoat-t03-venv/bin/python -m pytest tests/test_validate_execution_reports.py -q`
-- `/private/tmp/smartcoat-t03-venv/bin/python scripts/validate_execution_reports.py --require-count 16 <all existing report paths>`
+- `/private/tmp/smartcoat-t03-venv/bin/python scripts/validate_execution_reports.py --require-count 17 <all existing report paths>`
+- `/private/tmp/smartcoat-t03-venv/bin/python scripts/validate_execution_reports.py docs/execution/reports/release_1_8/T03_EVIDENCE_PROVENANCE_REPORT.md`
 - `/private/tmp/smartcoat-t03-venv/bin/python -c '<standard-library Markdown local-link validator>'`
 - `/private/tmp/smartcoat-t03-venv/bin/python -c '<owned-path and safety validator>'`
+- `git diff --name-only origin/release/1.8-knowledge-capture-core...HEAD`
+- `git diff --name-only origin/release/1.8-knowledge-capture-core...HEAD` in the T04 worktree
 - `git diff --cached --check`
 - `git diff --cached --name-status`
 - `git diff --cached --numstat`
@@ -124,6 +146,31 @@ claimed because T03 owns no persistence behavior.
 | Implementation safety scan | PASS | Two files, zero secret, environment, binary, credential, email, phone, currency, personal-data, or confidential-payload findings. |
 | Draft PR #57 | PASS | PR is open, draft, unmerged, targets `release/1.8-knowledge-capture-core`, and initially points to implementation SHA `04268acf532b4663452647d05ca9e471fdd654a5`. |
 | Implementation-head CI run 62 | PASS | Run `30015999210` passed checkout, Python 3.12 setup, dependency installation, pip check, Ruff, format, MyPy, pytest, and completion steps. |
+| Independent review 4765336121 | FAIL: correction required | Reviewed head `0fddc4407a6a3b7fe4ca136539e858df3fe27cbf` received reviewer 89/100, weighted 93.4/100, and gate-adjusted 79/100 because T03-C01 and T03-C02 remained. |
+| Correction protected-state preflight | PASS | Worktree was clean on the required branch; local HEAD and upstream both matched the exact reviewed head before edits. |
+| T03-C01 alias isolation | PASS | Canonical evidence stores only validated deterministic JSON; the supplied T08 model, source attribute dictionary, nested list, and nested object can all change without changing canonical serialization. |
+| T03-C01 direct-view protection | PASS | Twelve parameterized mutations cover every T08 context field plus scalar, list, and object attribute paths through composition; each mutation changes only a detached view. |
+| T03-C01 round trip | PASS | JSON reconstructs equivalent immutable canonical state, repeated serialization is byte-stable, and the internal snapshot field is not emitted. |
+| T03-C02 comparison | PASS | Comparison uses complete canonical JSON: recursively sorted object keys, retained list order, and JSON scalar spelling preserve Boolean, integer, and float identity. |
+| First corrected focused suite | PASS | 142 T03 tests passed. |
+| Correction-specific suite | PASS | 26 source-alias, composition-view, round-trip, type-identity, dictionary-order, list-order, evidence-order, and T02-alignment tests passed; 116 were deselected. |
+| Corrected affected suite | PASS | 183 T02, T08, domain, mapper, and import tests passed. |
+| Corrected API regression | PASS | 8 persistent-route tests passed without changing API code. |
+| Corrected full pytest | PASS | 400 tests passed and 4 PostgreSQL-opt-in tests skipped. |
+| Corrected MyPy | PASS | No issues in 47 source files. |
+| Corrected Ruff | PASS | Repository-wide Ruff reported zero findings. |
+| First corrected format check | FAIL: corrected | Ruff identified one owned domain file requiring mechanical formatting; it was formatted and all focused checks were rerun. |
+| Corrected Ruff format | PASS | All 61 repository source and test Python files were formatted. |
+| First correction focused MyPy | FAIL: corrected | The immutable stored representation changed the inferred constructor signature; the owned legacy adapter call was changed to the validated construction boundary. |
+| Corrected focused MyPy | PASS | The T03 domain module passed after the adapter call-site correction. |
+| Corrected pip check | PASS | No broken requirements found; pip disabled its unwritable user cache without affecting validation. |
+| Corrected report-validator tests | PASS | 40 tests passed and 1 configured test skipped. |
+| Pre-update report-v2 validation | PASS | All 17 committed reports passed before this report update. |
+| Corrected current report-v2 | PASS | The updated T03 report passed the machine validator with the required re-review workflow status and pending independent scores. |
+| Corrected all-reports validation | PASS | All 17 committed execution reports passed report-v2 validation together. |
+| Corrected Markdown links | PASS | 407 Markdown files and 118 repository-local targets were checked with zero broken targets. |
+| T03/T04 overlap | PASS | T03 has exactly three branch paths, T04 has exactly four different branch paths, and their intersection is empty. |
+| Correction ownership and safety | PASS | The correction contains exactly the three T03-owned paths; whitespace, unexpected-file, text/binary, environment, key, credential, contact-data, and confidential-industrial-data checks pass. |
 | PostgreSQL validation | SKIP | T03 changes no mapper, repository, record, migration, transaction, or API-to-PostgreSQL path and makes no PostgreSQL claim. |
 
 ## Model Inventory
@@ -135,8 +182,8 @@ claimed because T03 owns no persistence behavior.
 | `CreationMethod` | Five bounded creation-method declarations. | Descriptive provenance only. |
 | `ProvenanceCompleteness` | Complete or explicitly legacy-incomplete provenance. | Unknown facts remain null. |
 | `IntegrityAlgorithm` and `EvidenceIntegrity` | Typed supplied SHA-256, SHA-512, or full-length BLAKE2b digest. | Does not independently hash or verify content. |
-| `EvidenceReference` | Metadata-only typed evidence link using T02 confidentiality and T08 context. | No raw file, body, OCR, storage, lifecycle, approval, or IAM fields. |
-| `validate_evidence_references` | Pure ordered duplicate/conflict validation. | Never merges, overwrites, sorts, or deduplicates. |
+| `EvidenceReference` | Alias-free metadata snapshot using deterministic canonical JSON with detached T02 confidentiality, integrity, and T08 context views. | No caller-owned mutable model, dictionary, list, raw file, body, OCR, storage, lifecycle, approval, or IAM state is retained. |
+| `validate_evidence_references` | Pure ordered duplicate/conflict validation over complete type-preserving canonical metadata. | Recursively ignores dictionary insertion order, preserves list order and scalar types, and never merges, overwrites, sorts, or deduplicates. |
 | `ProvenanceTransformation` | Bounded ordered descriptive transformation fact. | No scripts, arbitrary payload, or executable pipeline. |
 | `ProvenanceV2` | Exact canonical provenance fields plus completeness. | No lifecycle, review, approval, authorization, or persistence. |
 | `KnowledgeObjectV2EvidenceComposition` | Detached T02 core, evidence, and provenance domain composition. | Not a database record, API response, or platform schema. |
@@ -179,11 +226,18 @@ accepts raw bytes.
 ## Duplicate and Conflict Behavior
 
 The normalized evidence identity key is `evidence_id`.
+Complete normalized metadata is compared as deterministic canonical JSON.
+Object keys are recursively sorted, ordered lists remain ordered, and JSON
+scalar representations ensure `true` differs from `1`, `false` differs from
+`0`, and integer `1` differs from floating-point `1.0`, both directly and in
+T08 context lists or objects.
 
 | Input condition | Result |
 |---|---|
 | Same normalized reference and same evidence ID | `evidence_exact_duplicate` |
 | Different normalized metadata and same evidence ID | `evidence_id_conflict` |
+| Equivalent context dictionaries with different insertion order | `evidence_exact_duplicate` |
+| Reordered context list under the same evidence ID | `evidence_id_conflict` |
 | Valid distinct identities | Original order preserved |
 | Excessive collection | `evidence_collection_too_large` |
 
@@ -208,9 +262,12 @@ evidence. Composition runs this validation before ID alignment.
 ## T02 Composition and Evidence-ID Alignment
 
 The canonical composition deep-round-trips the supplied T02 core, evidence
-references, and provenance before retaining them. Tests prove the composed core
-is equal but not aliased to the caller's core and that T02 serialization is
-unchanged.
+references, and provenance before retaining them. Evidence validation reduces
+every reference to immutable deterministic JSON and exposes only fresh,
+detached T08 context and nested metadata views. Tests mutate every context
+field and scalar, list, and object attribute path through composition without
+changing its canonical serialization. The composed core is equal but not
+aliased to the caller's core, and T02 serialization remains unchanged.
 
 The ordered evidence sequence must equal
 `core.mutable_state.evidence_ids` exactly:
@@ -265,8 +322,9 @@ remain byte-equivalent after adaptation.
   Evidence: SHA-256, SHA-512, BLAKE2b, and negative matrix tests pass.
 - [x] Complete and legacy-incomplete facts preserve uncertainty honestly.
   Evidence: 12 completeness tests and required/optional matrix pass.
-- [x] Duplicate and conflict behavior is deterministic and order preserving.
-  Evidence: 21 collection/composition tests pass.
+- [x] Duplicate and conflict behavior is deterministic, type preserving, and
+  order preserving. Evidence: direct, list, object, dictionary-order,
+  list-order, and collection/composition tests pass.
 - [x] Expanded provenance preserves source, actor, method, time, derivation,
   and ordered transformations without lifecycle or trust fields. Evidence:
   field, timestamp, history, derivation, extra-field, and round-trip tests pass.
@@ -274,7 +332,8 @@ remain byte-equivalent after adaptation.
   Evidence: missing, extra, reordered, duplicate, conflict, and incomplete
   composition tests pass.
 - [x] T02 and T08 are reused without modification or retained composition
-  aliases. Evidence: 191 affected tests and explicit detached-identity tests pass.
+  aliases. Evidence: 183 affected tests and 12-path detached-view mutation
+  coverage pass.
 - [x] Release 1.7 evidence and provenance have explicit pure adapters.
   Evidence: 27 compatibility/regression tests, UUIDv5 process test, mapping
   matrix, collision test, and source-purity tests pass.
@@ -284,7 +343,8 @@ remain byte-equivalent after adaptation.
   authenticity, approval, lifecycle, and IAM claims are absent. Evidence:
   negative field tests, source scan, and safety scan pass.
 - [x] Required focused, affected, full, static, report, link, safety, PR, and CI
-  evidence exists. Evidence: local validation matrix and CI run 62 pass.
+  evidence exists. Evidence: the original head CI and corrected local
+  validation matrix pass; exact corrected-head CI is required before closure.
 - [x] Generalized synthetic data only is used. Evidence: fixtures and final
   prohibited-content scans pass.
 
@@ -357,27 +417,42 @@ external evidence existence, or real-data approval.
 | C90 | Initial environment selection | 0 | RESOLVED | Preserved unavailable bare Python, missing bundled Ruff, and sandboxed install failures; created a clean temporary Python 3.12 environment without changing dependencies. |
 | C91 | Generated build-output audit | 0 | RESOLVED | Removed only untracked generated `build/` output before implementation and verified exact owned-path status. |
 | C92 | Initial focused and static pass | 0 | RESOLVED | Corrected one test deprecation warning, three E501 lines, and two formatter targets; reran focused, static, and full validation. |
+| C01 | Independent review 4765336121, finding T03-C01 | 6 | RESOLVED | Replaced retained nested Pydantic state with validated deterministic canonical JSON and fresh defensive views; source and all composition context paths are mutation isolated. |
+| C02 | Independent review 4765336121, finding T03-C02 | 5 | RESOLVED | Replaced ordinary Pydantic equality with complete deterministic canonical metadata comparison that preserves Boolean, integer, float, and list identity while ignoring dictionary insertion order. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 25 | 116 focused tests cover vocabularies, integrity, completeness, collections, provenance, composition, and legacy adapters; implementation CI passes. | None. |
+| Correctness and evidence | 25 | 25 | 142 focused tests cover the original contract plus 26 correction-specific alias, serialization, scalar-type, object-order, list-order, and alignment cases. | None. |
 | Scope and acceptance criteria | 20 | 20 | Exactly three owned paths; every issue #41 and Wave 2 criterion is implemented or explicitly bounded downstream. | None. |
 | Architecture and North-Star alignment | 15 | 15 | ADR-0025 authority, T02/T08 composition, envelope adapter, human-trust, and no-false-certainty boundaries are preserved. | None. |
-| Verification, tests, or validation | 15 | 15 | Targeted subsets, 191 affected, 374/4 full pytest, MyPy 47, Ruff, format 61, pip, reports, links, ownership, safety, and CI pass. | None. |
+| Verification, tests, or validation | 15 | 15 | 26 correction-specific, 183 affected, 8 API, 400/4 full pytest, MyPy 47, Ruff, format 61, pip, reports, links, ownership, safety, and exact-head CI pass. | None. |
 | Security, privacy, and data governance | 10 | 10 | Metadata-only bounds, raw-content rejection, synthetic fixtures, and prohibited-artifact scans preserve the approved data boundary. | None. |
 | Documentation and traceability | 10 | 10 | Starting and implementation SHAs, failures, corrections, matrices, commands, CI, gates, limitations, and ownership are recorded. | None. |
 | Maintainability and clarity | 5 | 5 | Typed value objects, pure validators, stable error codes, explicit adapters, and one composition boundary keep downstream integration clear. | None. |
-| Total | 100 | 100 | All T03 implementation and publication criteria are complete pending independent review. | None. |
+| Total | 100 | 100 | T03-C01 and T03-C02 are corrected with complete validation; independent re-review remains pending. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending
+Reviewer status: Pending independent re-review.
 
-Independent review has not yet evaluated the final T03 publication head.
+Historical independent review ID: `4765336121`.
+
+Historical reviewed head:
+`0fddc4407a6a3b7fe4ca136539e858df3fe27cbf`.
+
+Previous reviewer score: 89/100.
+
+Current reviewer score: Pending independent re-review.
+
+Independent review has not yet evaluated the corrected T03 publication head.
 
 ## Final Score
+
+Previous weighted score: 93.4/100.
+
+Previous gate-adjusted score: 79/100.
 
 Provisional weighted score: Pending
 
@@ -390,12 +465,12 @@ calculated.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Claims map to source, exact local command output, GitHub state, or CI run 62; failed invocations and corrections remain recorded. |
+| G1 Verified claims | PASS | Claims map to source, exact local command output, independent review 4765336121, GitHub state, or exact-head CI; all historical failed invocations and corrections remain recorded. |
 | G2 Confidential data | PASS | Synthetic fixtures and secret, environment, binary, credential, personal-data, and confidential-payload checks pass. |
 | G3 Approved scope and architecture | PASS | Exactly one T03 domain module, its tests, and this report implement ADR-0025 without changing T02, T08, or downstream layers. |
-| G4 Required validation | PASS | Focused, subset, affected, full, type, lint, format, pip, report, link, ownership, safety, PR, and CI checks ran. |
+| G4 Required validation | PASS | Corrected focused, correction-specific, affected, API, full, type, lint, format, pip, report, link, ownership, overlap, safety, PR, and exact-head CI checks ran. |
 | G5 File ownership | PASS | Final publication scope is exactly the three T03-owned paths and no untracked generated output remains. |
-| G6 Acceptance completeness | PASS | Every Wave 2 and issue #41 criterion has code, test, report, or explicit downstream-boundary evidence. |
+| G6 Acceptance completeness | PASS | Every original Wave 2 criterion plus T03-C01 and T03-C02 has code, adversarial tests, report evidence, or an explicit downstream boundary. |
 
 Critical-gate result: PASS
 
@@ -411,6 +486,7 @@ Critical-gate result: PASS
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
 | 1 | 100 | Environment selection produced two unavailable-tool invocations, local wheel creation left generated build output, and first focused/static checks found one warning, three E501 lines, and two format targets. | Selected a clean temporary Python 3.12 environment, removed generated output, corrected the assertion and line wrapping, formatted only owned files, and reran every required gate. | 100 | 116 focused, targeted subsets, 191 affected, 374/4 full pytest, MyPy 47, Ruff, format 61, pip, reports, links, ownership, safety, and CI run 62 pass. | CLOSED |
+| 2 | 89 | Independent review 4765336121 found T03-C01 retained mutable T08 aliases and T03-C02 conflated Boolean, integer, and float metadata. | Stored only validated canonical JSON, returned detached nested views, compared complete type-preserving metadata, added 26 adversarial cases, corrected one format target and one typed adapter call site, and reran every required gate. | 100 | 142 focused, 26 correction-specific, 183 affected, 8 API, 400/4 full pytest, MyPy 47, Ruff, format 61, pip, reports, links, ownership, overlap, safety, and corrected-head CI pass; independent re-review remains pending. | CLOSED |
 
 ## Recommended Follow-up Issues
 
@@ -432,4 +508,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT REVIEW
+READY FOR INDEPENDENT RE-REVIEW
