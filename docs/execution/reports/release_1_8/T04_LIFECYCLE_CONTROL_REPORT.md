@@ -10,7 +10,7 @@ Branch: `thread/18-04-lifecycle-controlled-mutation`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/56
 
-Final status: `READY FOR INDEPENDENT REVIEW`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -22,15 +22,28 @@ enforces the exact closed transition matrix, and returns immutable desired-work
 plans without changing the current record, persisting data, committing a
 transaction, or constructing a final `EnterpriseEvent`.
 
+Correction Cycle 1 closes the strict pre-deprecation history finding from
+independent review `4765339529`. A deprecated object now projects a legacy
+review status only when trusted history says it has left draft and its exact
+last pre-deprecation lifecycle is `approved`; that one valid case projects
+`validated`. Missing history and every non-approved predecessor fail closed as
+`lifecycle_history_inconsistent`.
+
 Exact starting release SHA:
 `f62f4bbc5554f6d19eb1bd2f60b2f7f74bbf8776`.
 
 Implementation SHA:
 `edf859d5bd4262ccd474ee152767bd6d47946785`.
 
-The final publication head is recorded by PR #56 because a Git commit cannot
-embed its own resulting SHA. The report publication commit changes only this
-report.
+Initial publication and independently reviewed SHA:
+`8ee81c8411a9659da36b7699200af434156f7dfe`.
+
+Correction implementation SHA:
+`91fd13ac762c0a73cff3f51acca1dd4bcfed2e2f`.
+
+The final correction publication head and its exact-head CI are recorded by PR
+#56 and the issue evidence comments because a Git commit cannot embed its own
+resulting SHA. The correction publication commit changes only this report.
 
 ## Files Changed
 
@@ -72,11 +85,25 @@ ADRs, and every other thread report remain unchanged.
 - `python -c '<secret, environment, binary, credential, personal-data, and confidential-data validator>'`
 - `git diff --check f62f4bbc5554f6d19eb1bd2f60b2f7f74bbf8776 HEAD`
 - `git diff --check f62f4bbc5554f6d19eb1bd2f60b2f7f74bbf8776`
+- `.venv/bin/python -m pytest tests/test_knowledge_lifecycle_service.py -q`
+- `.venv/bin/python -m pytest tests/test_knowledge_lifecycle_service.py -q -k 'deprecated_projection'`
+- `../.venv/bin/python -m pytest tests/test_knowledge_lifecycle_service.py -q -k 'deprecated_projection'`
+- `../.venv/bin/python -m pytest tests/test_knowledge_lifecycle_service.py -q`
+- `../.venv/bin/python -m pytest tests/test_knowledge_lifecycle_service.py tests/test_knowledge_objects_v2.py tests/test_context_references.py tests/test_domain_models.py tests/test_imports.py -q`
+- `../.venv/bin/python -m pytest tests/test_api_persistent_routes.py -q`
+- `../.venv/bin/python -m pytest -q`
+- `../.venv/bin/python -m mypy src`
+- `../.venv/bin/python -m ruff check .`
+- `../.venv/bin/python -m ruff format --check .`
+- `../.venv/bin/python -m pip check`
+- `git commit -m "Enforce approved pre-deprecation history"`
 
 GitHub connector operations verified issues #38, #40, #41, #42, #46, and #48,
 PRs #49 and #55, created draft PR #56, corrected its initial SHA text, and
-inspected workflow run 61 and every job step. No PostgreSQL, Docker, migration,
-repository, mapper, route, or final event command was run.
+inspected workflow run 61 and every job step. Correction Cycle 1 additionally
+verified review `4765339529`, the exact reviewed head, PR #56, and issues #42
+and #38 before editing. No PostgreSQL, Docker, migration, repository, mapper,
+route, or final event command was run.
 
 ## Actual Results
 
@@ -107,6 +134,19 @@ repository, mapper, route, or final event command was run.
 | Draft PR creation | PASS | PR #56 is open, draft, unmerged, and targets `release/1.8-knowledge-capture-core`. |
 | Initial PR body SHA | FAIL: corrected publication metadata | The first body incorrectly expanded short SHA `edf859d`; GitHub's exact head was immediately used to replace it with `edf859d5bd4262ccd474ee152767bd6d47946785`. Repository content was unaffected. |
 | Implementation-head CI run 61 | PASS | Run `30015948231` passed checkout, Python 3.12 setup, dependency installation, pip compatibility, Ruff, format, MyPy, pytest, post-setup, and completion on the exact implementation SHA. |
+| Independent review `4765339529` | FAIL: CORRECTION REQUIRED on prior head | Review of exact head `8ee81c8411a9659da36b7699200af434156f7dfe` scored 91/100, provisional weighted 94.2/100, and gate-adjusted 79/100 because deprecated projection accepted impossible non-approved predecessor histories. |
+| Correction preflight | PASS | Before edits, local HEAD, upstream, and PR #56 head all exactly equaled reviewed SHA `8ee81c8411a9659da36b7699200af434156f7dfe`; the worktree was clean and the PR remained draft, open, unmerged, and based on the Release 1.8 branch. |
+| Worktree-local `.venv` correction invocations | FAIL: corrected environment selection | Both requested test commands failed before collection because this worktree has no `.venv/bin/python`; no test result was claimed, and the established shared environment at `../.venv` was used. |
+| Correction-specific deprecated projection tests | PASS | 9 tests passed: approved plus true history projects `validated`; missing, draft, captured, reviewed, validated, rejected, and deprecated predecessors fail closed; approved plus false history also fails closed. |
+| Corrected focused T04 tests | PASS | 153 lifecycle tests passed, retaining the exact 12 allowed transitions, all 37 unsupported-pair failures, precedence, revision, delete, reopen, deprecation, and audit regressions. |
+| Corrected affected T02, T08, domain, and import tests | PASS | 333 tests passed. |
+| Corrected current API regression tests | PASS | 8 tests passed; no route or OpenAPI behavior changed. |
+| Corrected full pytest | PASS | 411 tests passed and 4 PostgreSQL-opt-in tests skipped. |
+| Corrected MyPy | PASS | No issues in 48 source files. |
+| Corrected Ruff | PASS | Repository-wide Ruff reported zero findings. |
+| Corrected Ruff format | PASS | All 62 files were formatted. |
+| Corrected pip check | PASS | No broken requirements found; the disabled user pip cache warning was non-behavioral. |
+| Correction implementation commit | PASS | Commit `91fd13ac762c0a73cff3f51acca1dd4bcfed2e2f` changes only the lifecycle domain and focused test paths. |
 | Complete report-validator tests | PASS | 40 tests passed and 1 environment-configured test skipped. |
 | All committed and T04 reports | PASS | All 17 execution reports passed the unchanged report-v2 validator. |
 | T04 report-v2 | PASS | This report passed the unchanged report-v2 validator. |
@@ -115,6 +155,14 @@ repository, mapper, route, or final event command was run.
 | First safety scanner | FAIL: scanner did not execute | A misplaced inline case-insensitive regex flag raised `re.error` before any path or content was scanned; no safety result was claimed from it. |
 | Corrected safety scanner | PASS | Four owned paths contained no `.env`, binary, secret, credential, personal-data, or confidential-industrial-data artifact. |
 | Final diff check | PASS | The release-base-to-index/worktree diff, including all four owned paths, had no whitespace error. |
+| Correction report-validator tests | PASS | 40 tests passed and 1 environment-configured test skipped. |
+| Correction all-report validation | PASS | All 17 committed execution reports, including the corrected T04 report, passed the unchanged report-v2 validator. |
+| Corrected T04 report-v2 | PASS | The current corrected report passed the unchanged report-v2 validator with self-score 99, current reviewer/final scores Pending, C01 resolved, and C02 open for one point. |
+| Corrected Markdown local links | PASS | 407 Markdown files and 118 repository-local targets were checked with zero broken targets. |
+| Corrected exact ownership | PASS | The release-base diff contains exactly the four authorized T04 paths; no unexpected untracked file exists. |
+| Corrected T03/T04 zero overlap | PASS | Comparing both complete release-base branch diffs found zero shared paths. |
+| Corrected diff checks | PASS | Both release-base and uncommitted report diffs have no whitespace error. |
+| Corrected safety scan | PASS | All four owned paths are UTF-8 text and contain no secret, `.env`, binary, credential, email/personal-data, or raw industrial-data artifact indicator. |
 | PostgreSQL validation | SKIP | T04 owns no persistence behavior and makes no PostgreSQL evidence claim. |
 
 ## Model and Service Inventory
@@ -202,13 +250,17 @@ mutation payload.
 | `approved` | `validated` | PASS |
 | `rejected` | `rejected` | PASS |
 | `deprecated`, valid pre-deprecation `approved` | `validated` | PASS |
-| `deprecated`, another projectable trusted prior state | Prior-state projection | PASS |
+| `deprecated`, missing or any non-approved predecessor | No projection; fail closed | PASS |
+| `deprecated`, pre-deprecation `approved`, never left draft | No projection; fail closed | PASS |
 
-Missing deprecated history, draft/deprecated as the prior state, a non-draft
-that claims never to have left draft, or pre-deprecation facts on an active
-record returns `lifecycle_history_inconsistent`. `approved` is intentionally
-absent from the review-projection vocabulary, so projection `validated` never
-proves authoritative lifecycle `approved`.
+For `deprecated`, the only valid predecessor is `approved` and
+`has_ever_left_draft` must be true. Missing, `draft`, `captured`, `reviewed`,
+`validated`, `rejected`, and `deprecated` predecessors all return
+`lifecycle_history_inconsistent`; false `has_ever_left_draft` also fails even
+with `approved`. A non-draft active state that claims never to have left draft,
+or pre-deprecation facts on an active record, likewise fails closed.
+`approved` is intentionally absent from the review-projection vocabulary, so
+projection `validated` never proves authoritative lifecycle `approved`.
 
 ## Revision and Error Precedence
 
@@ -279,7 +331,7 @@ atomic commit.
 - [x] Every unsupported lifecycle pair fails deterministically. Evidence: all 37 remaining Cartesian pairs return `invalid_lifecycle_transition`.
 - [x] Role and note rules match ADR-0020 without invented production authorization. Evidence: required-role, generic-role, blank actor/role, blank note, and missing-field matrices pass.
 - [x] Draft capture readiness requires valid T02 governance, non-empty bounded content, and ordered evidence identity. Evidence: positive and both negative readiness cases pass.
-- [x] Review projection is read-only, history-aware, and fail-closed. Evidence: new/correction draft, five active states, deprecated prior-state, and contradiction tests pass.
+- [x] Review projection is read-only, history-aware, and fail-closed. Evidence: new/correction draft, five active states, approved-only deprecated projection, seven invalid predecessors, false-history, and active-state contradiction tests pass.
 - [x] Target and stale revision precedence is deterministic and no source revision changes. Evidence: combined precedence and source-stability tests pass.
 - [x] Draft deletion follows ADR-0022 and all non-draft records reject hard deletion. Evidence: eligible, correction, inbound, stale, target, and six non-draft cases pass.
 - [x] Reopen and deprecation remain explicit, revisioned, and non-destructive. Evidence: rejected reopen, approved deprecation, replacement, and deprecated-terminal tests pass.
@@ -332,36 +384,57 @@ authorization, retention, external-existence, or real-data permission claim.
 - No route, mapper, migration, repository, PostgreSQL, production IAM,
   tenancy, legal-erasure, API-completion, real-data, or production-readiness
   result is claimed.
-- Independent current-head review is pending, so the self-score remains below
-  100 and final weighted scores remain Pending.
+- Independent re-review of the corrected publication head is pending, so the
+  self-score remains below 100 and current reviewer, weighted, and
+  gate-adjusted scores remain Pending.
 
 ## Lost Points and Correction Items
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | Initial static-quality pass | 0 | RESOLVED | Applied Ruff formatting to three new files and reran focused and repository-wide checks. |
-| C02 | Internal second pass and publication metadata | 0 | RESOLVED | Added immutable output consistency validators and four negative tests; corrected the PR-body SHA and the safety-scanner regex, then reran both checks. |
-| C03 | Independent current-head review | 1 | OPEN | Independent ChatGPT review must evaluate the exact final publication head before any approval, ready transition, or merge. |
+| C90 | Initial static-quality pass | 0 | RESOLVED | Historical internal item: applied Ruff formatting to three new files and reran focused and repository-wide checks. |
+| C91 | Internal second pass and publication metadata | 0 | RESOLVED | Historical internal item: added immutable output consistency validators and four negative tests; corrected the PR-body SHA and safety-scanner regex, then reran both checks. |
+| C92 | Initial exact-head independent review | 0 | RESOLVED | Historical open-review item: independent review `4765339529` evaluated exact head `8ee81c8411a9659da36b7699200af434156f7dfe`, supplied the previous 91/94.2/79 scores, and created C01. |
+| C01 | Independent review `4765339529` on previous head | 9 | RESOLVED | Deprecated projection now requires true `has_ever_left_draft` and exact predecessor `approved`; exhaustive tests reject missing, draft, captured, reviewed, validated, rejected, deprecated, and false-history inputs while preserving the valid `validated` projection. |
+| C02 | Independent corrected-head re-review | 1 | OPEN | Independent ChatGPT re-review must evaluate the exact corrected publication head before approval, ready transition, or merge. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 25 | Complete transition, invalid-pair, precedence, history, deletion, audit, and invariant tests pass. | None. |
+| Correctness and evidence | 25 | 25 | Complete transition, invalid-pair, precedence, strict approved-only history, deletion, audit, and invariant tests pass. | None. |
 | Scope and acceptance criteria | 20 | 20 | Exactly four T04 paths; all issue #42 and Wave 2 criteria are implemented without downstream work. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Lifecycle remains authoritative; human trust, explicit commands, deprecation, and bounded desired-work boundaries align. | None. |
-| Verification, tests, or validation | 15 | 15 | Focused, affected, API, full, type, lint, format, pip, report, link, ownership, safety, and CI evidence is recorded. | None. |
+| Verification, tests, or validation | 15 | 15 | 9 correction-specific, 153 focused, 333 affected, 8 API, 411/4 full, type, lint, format, pip, report, link, ownership, safety, and CI evidence is recorded. | None. |
 | Security, privacy, and data governance | 10 | 10 | Synthetic fixtures, minimal audit requests, no arbitrary payloads, and prohibited-artifact scans preserve the boundary. | None. |
-| Documentation and traceability | 10 | 9 | Commands, failures, corrections, matrices, ownership, limits, gates, and CI are recorded. | Exact final-head independent review remains pending. |
+| Documentation and traceability | 10 | 9 | Initial and correction commands, failures, review ID/head/scores, C01, matrices, ownership, limits, gates, and CI publication boundary are recorded. | Exact corrected-head independent re-review remains pending. |
 | Maintainability and clarity | 5 | 5 | Explicit commands, one closed matrix, typed errors, immutable outputs, and pure planner separate concerns clearly. | None. |
-| Total | 100 | 99 | All in-scope implementation and validation is complete for independent review. | One point remains open for independent current-head review. |
+| Total | 100 | 99 | All in-scope correction implementation and local validation is complete for independent re-review. | One point remains open for independent corrected-head re-review. |
 
 ## ChatGPT Reviewer Score
 
+Previous-head reviewer outcome: CORRECTION REQUIRED.
+
+Independent review ID: `4765339529`.
+
+Reviewed head: `8ee81c8411a9659da36b7699200af434156f7dfe`.
+
+Previous-head reviewer score: 91/100.
+
+Previous-head provisional weighted score: 94.2/100.
+
+Previous-head gate-adjusted score: 79/100.
+
+Previous-head gate result: G1 PASS, G2 PASS, G3 FAIL, G4 FAIL, G5 PASS, G6
+FAIL, G7 PASS, and G8 FAIL.
+
+Current corrected-head reviewer status: Pending.
+
 Reviewer status: Pending
 
-Independent reviewer score, review ID, reviewed SHA, findings, and outcome must
-be supplied by the external ChatGPT review of the exact final publication head.
+The current reviewer, weighted, and gate-adjusted scores must be supplied by an
+independent re-review of the exact corrected publication head. The historical
+scores above apply only to the reviewed previous head.
 
 ## Final Score
 
@@ -375,12 +448,12 @@ The weighted and gate-adjusted scores remain pending until independent review.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Every current claim maps to source, executed commands, exact test counts, GitHub state, or CI run 61; failed environment and PR-body invocations remain recorded. |
+| G1 Verified claims | PASS | Every current claim maps to source, executed commands, exact test counts, GitHub state, CI run 61, or review `4765339529`; prior failures and prior-head scores remain recorded. |
 | G2 Confidential data | PASS | Synthetic fixtures and secret, environment, binary, credential, personal-data, and confidential-data checks found no prohibited artifact. |
-| G3 Approved scope and architecture | PASS | ADR-0020/0022 authority, T02 consumption, explicit commands, read-only projection, and downstream ownership are preserved. |
-| G4 Required validation | PASS | Focused, affected, API, full pytest, MyPy, Ruff, format, pip, report, link, ownership, safety, and implementation-head CI checks ran. |
+| G3 Approved scope and architecture | PASS | ADR-0020/0022 authority, T02 consumption, explicit commands, approved-only deprecated projection, and downstream ownership are preserved. |
+| G4 Required validation | PASS | Correction-specific, focused, affected, API, full pytest, MyPy, Ruff, format, pip, report, link, ownership, safety, and implementation-head CI checks ran; exact correction-publication CI is reported outside this self-referential commit. |
 | G5 File ownership | PASS | The complete branch diff contains exactly the four authorized T04 paths and zero T03 or other-thread overlap. |
-| G6 Acceptance completeness | PASS | Every issue #42 and Wave 2 T04 criterion has code, test, report, or explicit downstream-boundary evidence. |
+| G6 Acceptance completeness | PASS | C01 and every issue #42 and Wave 2 T04 criterion have code, test, report, or explicit downstream-boundary evidence. |
 
 Critical-gate result: PASS
 
@@ -389,18 +462,20 @@ Critical-gate result: PASS
 | Gate | Status | Applicability Evidence |
 |---|---|---|
 | G7 Persistence alignment and PostgreSQL evidence | PASS | T04 changes no persistence, migration, mapper, repository, route, or transaction path and makes no PostgreSQL claim; T05 ownership is explicit. |
-| G8 Lifecycle, trust, and audit bypass prevention | PASS | Generic lifecycle/review writes are absent; exact commands, target/stale checks, closed transitions, immutable plans, and one safe audit request are mandatory. |
+| G8 Lifecycle, trust, and audit bypass prevention | PASS | Generic lifecycle/review writes are absent; deprecated history fails closed unless its exact predecessor is approved; exact commands, target/stale checks, closed transitions, immutable plans, and one safe audit request remain mandatory. |
 
 ## Correction-Cycle History
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
-| 1 | 96 | First format check identified three files; internal review found output models should reject manual semantic contradictions; initial PR text contained an incorrect expanded SHA; the first safety regex did not compile. | Applied formatting, added output/action/revision/time/tombstone consistency checks and four tests, corrected PR metadata and scanner syntax, and reran local plus CI validation. | 99 | 148 focused, 328 affected, 8 API, 406/4 full pytest, MyPy 48, Ruff, format 62, pip, reports, links, safety, and CI run 61 passed. | OPEN |
+| 1 | 96 | First format check identified three files; internal review found output models should reject manual semantic contradictions; initial PR text contained an incorrect expanded SHA; the first safety regex did not compile. | Applied formatting, added output/action/revision/time/tombstone consistency checks and four tests, corrected PR metadata and scanner syntax, and reran local plus CI validation. | 99 | Historical evidence: 148 focused, 328 affected, 8 API, 406/4 full pytest, MyPy 48, Ruff, format 62, pip, reports, links, safety, and CI run 61 passed. | CLOSED |
+| 2 | 79 | Independent review `4765339529` scored the exact previous head 91/100, provisional weighted 94.2/100, and gate-adjusted 79/100 because deprecated projection accepted impossible non-approved lifecycle histories. | Required true left-draft history plus exact `approved` predecessor, returned only `validated`, removed reviewed acceptance, and added exhaustive predecessor and false-history regressions without changing transition, persistence, API, or event ownership. | 99 | 9 correction-specific, 153 focused, 333 affected, 8 API, 411/4 full pytest, MyPy 48, Ruff, format 62, and pip checks passed; report, safety, publication, and exact-head CI evidence follows. | OPEN |
 
 ## Recommended Follow-up Issues
 
-- Independent ChatGPT should review exact final PR #56 head and assign the
-  authoritative score and correction items.
+- Independent ChatGPT should re-review exact corrected PR #56 head, verify C01,
+  and assign the authoritative current reviewer, weighted, and gate-adjusted
+  scores.
 - T07 should consume only the safe append request when defining the canonical
   typed Knowledge `EnterpriseEvent` profile.
 - T05 should supply trusted history/reference facts and execute compare-and-swap
@@ -414,4 +489,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT REVIEW
+READY FOR INDEPENDENT RE-REVIEW
