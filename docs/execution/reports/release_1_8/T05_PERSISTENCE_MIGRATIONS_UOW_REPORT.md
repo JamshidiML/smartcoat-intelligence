@@ -29,7 +29,11 @@ Independent review `4766496385` evaluated publication head
 two corrections: complete-composition material-update semantics and
 snapshot-consistent aggregate reads. Correction implementation SHA
 `c222c279eceaeaa3b1d082adf8e78bd78889a00a` resolves both findings within
-the four authorized correction paths. Independent re-review remains pending.
+the four authorized correction paths. Final independent re-review
+`4767177206` accepted corrected report head
+`5f50dfaea07026e3250734620e1327adc5c7c332` within T05 persistence,
+migration, CAS, and Unit-of-Work scope at 98/100 with G1-G8 PASS and no
+blockers.
 
 The final report-publication SHA is the Git commit containing this report. It
 will be recorded in PR #58, issues #35, #38, #43, and #45, and the final
@@ -184,6 +188,8 @@ local Docker development configuration, and randomized
 | Corrected safety and data scan | PASS | All 18 release-base paths remain text-only by Git numstat; the four correction paths contain no `.env` file, binary, secret-token format, private key, email, E.164 phone, personal-record marker, proprietary formulation, or real industrial-data marker. Fixtures remain synthetic metadata only. |
 | Corrected diff checks | PASS | Worktree and complete release-base `git diff --check` returned zero whitespace errors. |
 | Corrected implementation-head PR merge-ref CI | PASS | Pull-request run `30030301803`, associated with branch head `c222c279eceaeaa3b1d082adf8e78bd78889a00a`, passed Python 3.12 quality in 37 seconds and PostgreSQL 16 migrations/persistence in 49 seconds. The PostgreSQL job collected and passed all 30 tests, including C01 and C02, on the PR merge ref rather than claiming a literal raw-head checkout. |
+| Corrected report-head PR merge-ref CI | PASS | Pull-request run `30030908921`, associated with corrected report head `5f50dfaea07026e3250734620e1327adc5c7c332`, passed Python 3.12 quality in 36 seconds and PostgreSQL 16 migrations/persistence in 43 seconds on the PR merge ref. |
+| Final independent re-review | PASS | Review `4767177206` accepted corrected head `5f50dfaea07026e3250734620e1327adc5c7c332`, scored 98/100, confirmed C01 and C02 RESOLVED, declared G1-G8 PASS with no blockers, and authorized administrative merge closure. |
 
 ## Migration State and Graph
 
@@ -459,6 +465,10 @@ blocks deletion conservatively rather than fabricating or assuming tenancy.
   mutation is transactionally paired with a root revision increment. Direct
   out-of-band child-table DML is unsupported and is not represented as a
   repository behavior claim.
+- Every governed evidence, provenance, context, tag, or relationship mutation
+  must increment the aggregate-root revision. T07, T06, and T09 must not
+  introduce child-only writes that bypass the revision-verified aggregate-read
+  contract.
 
 ## Lost Points and Correction Items
 
@@ -472,6 +482,7 @@ blocks deletion conservatively rather than fabricating or assuming tenancy.
 | C02 | Independent review 4766496385: coherent aggregate reads | 7 | RESOLVED | Every composition reload now uses an organization-scoped, three-attempt root/children/final-revision protocol with typed exhaustion. Five deterministic live interleaving cases pass. |
 | C94 | First correction live test helper | 0 | RESOLVED | Preserved the 3-pass/21-fail invocation caused by one nested default transformation tuple, corrected only the helper, and reran focused, complete, and CI PostgreSQL suites. |
 | C95 | First correction MyPy pass | 0 | RESOLVED | Converted five SQLAlchemy child `Sequence` results to explicit immutable tuples and reran MyPy successfully across 53 source files. |
+| C03 | Independent review 4767177206: downstream revision invariant | 2 | OPEN | T07, T06, and T09 must preserve transactional root revision increments for every governed evidence, provenance, context, tag, or relationship mutation and must not add child-only write paths. This is non-blocking for T05 closure. |
 
 ## Codex Self-Score
 
@@ -480,15 +491,15 @@ blocks deletion conservatively rather than fabricating or assuming tenancy.
 | Correctness and evidence | 25 | 25 | Original migration/CAS/deletion evidence plus complete-composition CAS/no-op behavior and deterministic coherent-read interleavings pass on PostgreSQL. | None. |
 | Scope and acceptance criteria | 20 | 20 | Correction changes exactly the three implementation/test paths plus this report, all within the four authorized paths, and preserves T02/T03/T04/T08 plus current API ownership. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Separate v2 aggregate, fail-closed legacy adaptation, T04 plan authority, T07 participant boundary, bounded read consistency, and no false production claims align with accepted ADRs. | None. |
-| Verification, tests, or validation | 15 | 15 | C01 10, C02 5, persistence 11, affected 472, live 30/0, full 565/28, MyPy 53, Ruff, format 75, pip, reports, and corrected implementation-head PR merge-ref CI pass. | None. |
+| Verification, tests, or validation | 15 | 15 | C01 10, C02 5, persistence 11, affected 472, live 30/0, full 565/28, MyPy 53, Ruff, format 75, pip, reports, both corrected PR merge-ref CI runs, and independent re-review pass. | None. |
 | Security, privacy, and data governance | 10 | 10 | Synthetic metadata-only fixtures, source-payload bounds, test-target guardrails, organization predicates, and cleanup pass. | None. |
 | Documentation and traceability | 10 | 10 | Original history, independent review, scores, failed invocations, C01/C02 design, merge-ref terminology, commands, corrections, and limits are recorded. | None. |
 | Maintainability and clarity | 5 | 5 | Canonical comparison, immutable child bundles, bounded typed retry, deterministic SQLAlchemy hooks, and focused tests keep the correction localized and explicit. | None. |
-| Total | 100 | 100 | All correction, original-scope, live PostgreSQL, safety, report, and corrected implementation-head CI evidence required for independent re-review passes. | None. |
+| Total | 100 | 100 | All correction, original-scope, live PostgreSQL, safety, report, corrected PR merge-ref CI, and accepted independent-review evidence pass. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending independent re-review.
+Reviewer status: Accepted within T05 scope.
 
 Historical independent review ID: `4766496385`.
 
@@ -506,10 +517,21 @@ Historical reviewer findings:
 - C02 required snapshot-consistent aggregate reads with deterministic live
   concurrency proof.
 
-Current reviewer score: Pending independent re-review.
+Final independent review ID: `4767177206`.
 
-Current corrected implementation head:
-`c222c279eceaeaa3b1d082adf8e78bd78889a00a`.
+Accepted corrected head:
+`5f50dfaea07026e3250734620e1327adc5c7c332`.
+
+Reviewer total: 98
+
+Reviewer evidence: Review `4767177206` independently verified C01 and C02
+RESOLVED, exact four-path correction ownership, deterministic PostgreSQL
+concurrency coverage, and corrected report-head PR merge-ref CI run
+`30030908921`; it declared G1-G8 PASS, no blockers, and accepted T05 for
+administrative merge closure.
+
+Decision: ACCEPTED WITHIN T05 PERSISTENCE, MIGRATION, CAS, AND UNIT-OF-WORK
+SCOPE
 
 ## Final Score
 
@@ -517,21 +539,20 @@ Previous weighted score: 91.6/100.
 
 Previous gate-adjusted score: 79/100.
 
-Provisional weighted score: Pending
+Provisional weighted score: 98.8
 
-Gate-adjusted score: Pending
+Gate-adjusted score: 98.8
 
-Independent re-review is required before current weighted or gate-adjusted
-scoring.
+The final score is `0.40 * 100 + 0.60 * 98 = 98.8`. No gate cap applies.
 
 ## Critical-Gate Declaration
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Claims map to exact local output, review 4766496385, GitHub state, migration inspection, PostgreSQL behavior, or PR merge-ref run 30030301803; all failed invocations and corrections are retained. |
+| G1 Verified claims | PASS | Claims map to exact local output, reviews 4766496385 and 4767177206, GitHub state, migration inspection, PostgreSQL behavior, or PR merge-ref runs 30030301803 and 30030908921; all failed invocations and corrections are retained. |
 | G2 Confidential data | PASS | Synthetic metadata-only fixtures, no raw evidence, and test-target guardrails preserve the approved data boundary. |
 | G3 Approved scope and architecture | PASS | Correction modifies only the four authorized paths and changes no migration, ORM, mapper, Unit of Work, domain, API, dependency, CI, or ADR contract. |
-| G4 Required validation | PASS | C01, C02, persistence, affected, full, type, lint, format, pip, migration, live PostgreSQL, regressions, cleanup, report, links, safety, and corrected implementation-head PR merge-ref CI pass. |
+| G4 Required validation | PASS | C01, C02, persistence, affected, full, type, lint, format, pip, migration, live PostgreSQL, regressions, cleanup, report, links, safety, both corrected PR merge-ref CI runs, and independent re-review pass. |
 | G5 File ownership | PASS | Correction diff is exactly four authorized paths after report publication; the release-base diff remains exactly the original 18 declared T05 paths. |
 | G6 Acceptance completeness | PASS | C01 and C02 plus every original in-scope criterion have code, deterministic live PostgreSQL evidence, validation, or an explicit downstream boundary. |
 
@@ -542,7 +563,7 @@ Critical-gate result: PASS
 | Gate | Status | Applicability Evidence |
 |---|---|---|
 | G7 Persistence alignment and PostgreSQL evidence | PASS | Original migration/ORM evidence plus complete-composition CAS, zero-write `xmin`, rollback, coherent read, deletion, bounded exhaustion, cleanup, and 30-test corrected CI ran on PostgreSQL 16. |
-| G8 Lifecycle, trust, and audit bypass prevention | PASS | Lifecycle-only interleaving reconstructs coherently; only accepted T04 plans alter lifecycle; no public mutation service or arbitrary audit API exists; T07 remains required and unstarted. |
+| G8 Lifecycle, trust, and audit bypass prevention | PASS | Lifecycle-only interleaving reconstructs coherently; only accepted T04 plans alter lifecycle; no public mutation service or arbitrary audit API exists; T07 remains required and must preserve the no-child-only-write invariant. |
 
 ## Correction-Cycle History
 
@@ -550,20 +571,23 @@ Critical-gate result: PASS
 |---:|---:|---|---|---:|---|---|
 | 1 | 97 | Initial local-network denial, four metadata defaults, and three T02 import/model-isolation regressions were exposed by required validation. | Reran with approved access, aligned metadata, moved v2 ORM records to a dedicated owned path, removed eager export, reran all required checks, and required both implementation-head CI jobs to pass. | 100 | 10 focused, 15/0 live, 564/13 full, MyPy 53, Ruff, format 75, pip, metadata, downgrade/re-upgrade, cleanup, T02 isolation, and run `30027268394` pass. | CLOSED |
 | 2 | 86 | Independent review 4766496385 found C01 evidence/provenance-only changes were discarded by core-only no-op classification and C02 multi-statement reads could reconstruct mixed revisions. | Added validated type-preserving complete-composition comparison, CAS for evidence/provenance-only changes, strict zero-write no-op, bounded revision-verified aggregate reads, and deterministic PostgreSQL interleaving/exhaustion tests. Corrected one test-helper tuple and five static tuple types found during validation. | 100 | C01 10, C02 5, persistence 11, affected 472, live 30/0, full 565/28, MyPy 53, Ruff, format 75, pip, reports, links, ownership, safety, and run `30030301803` pass; independent re-review remains pending. | CLOSED |
+| 3 | 98 | Independent review 4767177206 accepted T05 and identified one non-blocking downstream invariant plus an obsolete PR body. | Recorded the final review and scores, C01/C02 resolution, both corrected PR merge-ref CI runs, and C03 for T07/T06/T09; the PR body is updated administratively without product-code change. | 98 | Review 4767177206, report-v2 validation, exact report-only ownership, and corrected report-head run 30030908921 support merge closure; C03 remains an explicit downstream obligation. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Independent ChatGPT re-review should evaluate PR #58 at its final correction
-  report head, beginning from implementation SHA
-  `c222c279eceaeaa3b1d082adf8e78bd78889a00a`.
-- Issue #35 should remain open until independent review accepts the migration
-  and metadata-alignment evidence.
+- Independent review `4767177206` accepted corrected T05 head
+  `5f50dfaea07026e3250734620e1327adc5c7c332` for administrative merge
+  closure.
+- Issue #35 may close only after the original migration and metadata-alignment
+  criteria pass again on the exact Release merge commit.
 - T07 issue #45 should implement the canonical audit participant on the same
-  Session without adding repository commits or a public arbitrary event API.
+  Session without adding repository commits, child-only aggregate writes, or
+  a public arbitrary event API.
 - T06 should consume only the query-supporting indexes and must own filtering,
-  deterministic pagination, and cursor contracts.
+  deterministic pagination, cursor contracts, and the root-revision invariant.
 - T09 should own explicit public schemas, route orchestration, error mapping,
-  and OpenAPI after T05 and T07 are accepted.
+  and OpenAPI after T05 and T07 are accepted without introducing child-only
+  persistence writes.
 - Issue #46 should remain open for downstream context integration.
 - PR #49 must remain draft and unmerged; no Release 1.8 integration is
   authorized by T05.
@@ -574,4 +598,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT RE-REVIEW
+READY FOR APPROVAL
