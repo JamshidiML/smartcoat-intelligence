@@ -10,7 +10,7 @@ Branch: `thread/18-05-persistence-uow`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/58
 
-Final status: `READY FOR INDEPENDENT REVIEW`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -21,8 +21,15 @@ dedicated flush-only v2 repository, atomic optimistic concurrency, eligible
 draft deletion, and one shared Unit of Work that owns commit, rollback, and
 session lifecycle.
 
-Validated implementation SHA:
+Original validated implementation SHA:
 `92736d38c7047204e84eb1fb31a49497c3daecdc`.
+
+Independent review `4766496385` evaluated publication head
+`c27f217513e237bb3e302354cae7c1dea777e694`, scored it 86/100, and required
+two corrections: complete-composition material-update semantics and
+snapshot-consistent aggregate reads. Correction implementation SHA
+`c222c279eceaeaa3b1d082adf8e78bd78889a00a` resolves both findings within
+the four authorized correction paths. Independent re-review remains pending.
 
 The final report-publication SHA is the Git commit containing this report. It
 will be recorded in PR #58, issues #35, #38, #43, and #45, and the final
@@ -84,6 +91,15 @@ Release 1.7 model module and API import graph remain v2-free.
 - `git push -u origin thread/18-05-persistence-uow`
 - `gh pr create --draft --base release/1.8-knowledge-capture-core --head thread/18-05-persistence-uow`
 - `gh pr checks 58 --repo JamshidiML/smartcoat-intelligence`
+- `python -m pytest tests/integration/test_knowledge_v2_postgres.py -q -k '<C01 selection>'`
+- `python -m pytest tests/integration/test_knowledge_v2_postgres.py -q -k 'revision_verified'`
+- `python -m pytest tests/persistence -q`
+- `python -m pytest tests/test_knowledge_objects_v2.py tests/test_evidence_provenance.py tests/test_knowledge_lifecycle_service.py tests/test_context_references.py -q`
+- `SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true SMARTCOAT_TEST_DATABASE_URL=<local-test-dsn> SMARTCOAT_TEST_SCHEMA=smartcoat_test_t05_correction_legacy_api python -m pytest tests/integration/test_knowledge_v2_postgres.py tests/integration/test_persistent_api_postgres.py -q`
+- `git commit -m "Correct v2 composition updates and coherent reads"`
+- `git push origin thread/18-05-persistence-uow`
+- `gh pr checks 58 --repo JamshidiML/smartcoat-intelligence --watch --interval 10`
+- `gh run view 30030301803 --repo JamshidiML/smartcoat-intelligence`
 
 The live test DSN used a local PostgreSQL 16 container, the dedicated
 `smartcoat_test_t05` database, synthetic credentials already defined by the
@@ -139,6 +155,35 @@ local Docker development configuration, and randomized
 | Implementation commits and push | PASS | Commits `6d8263a` and `92736d3` were pushed normally; no force push, reset, rebase, or history rewrite occurred. |
 | Draft PR publication | PASS | PR #58 is draft, open, unmerged, and targets `release/1.8-knowledge-capture-core`. |
 | Implementation-head GitHub Actions | PASS | Run `30027268394` passed the Python 3.12 quality job in 42 seconds and PostgreSQL 16 migration/persistence job in 1 minute 25 seconds; checkout used the pull-request merge ref derived from implementation head `92736d38c7047204e84eb1fb31a49497c3daecdc`. |
+| Independent review | FAIL: correction required | Review `4766496385` evaluated head `c27f217513e237bb3e302354cae7c1dea777e694`, scored it 86/100, produced a 91.6/100 weighted score and 79/100 gate-adjusted score, and found C01 complete-composition updates plus C02 snapshot-consistent reads incomplete. |
+| First correction live PostgreSQL invocation | FAIL: corrected test helper | Three tests passed and 21 failed because the new optional provenance helper nested its default transformation tuple one level too deeply; no repository defect was masked. The helper was corrected and every focused, complete, and CI live suite was rerun. |
+| Correction MyPy pass 1 | FAIL: corrected tuple typing | Runtime-live behavior passed, but MyPy found five child-record collections typed as `Sequence` instead of immutable tuples. The repository now materializes explicit tuples; MyPy then passed all 53 source files. |
+| C01 complete-composition comparison | PASS | Target mismatch and stale revision retain precedence. The desired mutable state, ordered evidence, and provenance are validated together and compared through type-preserving canonical JSON. Boolean/integer/float identity and governed order remain significant; dictionary insertion order does not. |
+| C01 evidence-only material writes | PASS | Changed title, source reference, source system, context attributes, and context `true` to integer `1` each used organization-scoped revision CAS, incremented once, used the database timestamp, replaced children, and preserved core mutable state. |
+| C01 provenance-only material writes | PASS | Changed source reference and reordered transformation history each used the same CAS and one revision increment while preserving unrelated mutable state and evidence. |
+| C01 strict complete no-op | PASS | Identical supplied evidence/provenance plus dictionary-insertion-only state/evidence changes preserved revision, `updated_at`, root `xmin`, and every child-table `xmin`; no root or child write occurred. |
+| C01 failure and rollback behavior | PASS | Evidence-only stale and provenance-only stale calls returned `stale_revision`; target mismatch won first; missing complete evidence and incomplete provenance failed deterministically; evidence-only and provenance-only participant failures rolled back root and children. |
+| Focused C01 correction suite | PASS | 10 live PostgreSQL cases passed and 15 unrelated T05 cases were deselected. |
+| C02 coherent-read strategy | PASS | Each aggregate read performs at most three organization-scoped attempts: root/revision, all children, direct final revision check, then return only on equality; mismatch/deletion expires Session state and retries, and exhaustion raises typed `aggregate_read_retry_exhausted`. No global isolation or lock policy changed. |
+| C02 forced root and multiple-child update | PASS | A SQLAlchemy execution hook committed changed root title/content plus tags, evidence, and provenance after the reader root query. The reader retried and returned the complete revision-2 aggregate with no old/new mixture. |
+| C02 evidence/provenance-only interleave | PASS | The same deterministic hook forced a complete-composition-only commit between root and children; the reader returned coherent revision 2 evidence and provenance with unchanged core content. |
+| C02 lifecycle and deletion interleaves | PASS | A lifecycle-only commit returned coherent captured revision 2; concurrent eligible deletion retried to deterministic missing-object `None`. |
+| C02 bounded exhaustion and resource behavior | PASS | Three forced commits exhausted exactly three attempts with `aggregate_read_retry_exhausted`; the connection immediately executed `SELECT 1` and an ordinary subsequent read returned revision 4, proving no deadlock or leaked transaction. |
+| Focused C02 correction suite | PASS | 5 live PostgreSQL cases passed and 20 unrelated T05 cases were deselected. |
+| Corrected persistence suite | PASS | All 11 persistence tests passed, including organization scoping for the final revision verification query. |
+| Corrected affected contracts | PASS | 472 T02/T03/T04/T08 tests passed. |
+| Corrected combined live PostgreSQL suites | PASS | 30 tests passed with zero T05 skips: 25 T05 migration/persistence/correction tests and 5 Release 1.7 PostgreSQL API regressions. |
+| Corrected full pytest | PASS | 565 tests passed and 28 opt-in tests skipped in default mode; all 25 T05 PostgreSQL items ran separately with zero skips. |
+| Corrected static and dependency gates | PASS | MyPy passed 53 source files; repository-wide Ruff passed; all 75 files passed format checking; pip reported no broken requirements. |
+| Corrected report-validator tests | PASS | 40 validator tests passed and one environment-configured test skipped. |
+| Corrected all-report validation | PASS | All 19 committed/current execution reports passed the unchanged report-v2 validator with the exact required count. |
+| Corrected T05 report-v2 validation | PASS | This correction report passes as `READY FOR INDEPENDENT RE-REVIEW` with reviewer and current weighted scores pending re-review. |
+| Corrected Markdown local links | PASS | 409 Markdown files and 118 repository-local targets were checked with zero broken targets. |
+| Exact correction-path ownership | PASS | The reviewed-head-to-current diff contains exactly the four authorized correction paths with no missing, unexpected, or untracked path. |
+| Preserved release-base ownership | PASS | The release-base diff remains exactly the original 18 declared T05 paths; no migration, ORM, mapper, Unit of Work, dependency, CI, domain, API, or ADR path was added by correction. |
+| Corrected safety and data scan | PASS | All 18 release-base paths remain text-only by Git numstat; the four correction paths contain no `.env` file, binary, secret-token format, private key, email, E.164 phone, personal-record marker, proprietary formulation, or real industrial-data marker. Fixtures remain synthetic metadata only. |
+| Corrected diff checks | PASS | Worktree and complete release-base `git diff --check` returned zero whitespace errors. |
+| Corrected implementation-head PR merge-ref CI | PASS | Pull-request run `30030301803`, associated with branch head `c222c279eceaeaa3b1d082adf8e78bd78889a00a`, passed Python 3.12 quality in 37 seconds and PostgreSQL 16 migrations/persistence in 49 seconds. The PostgreSQL job collected and passed all 30 tests, including C01 and C02, on the PR merge ref rather than claiming a literal raw-head checkout. |
 
 ## Migration State and Graph
 
@@ -255,10 +300,32 @@ WHERE object_id = :object_id
   AND revision = :expected_revision
 ```
 
-No-op evaluation uses the accepted T02 evaluator after target and stale
-checks. A changed evidence-ID sequence requires a complete structured evidence
-replacement. Generic lifecycle, revision, and timestamp update parameters do
-not exist.
+Target and stale checks use the accepted T02 evaluator first. The repository
+then constructs and validates the complete desired composition from the
+replacement core plus supplied-or-current ordered evidence and
+supplied-or-current provenance. A no-op requires canonical identity across all
+three dimensions. Mutable state and evidence already retain deterministic
+canonical JSON; provenance receives the same sorted-key, compact,
+type-preserving serialization. Dictionary insertion order is ignored while
+Boolean, integer, float, evidence order, and transformation order remain
+distinct. A changed evidence-ID sequence still requires a complete structured
+evidence replacement. Generic lifecycle, revision, and timestamp update
+parameters do not exist.
+
+Evidence-only and provenance-only changes use the same atomic root CAS as a
+core material update, increment revision exactly once, assign `updated_at`
+through PostgreSQL `clock_timestamp()`, and transactionally replace all
+mutable children. Exact complete-composition identity returns before the root
+update or any child delete/reinsert.
+
+Aggregate reads use a bounded revision-verified retry under the existing
+`READ COMMITTED` configuration. One attempt reads the organization-scoped
+root, reads every child collection, then selects the same scoped root revision
+directly from PostgreSQL. Equality permits reconstruction; mismatch or
+deletion expires Session identity state and retries. Three consecutive
+collisions raise `aggregate_read_retry_exhausted`. This changes neither global
+isolation nor lock behavior and applies to `get`, controlled loads, and
+post-create, post-material-update, and post-lifecycle reloads.
 
 Draft deletion rechecks persisted lifecycle, revision,
 `has_ever_left_draft`, inbound v2 Knowledge links, and inbound current Decision
@@ -297,6 +364,14 @@ path can be complete.
 - [x] No-op, material, stale no-op, stale material, target mismatch, and
   two-session race behaviors are deterministic. Evidence: live `xmin`,
   revision, timestamp, and concurrency assertions pass.
+- [x] Complete-composition material classification includes ordered evidence
+  and provenance, preserves scalar identity, permits only exact no-op, and
+  rolls evidence-only/provenance-only changes back atomically. Evidence: 10
+  focused C01 live cases pass.
+- [x] Root and all child collections reconstruct from one coherent committed
+  state through a three-attempt revision-verified read. Evidence: deterministic
+  execution-hook tests cover root/multiple children, evidence/provenance-only,
+  lifecycle, deletion, exhaustion, resource release, and ordinary reads.
 - [x] Lifecycle persistence consumes and stores a valid T04 plan exactly,
   rejects stale reuse, and exposes no generic lifecycle update. Evidence:
   live lifecycle and repository-surface tests pass.
@@ -376,6 +451,14 @@ blocks deletion conservatively rather than fabricating or assuming tenancy.
   T07 owns the final audit model.
 - Production IAM, authorization, retention policy, real-data approval,
   deployment readiness, and Release 1.8 completion are not claimed.
+- Revision-verified reads intentionally fail with
+  `aggregate_read_retry_exhausted` after three consecutive collisions; callers
+  must retry at their orchestration boundary if sustained write contention
+  continues.
+- Coherence depends on the persistence contract that every governed child
+  mutation is transactionally paired with a root revision increment. Direct
+  out-of-band child-table DML is unsupported and is not represented as a
+  repository behavior claim.
 
 ## Lost Points and Correction Items
 
@@ -384,45 +467,73 @@ blocks deletion conservatively rather than fabricating or assuming tenancy.
 | C90 | Initial sandboxed localhost invocation | 0 | RESOLVED | Preserved the failed invocation, requested approved local-network access, and reran all required PostgreSQL tests successfully. |
 | C91 | First live metadata comparison | 0 | RESOLVED | Aligned four legacy server-default declarations and reran clean upgrade, comparison, downgrade, re-upgrade, and smoke validation. |
 | C92 | First full-suite T02 isolation findings | 0 | RESOLVED | Added a pre-modification owned-path amendment, separated v2 ORM models, restored the legacy shape/import graph, and reran affected and complete validation. |
-| C01 | Implementation-head CI evidence | 0 | RESOLVED | Both Python 3.12 quality and PostgreSQL 16 jobs in run `30027268394` passed; the latter executed all migration, downgrade/re-upgrade, repository, concurrency, rollback, cleanup, and Release 1.7 live API tests. |
+| C93 | Original implementation-head CI evidence | 0 | RESOLVED | Both Python 3.12 quality and PostgreSQL 16 jobs in run `30027268394` passed; the latter executed all migration, downgrade/re-upgrade, repository, concurrency, rollback, cleanup, and Release 1.7 live API tests. |
+| C01 | Independent review 4766496385: complete-composition updates | 7 | RESOLVED | Material classification now validates and canonically compares mutable state, ordered evidence, and provenance; evidence-only/provenance-only changes use CAS and one revision increment, while exact identity remains a zero-write no-op. Ten focused live cases pass. |
+| C02 | Independent review 4766496385: coherent aggregate reads | 7 | RESOLVED | Every composition reload now uses an organization-scoped, three-attempt root/children/final-revision protocol with typed exhaustion. Five deterministic live interleaving cases pass. |
+| C94 | First correction live test helper | 0 | RESOLVED | Preserved the 3-pass/21-fail invocation caused by one nested default transformation tuple, corrected only the helper, and reran focused, complete, and CI PostgreSQL suites. |
+| C95 | First correction MyPy pass | 0 | RESOLVED | Converted five SQLAlchemy child `Sequence` results to explicit immutable tuples and reran MyPy successfully across 53 source files. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 25 | Real migrations, exact ORM comparison, complete round trips, database CAS, two-session race, deletion gates, and rollback passed. | None. |
-| Scope and acceptance criteria | 20 | 20 | Implementation remains within published T05 paths and preserves T02/T03/T04/T08 plus current API ownership. | None. |
-| Architecture and North-Star alignment | 15 | 15 | Separate v2 aggregate, fail-closed legacy adaptation, T04 plan authority, T07 participant boundary, and no false production claims align with accepted ADRs. | None. |
-| Verification, tests, or validation | 15 | 15 | 15/0 live, 564/13 full, MyPy 53, Ruff, format 75, pip, migration, cleanup, regressions, and both implementation-head PR merge-ref CI jobs pass. | None. |
+| Correctness and evidence | 25 | 25 | Original migration/CAS/deletion evidence plus complete-composition CAS/no-op behavior and deterministic coherent-read interleavings pass on PostgreSQL. | None. |
+| Scope and acceptance criteria | 20 | 20 | Correction changes exactly the three implementation/test paths plus this report, all within the four authorized paths, and preserves T02/T03/T04/T08 plus current API ownership. | None. |
+| Architecture and North-Star alignment | 15 | 15 | Separate v2 aggregate, fail-closed legacy adaptation, T04 plan authority, T07 participant boundary, bounded read consistency, and no false production claims align with accepted ADRs. | None. |
+| Verification, tests, or validation | 15 | 15 | C01 10, C02 5, persistence 11, affected 472, live 30/0, full 565/28, MyPy 53, Ruff, format 75, pip, reports, and corrected implementation-head PR merge-ref CI pass. | None. |
 | Security, privacy, and data governance | 10 | 10 | Synthetic metadata-only fixtures, source-payload bounds, test-target guardrails, organization predicates, and cleanup pass. | None. |
-| Documentation and traceability | 10 | 10 | Migration history caveat, schema/mapping matrices, commands, failures, corrections, ownership, and downstream limits are recorded. | None. |
-| Maintainability and clarity | 5 | 5 | Dedicated models, mapper, repository, typed errors, Unit of Work, participant Protocol, migrations, and focused tests separate responsibilities. | None. |
-| Total | 100 | 100 | All local, live PostgreSQL, safety, report, and implementation-head CI evidence required for independent review passes. | None. |
+| Documentation and traceability | 10 | 10 | Original history, independent review, scores, failed invocations, C01/C02 design, merge-ref terminology, commands, corrections, and limits are recorded. | None. |
+| Maintainability and clarity | 5 | 5 | Canonical comparison, immutable child bundles, bounded typed retry, deterministic SQLAlchemy hooks, and focused tests keep the correction localized and explicit. | None. |
+| Total | 100 | 100 | All correction, original-scope, live PostgreSQL, safety, report, and corrected implementation-head CI evidence required for independent re-review passes. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending
+Reviewer status: Pending independent re-review.
 
-Independent review has not yet been performed for PR #58.
+Historical independent review ID: `4766496385`.
+
+Historical reviewed head:
+`c27f217513e237bb3e302354cae7c1dea777e694`.
+
+Previous reviewer score: 86/100.
+
+Previous decision: CORRECTION REQUIRED.
+
+Historical reviewer findings:
+
+- C01 required complete-composition update semantics across mutable state,
+  ordered evidence, and provenance.
+- C02 required snapshot-consistent aggregate reads with deterministic live
+  concurrency proof.
+
+Current reviewer score: Pending independent re-review.
+
+Current corrected implementation head:
+`c222c279eceaeaa3b1d082adf8e78bd78889a00a`.
 
 ## Final Score
+
+Previous weighted score: 91.6/100.
+
+Previous gate-adjusted score: 79/100.
 
 Provisional weighted score: Pending
 
 Gate-adjusted score: Pending
 
-Independent review is required before weighted or gate-adjusted scoring.
+Independent re-review is required before current weighted or gate-adjusted
+scoring.
 
 ## Critical-Gate Declaration
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Claims map to exact local output, GitHub state, migration inspection, or PostgreSQL behavior; failures and corrections are retained. |
+| G1 Verified claims | PASS | Claims map to exact local output, review 4766496385, GitHub state, migration inspection, PostgreSQL behavior, or PR merge-ref run 30030301803; all failed invocations and corrections are retained. |
 | G2 Confidential data | PASS | Synthetic metadata-only fixtures, no raw evidence, and test-target guardrails preserve the approved data boundary. |
-| G3 Approved scope and architecture | PASS | T05-only paths implement persistence without modifying domain contracts, routes, Accepted ADRs, T06, T07, or T09. |
-| G4 Required validation | PASS | Focused, affected, full, type, lint, format, pip, migration, live PostgreSQL, cleanup, report, safety, and both implementation-head CI jobs pass. |
-| G5 File ownership | PASS | All changed paths were declared before modification, including the documented dedicated-model amendment. |
-| G6 Acceptance completeness | PASS | Every in-scope implementation and publication criterion has code, live PostgreSQL evidence, validation, or an explicit downstream boundary. |
+| G3 Approved scope and architecture | PASS | Correction modifies only the four authorized paths and changes no migration, ORM, mapper, Unit of Work, domain, API, dependency, CI, or ADR contract. |
+| G4 Required validation | PASS | C01, C02, persistence, affected, full, type, lint, format, pip, migration, live PostgreSQL, regressions, cleanup, report, links, safety, and corrected implementation-head PR merge-ref CI pass. |
+| G5 File ownership | PASS | Correction diff is exactly four authorized paths after report publication; the release-base diff remains exactly the original 18 declared T05 paths. |
+| G6 Acceptance completeness | PASS | C01 and C02 plus every original in-scope criterion have code, deterministic live PostgreSQL evidence, validation, or an explicit downstream boundary. |
 
 Critical-gate result: PASS
 
@@ -430,18 +541,21 @@ Critical-gate result: PASS
 
 | Gate | Status | Applicability Evidence |
 |---|---|---|
-| G7 Persistence alignment and PostgreSQL evidence | PASS | Clean, existing-v1, downgrade/re-upgrade, exact ORM comparison, complete round trip, CAS race, rollback, and cleanup ran on PostgreSQL 16. |
-| G8 Lifecycle, trust, and audit bypass prevention | PASS | Only accepted T04 plans can alter lifecycle; no public material-mutation service or arbitrary audit API exists; T07 remains required. |
+| G7 Persistence alignment and PostgreSQL evidence | PASS | Original migration/ORM evidence plus complete-composition CAS, zero-write `xmin`, rollback, coherent read, deletion, bounded exhaustion, cleanup, and 30-test corrected CI ran on PostgreSQL 16. |
+| G8 Lifecycle, trust, and audit bypass prevention | PASS | Lifecycle-only interleaving reconstructs coherently; only accepted T04 plans alter lifecycle; no public mutation service or arbitrary audit API exists; T07 remains required and unstarted. |
 
 ## Correction-Cycle History
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
 | 1 | 97 | Initial local-network denial, four metadata defaults, and three T02 import/model-isolation regressions were exposed by required validation. | Reran with approved access, aligned metadata, moved v2 ORM records to a dedicated owned path, removed eager export, reran all required checks, and required both implementation-head CI jobs to pass. | 100 | 10 focused, 15/0 live, 564/13 full, MyPy 53, Ruff, format 75, pip, metadata, downgrade/re-upgrade, cleanup, T02 isolation, and run `30027268394` pass. | CLOSED |
+| 2 | 86 | Independent review 4766496385 found C01 evidence/provenance-only changes were discarded by core-only no-op classification and C02 multi-statement reads could reconstruct mixed revisions. | Added validated type-preserving complete-composition comparison, CAS for evidence/provenance-only changes, strict zero-write no-op, bounded revision-verified aggregate reads, and deterministic PostgreSQL interleaving/exhaustion tests. Corrected one test-helper tuple and five static tuple types found during validation. | 100 | C01 10, C02 5, persistence 11, affected 472, live 30/0, full 565/28, MyPy 53, Ruff, format 75, pip, reports, links, ownership, safety, and run `30030301803` pass; independent re-review remains pending. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Independent ChatGPT review should evaluate PR #58 at its final report head.
+- Independent ChatGPT re-review should evaluate PR #58 at its final correction
+  report head, beginning from implementation SHA
+  `c222c279eceaeaa3b1d082adf8e78bd78889a00a`.
 - Issue #35 should remain open until independent review accepts the migration
   and metadata-alignment evidence.
 - T07 issue #45 should implement the canonical audit participant on the same
@@ -460,4 +574,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT REVIEW
+READY FOR INDEPENDENT RE-REVIEW
