@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Numeric, String, Text, func
+from sqlalchemy import DateTime, Index, Numeric, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,6 +10,11 @@ from smartcoat.storage.database.base import Base
 
 class KnowledgeObjectRecord(Base):
     __tablename__ = "knowledge_objects"
+    __table_args__ = (
+        Index("idx_knowledge_objects_type", "knowledge_type"),
+        Index("idx_knowledge_objects_domain", "domain"),
+        Index("idx_knowledge_objects_lifecycle_state", "lifecycle_state"),
+    )
 
     object_id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
@@ -19,7 +24,12 @@ class KnowledgeObjectRecord(Base):
     description: Mapped[str | None] = mapped_column(Text)
     domain: Mapped[str | None] = mapped_column(String(255))
     owner: Mapped[str | None] = mapped_column(String(255))
-    lifecycle_state: Mapped[str] = mapped_column(String(100), nullable=False, default="draft")
+    lifecycle_state: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        default="draft",
+        server_default=text("'draft'"),
+    )
     evidence: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     related_entities: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     related_decisions: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
@@ -36,12 +46,22 @@ class KnowledgeObjectRecord(Base):
 
 class DecisionObjectRecord(Base):
     __tablename__ = "decision_objects"
+    __table_args__ = (
+        Index("idx_decision_objects_type", "decision_type"),
+        Index("idx_decision_objects_status", "status"),
+        Index("idx_decision_objects_domain", "domain"),
+    )
 
     object_id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
     )
     decision_type: Mapped[str] = mapped_column(String(100), nullable=False)
-    status: Mapped[str] = mapped_column(String(100), nullable=False, default="draft")
+    status: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        default="draft",
+        server_default=text("'draft'"),
+    )
     title: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     domain: Mapped[str | None] = mapped_column(String(255))
@@ -58,7 +78,12 @@ class DecisionObjectRecord(Base):
     outcome: Mapped[str | None] = mapped_column(Text)
     learning: Mapped[str | None] = mapped_column(Text)
     related_knowledge: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
-    lifecycle_state: Mapped[str] = mapped_column(String(100), nullable=False, default="draft")
+    lifecycle_state: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        default="draft",
+        server_default=text("'draft'"),
+    )
     provenance: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -69,6 +94,11 @@ class DecisionObjectRecord(Base):
 
 class EnterpriseEventRecord(Base):
     __tablename__ = "enterprise_events"
+    __table_args__ = (
+        Index("idx_enterprise_events_type", "event_type"),
+        Index("idx_enterprise_events_related_object_id", "related_object_id"),
+        Index("idx_enterprise_events_created_at", "created_at"),
+    )
 
     object_id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
@@ -84,7 +114,12 @@ class EnterpriseEventRecord(Base):
     new_state: Mapped[dict | None] = mapped_column(JSONB)
     evidence: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     impact: Mapped[str | None] = mapped_column(Text)
-    lifecycle_state: Mapped[str] = mapped_column(String(100), nullable=False, default="draft")
+    lifecycle_state: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        default="draft",
+        server_default=text("'draft'"),
+    )
     provenance: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
