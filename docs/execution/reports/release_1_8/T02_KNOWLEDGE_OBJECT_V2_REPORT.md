@@ -10,7 +10,7 @@ Branch: `thread/18-02-knowledge-object-v2`
 
 Draft PR: `https://github.com/JamshidiML/smartcoat-intelligence/pull/55`
 
-Final status: `READY FOR INDEPENDENT REVIEW`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -20,8 +20,12 @@ Knowledge Object path. The T02 core reuses `KnowledgeObjectType`,
 `LifecycleState`, and T08's `KnowledgeContext`; it defines governance,
 structured uncertainty, typed relationships, bounded flexible content,
 identity-only evidence composition, explicit create/update commands, a frozen
-persisted core snapshot, pure revision/no-op evaluation, and fail-closed legacy
-compatibility assessment.
+outer persisted core, pure revision/no-op evaluation, and fail-closed legacy
+compatibility assessment. Independent review found that the initial nested
+state remained shallow-frozen and that ordinary equality conflated distinct
+JSON scalar types. Correction Cycle 1 replaces that nested state with a true
+alias-free canonical snapshot and uses its type-preserving representation for
+deterministic update comparison.
 
 Exact starting release SHA:
 `5d52dec74d337ac162e4bae17a4dd4cb4a42fefa`.
@@ -29,8 +33,15 @@ Exact starting release SHA:
 Final implementation SHA:
 `65badad9408f15662f2db268c1c1171fe7d4c837`.
 
-The final publication head is recorded by PR #55 because a Git commit cannot
-embed its own resulting SHA. The report commit changes documentation only.
+Initial publication SHA:
+`5dfa0a51928925c4bae80947993f7f89717b6b1d`.
+
+Correction implementation SHA:
+`82e032e60103b05db49c1e38903813666d98a42d`.
+
+The corrected publication head is recorded by PR #55 because a Git commit
+cannot embed its own resulting SHA. The correction publication commit changes
+this report only.
 
 ## Files Changed
 
@@ -56,6 +67,8 @@ dependencies, schemas, and Accepted ADRs are unchanged.
 - `python -m ruff format --check .`
 - `python -m mypy src`
 - `python -m pytest tests/test_knowledge_objects_v2.py -q`
+- `python -m pytest tests/test_knowledge_objects_v2.py -q -k 'persisted_snapshot or serialization_round_trip_is_stable_and_immutable'`
+- `python -m pytest tests/test_knowledge_objects_v2.py -q -k 'update_comparison or stale_typed_change or target_mismatch_fails_before_stale'`
 - `python -m pytest tests/test_domain_models.py tests/test_persistence_mappers.py -q`
 - `python -m pytest tests/test_context_references.py -q`
 - `python -m pytest tests/test_api_persistent_routes.py -q`
@@ -68,6 +81,11 @@ dependencies, schemas, and Accepted ADRs are unchanged.
 - `python -c '<exact T02 owned-path and unexpected-file validator>'`
 - `python -c '<secret, environment, binary, credential, personal-data, and confidential-data validator>'`
 - `git diff --check 5d52dec74d337ac162e4bae17a4dd4cb4a42fefa HEAD`
+- `git diff --name-only origin/release/1.8-knowledge-capture-core...HEAD`
+- `git diff --check`
+- `git push`
+- GitHub PR, review, issue, workflow-run, job, and step verification for PR
+  #55, independent review `4763553373`, issues #40/#46, PR #49, and CI run 56.
 
 Long inline scanner bodies remain in the execution transcript. No PostgreSQL,
 Docker, migration, repository, mapper, service, or API implementation command
@@ -88,7 +106,7 @@ was run or claimed for T02.
 | First T02 Ruff invocation | FAIL: corrected one E501 finding | One overlong negative-test assertion was wrapped without behavioral change. |
 | First T02 format invocation | FAIL: corrected formatting | Ruff identified two files for formatting; formatter output was applied and rechecked. |
 | First T02 MyPy invocation | FAIL: corrected four narrowing findings | Validator metadata and shared relationship-union typing were narrowed; no runtime contract changed. |
-| Corrected focused T02 tests | PASS | 112 governance, uncertainty, content, relationship, command, record, compatibility, context, and non-exposure tests passed. |
+| Initial corrected focused T02 tests | PASS | 112 governance, uncertainty, content, relationship, command, record, compatibility, context, and non-exposure tests passed. |
 | Existing Knowledge Object and mapper tests | PASS | 5 current-domain and persistence-mapper tests passed. |
 | Existing T08 context tests | PASS | 44 ContextReference and KnowledgeContext tests passed. |
 | Existing API route tests | PASS | 8 current API tests passed. |
@@ -105,6 +123,29 @@ was run or claimed for T02.
 | Owned-path and diff checks | PASS | Implementation changed exactly three T02 code/test paths; publication adds only this fourth report path; `git diff --check` passed. |
 | Security and data scans | PASS | No secret, `.env`, binary, credential, email, phone, confidential payload, industrial dataset, or unexpected file signature was found. |
 | Implementation-head CI run 53 | PASS | GitHub Actions run `29968329644` passed dependency install, pip check, Ruff, Ruff format, MyPy, and pytest on `65badad9408f15662f2db268c1c1171fe7d4c837`. |
+| Initial publication-head CI run 55 | PASS | GitHub Actions run `29968590458` passed dependency install, pip check, Ruff, Ruff format, MyPy, and pytest on `5dfa0a51928925c4bae80947993f7f89717b6b1d`. |
+| Independent review `4763553373` | FAIL: correction required on previous head | Reviewer scored previous head `5dfa0a51928925c4bae80947993f7f89717b6b1d` at 89/100, provisional weighted 93.4/100, gate-adjusted 79/100; C01 found shallow nested mutability and C02 found type-conflating no-op equality. |
+| Correction C01 immutable-snapshot subset | PASS | 3 source-alias, defensive nested-access, deterministic serialization, and round-trip tests passed; 130 focused tests were deselected. |
+| Correction C02 typed-comparison subset | PASS | 18 direct/nested scalar-type, dictionary-order, ordered-collection, stale-first, and target-first tests passed; 115 focused tests were deselected. |
+| Corrected focused T02 tests | PASS | 133 tests passed, including every initial contract test and 21 correction-specific tests. |
+| Corrected existing Knowledge Object and mapper tests | PASS | 5 tests passed. |
+| Corrected existing T08 context tests | PASS | 44 tests passed without modifying T08 models. |
+| Corrected API route tests | PASS | 8 tests passed. |
+| Corrected v2 API and persistence regression subset | PASS | 6 tests passed and 127 were deselected; current model, schema, OpenAPI, imports, and database record remain isolated from v2. |
+| Corrected full pytest | PASS | 258 tests passed and 4 PostgreSQL-opt-in tests skipped. |
+| Corrected MyPy | PASS | No issues in 46 source files. |
+| Corrected Ruff | PASS | Repository-wide Ruff reported zero findings. |
+| Corrected Ruff format | PASS | All 59 files were already formatted. |
+| Corrected pip check | PASS | No broken requirements found; the sandbox-disabled pip cache produced only a non-behavioral warning. |
+| First correction safety-scan invocation | FAIL: corrected scanner precision | The initial broad phone expression matched a synthetic UUID-like numeric value. The scanner was narrowed to international-number syntax and rerun; no product file or fixture changed. |
+| Corrected ownership and safety scan | PASS | Net release diff remained exactly four owned paths; no changed `.env`, binary, forbidden attachment, secret assignment, bearer credential, email, international phone number, personal-data marker, or confidential industrial-data marker was found. |
+| Correction implementation-head CI run 56 | PASS | GitHub Actions run `30003785605` passed checkout, Python setup, dependency installation, pip compatibility, Ruff, Ruff format, MyPy, pytest, and completion on `82e032e60103b05db49c1e38903813666d98a42d`. |
+| First correction T02 report-v2 invocation | FAIL: corrected report structure | The validator detected one duplicate method label and two nonconforming historical correction IDs. The method was distinguished as initial evidence and historical IDs were renamed to valid unique C90/C91 identifiers without deleting their history. |
+| Corrected T02 report-v2 | PASS | The updated report passes the unchanged report-v2 validator. |
+| Corrected report-validator tests | PASS | 40 tests passed and 1 environment-configured test skipped. |
+| Corrected all-report validation | PASS | All 16 committed and current execution reports pass report-v2 validation. |
+| First correction Markdown measurement | FAIL: corrected measurement harness | The first inline expression counted only broken candidates and therefore reported an invalid zero-target result. It was discarded and replaced by an explicit loop over every Markdown link. |
+| Corrected Markdown local links | PASS | 406 Markdown files and 118 repository-local targets were checked with zero broken targets. |
 | PostgreSQL validation | SKIP | T02 owns no persistence behavior and makes no PostgreSQL evidence claim. |
 
 ## Model Inventory
@@ -117,9 +158,10 @@ was run or claimed for T02.
 | `KnowledgeObjectRelationship` | Typed Knowledge Object target, relationship type, and optional target revision. | Existence checks remain outside T02. |
 | `DecisionObjectRelationship` | Typed Decision Object target, relationship type, and optional target revision. | Existence checks remain outside T02. |
 | `KnowledgeObjectV2MutableState` | Complete normalized replacement state. | Contains no server-managed identity, lifecycle, revision, organization, or time. |
+| `KnowledgeObjectV2PersistedStateSnapshot` | Public immutable canonical state with detached defensive access. | Deliberate downstream record contract; not an API or database representation. |
 | `KnowledgeObjectV2CreateCommand` | Organization boundary plus one explicit mutable-state composition. | Persistence assigns ID, draft lifecycle, revision 1, timestamps, and audit. |
 | `KnowledgeObjectV2UpdateCommand` | Target ID, positive expected revision, and complete replacement. | T05 performs compare-and-swap, revision increment, and transaction. |
-| `KnowledgeObjectV2CoreRecord` | Frozen successfully persisted v2 core snapshot. | Not the final T03 evidence/provenance or T09 API object. |
+| `KnowledgeObjectV2CoreRecord` | Frozen persisted core containing an alias-free state snapshot. | Not the final T03 evidence/provenance or T09 API object. |
 | `evaluate_knowledge_object_update` | Pure target, revision, no-op, and material-change evaluation. | Performs no mutation, audit, time update, or persistence. |
 | `assess_legacy_knowledge_object` | Deterministic fail-closed Release 1.7 gap assessment. | Performs no conversion or migration. |
 
@@ -127,12 +169,12 @@ was run or claimed for T02.
 
 | Field group | Create input | Update replacement | Persisted core | Owner |
 |---|---|---|---|---|
-| Title, description, knowledge type | Mutable state | Full replacement | Nested mutable-state snapshot | T02 domain contract |
-| Owner and confidentiality | Mutable state, required | Full replacement | Nested mutable-state snapshot | T02 metadata contract; IAM excluded |
-| Uncertainty, tags, bounded content | Mutable state | Full replacement | Nested mutable-state snapshot | T02 domain contract |
-| Context | Existing `KnowledgeContext` | Full replacement | Nested mutable-state snapshot | T08 type, T02 composition |
-| Evidence identity | Ordered unique `evidence_ids` only | Full replacement | Nested mutable-state snapshot | T03 final structured composition |
-| Knowledge and Decision relationships | Typed ordered collections | Full replacement | Nested mutable-state snapshot | T02 shape, T05 integrity/persistence |
+| Title, description, knowledge type | Mutable state | Full replacement | Canonical immutable snapshot | T02 domain contract |
+| Owner and confidentiality | Mutable state, required | Full replacement | Canonical immutable snapshot | T02 metadata contract; IAM excluded |
+| Uncertainty, tags, bounded content | Mutable state | Full replacement | Canonical immutable snapshot | T02 domain contract |
+| Context | Existing `KnowledgeContext` | Full replacement | Canonical immutable snapshot with detached T08 views | T08 type, T02 composition |
+| Evidence identity | Ordered unique `evidence_ids` only | Full replacement | Canonical immutable snapshot | T03 final structured composition |
+| Knowledge and Decision relationships | Typed ordered collections | Full replacement | Canonical immutable snapshot | T02 shape, T05 integrity/persistence |
 | Organization ID | Required create boundary | Not editable | Server-managed top-level value | T05 persistence, no tenancy claim |
 | Object ID | Forbidden | Target selector only | Server-managed top-level UUID | Persistence assigns |
 | Revision | Forbidden | Positive expected revision only | Server-managed positive integer | T05 compare-and-swap |
@@ -188,13 +230,42 @@ organization, and bounded-attribute rules continue to validate nested context.
 Issue #46 remains open until independent review accepts this composition and
 later persistence/API ownership is completed.
 
+## Persisted Snapshot and Type-Preserving Comparison
+
+The initial core used `ConfigDict(frozen=True)` only on the outer record while
+retaining `KnowledgeObjectV2MutableState` and its mutable nested models and
+containers. Independent review correctly identified that this was a
+shallow-frozen structure, not a true persisted snapshot.
+
+C01 introduces the deliberately public
+`KnowledgeObjectV2PersistedStateSnapshot`. Construction first validates the
+complete command-compatible mutable state, then retains only deterministic
+canonical JSON. Source mutable state, content, context, references, attributes,
+owner, uncertainty, evidence identities, and relationship objects are not
+retained. Field properties and `to_mutable_state()` reconstruct fresh detached
+models on every access. Attempts to assign snapshot fields fail through the
+frozen model, and changes to any returned nested model or container cannot
+affect the stored canonical state. The existing T08 `KnowledgeContext` and
+`ContextReference` definitions remain unchanged. Core JSON output preserves
+the original state shape, is byte-stable across repeated serialization, and
+round-trips to an equivalent immutable snapshot.
+
+C02 uses the same complete-state canonical representation for no-op
+comparison. Sorted object keys make dictionary insertion order irrelevant;
+JSON arrays and all ordered contract collections retain order. Standard JSON
+tokens preserve boolean, integer, and floating-point distinctions, so
+`true`/`1`, `false`/`0`, and `1`/`1.0` are material changes both directly and
+inside lists or objects. Target mismatch still fails first, stale revision
+still fails second, and comparison mutates neither input.
+
 ## Revision, No-Op, and Legacy Results
 
 Update evaluation checks target identity first and expected revision second.
 A stale revision therefore fails even for otherwise identical content. Equal
-normalized full replacement returns `no_op`; a difference returns
-`material_change`. Evaluation never mutates the record, increments revision,
-changes timestamps, writes audit events, or persists data.
+type-preserving canonical full replacement returns `no_op`; any type, value,
+order, or governed-metadata difference returns `material_change`. Evaluation
+never mutates the record or replacement, increments revision, changes
+timestamps, writes audit events, or persists data.
 
 Every legacy assessment is explicitly not v2-complete. Deterministic blockers
 identify missing organization, structured owner, confidentiality, T03 evidence
@@ -210,6 +281,12 @@ original Release 1.7 object remains unchanged.
 - [x] Stable identity and deterministic positive revision semantics exist only
   on the persisted core and update precondition. Evidence: record, command, and
   pure evaluator tests pass.
+- [x] Persisted state cannot change through retained source aliases or direct
+  nested access. Evidence: C01 mutates every source category and every returned
+  nested view while canonical serialization remains unchanged.
+- [x] No-op evaluation distinguishes boolean, integer, and float JSON scalars,
+  ignores dictionary insertion order, and preserves all ordered collections.
+  Evidence: 18 C02 regression tests pass.
 - [x] Generic update cannot modify object identity, organization, lifecycle,
   revision, timestamps, or audit fields. Evidence: command extra-field and
   mutable-state field-inventory tests pass.
@@ -257,9 +334,12 @@ persistence mappers, SQLAlchemy records, migrations, and OpenAPI remain
 unchanged. The current model/API/persistence file hashes match the starting
 release evidence.
 
-This is a domain contract, not lifecycle orchestration, a persistence model, a
-database migration, an API response, or the complete Release 1.8 Knowledge
-Object. No new infrastructure or architecture pattern is introduced.
+The public persisted-state snapshot is a deliberate downstream domain
+contract. It keeps one validated canonical representation and exposes only
+detached command-compatible views; it is not a persistence record, database
+serialization, or API schema. This remains a domain contract, not lifecycle
+orchestration, a database migration, an API response, or the complete Release
+1.8 Knowledge Object. No dependency or infrastructure pattern is introduced.
 
 ## Security and Data Impact
 
@@ -286,8 +366,9 @@ scans are defense in depth and not a replacement for later production controls.
 - T09 must define and expose API request/response/error/OpenAPI contracts.
 - Issue #46 remains open pending independent acceptance of T02 composition and
   downstream completion.
-- The core record is a frozen Pydantic snapshot, not a complete T03/T09 object
-  and not proof of deep immutable external storage.
+- The corrected core is an immutable in-memory snapshot contract, not a
+  complete T03/T09 object and not evidence of database immutability or atomic
+  persistence; T05 owns those guarantees.
 - No PostgreSQL, migration, persistence, API completion, production IAM,
   tenancy, real-data authorization, or Release 1.8 completion is claimed.
 
@@ -295,25 +376,39 @@ scans are defense in depth and not a replacement for later production controls.
 
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
-| C01 | First static-quality pass | 0 | RESOLVED | Wrapped one E501 assertion, applied Ruff formatting, narrowed four MyPy annotations, added explicit creator/evidence boundaries and legacy-copy hardening, then reran focused and repository-wide validation. |
-| C02 | Exact final-head validation | 0 | RESOLVED | Final hardening tests increased the suite from the earlier 225-pass snapshot to 237 passes; synchronized the report to the exact final-head result and reran report validation. |
+| C90 | Initial internal static-quality pass | 0 | RESOLVED | Historical internal item: wrapped one E501 assertion, applied Ruff formatting, narrowed four MyPy annotations, added explicit creator/evidence boundaries and legacy-copy hardening, then reran focused and repository-wide validation. |
+| C91 | Initial exact final-head validation | 0 | RESOLVED | Historical internal item: final hardening tests increased the suite from the earlier 225-pass snapshot to 237 passes; synchronized the report to the exact final-head result and reran report validation. |
+| C01 | Independent review `4763553373` on previous head | 6 | RESOLVED | Replaced shallow nested state with a validated canonical snapshot that retains no mutable aliases and returns only detached views; added source-alias, direct nested-access, stable serialization, round-trip, and evaluator isolation tests. |
+| C02 | Independent review `4763553373` on previous head | 5 | RESOLVED | Replaced ordinary model equality with complete deterministic canonical comparison that sorts dictionaries, preserves scalar types and ordered collections, and retains target/stale precedence; added direct and nested regressions. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 25 | 112 focused tests cover governance, uncertainty, content, relationships, commands, records, legacy compatibility, context, and non-exposure. | None. |
+| Correctness and evidence | 25 | 25 | 133 focused tests include explicit alias-isolation, defensive-access, stable round-trip, typed scalar, dictionary-order, ordered-collection, and evaluation-precedence coverage. | None. |
 | Scope and acceptance criteria | 20 | 20 | Exactly four authorized paths; all requested domain and compatibility contracts are implemented without downstream exposure. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Accepted ADR types are reused; lifecycle, evidence/provenance, persistence, audit, and API ownership remain separated. | None. |
-| Verification, tests, or validation | 15 | 15 | Focused, existing, regression, full pytest, MyPy, Ruff, format, pip, reports, links, ownership, diff, safety, and CI pass. | None. |
+| Verification, tests, or validation | 15 | 15 | Correction subsets, focused, existing, regression, 258/4 full pytest, MyPy, Ruff, format, pip, reports, links, ownership, diff, safety, and implementation-head CI pass. | None. |
 | Security, privacy, and data governance | 10 | 10 | Synthetic-only fixtures, bounded JSON, fail-closed legacy gaps, and final scans preserve the approved data boundary. | None. |
-| Documentation and traceability | 10 | 10 | Starting SHA, implementation SHA, ADR mapping, contract matrices, commands, failures, corrections, CI, boundaries, and limitations are recorded. | None. |
-| Maintainability and clarity | 5 | 5 | One isolated module centralizes normalization and pure evaluation; lazy exports protect current runtime imports. | None. |
-| Total | 100 | 100 | All in-scope T02 acceptance criteria and required evidence are complete for independent review. | None. |
+| Documentation and traceability | 10 | 10 | Starting, initial implementation/publication, review, correction implementation, test, CI, gate, failure, score, boundary, and limitation history are recorded. | None. |
+| Maintainability and clarity | 5 | 5 | One named public snapshot centralizes alias isolation and canonical comparison; command conversion is explicit and lazy exports protect current imports. | None. |
+| Total | 100 | 100 | All in-scope T02 corrections and acceptance criteria are complete for independent re-review; this is not an approval score. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending independent review.
+Previous-head reviewer outcome: CORRECTION REQUIRED.
+
+Independent review ID: `4763553373`.
+
+Reviewed head: `5dfa0a51928925c4bae80947993f7f89717b6b1d`.
+
+Previous-head reviewer score: 89/100.
+
+Previous-head provisional weighted score: 93.4/100.
+
+Previous-head gate-adjusted score: 79/100.
+
+Current corrected-head reviewer status: Pending independent re-review.
 
 ## Final Score
 
@@ -325,12 +420,12 @@ Gate-adjusted score: Pending
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Claims map to source, tests, exact command outputs, hashes, GitHub state, or CI run 53; failed first-pass checks remain recorded. |
+| G1 Verified claims | PASS | The initial shallow-frozen claim is explicitly corrected; current claims map to source, 133 focused tests, 258/4 full pytest, exact command output, GitHub state, or CI run 56. Prior failures and scores remain recorded. |
 | G2 Confidential data | PASS | Synthetic fixtures and secret, environment, binary, credential, personal, confidential, and dataset scans pass. |
-| G3 Approved scope and architecture | PASS | The isolated v2 core preserves ADR and T03/T04/T05/T07/T09 boundaries. |
-| G4 Required validation | PASS | Focused, affected, full, type, lint, format, pip, validator, reports, links, ownership, diff, safety, and CI checks ran. |
+| G3 Approved scope and architecture | PASS | The alias-free snapshot fixes the trust invariant without changing T08 or crossing T03/T04/T05/T07/T09 boundaries. |
+| G4 Required validation | PASS | Correction-specific, focused, affected, full, type, lint, format, pip, validator, reports, links, ownership, diff, safety, and implementation-head CI checks ran. |
 | G5 File ownership | PASS | Net publication diff contains exactly the four T02-owned paths. |
-| G6 Acceptance completeness | PASS | Every issue and execution-prompt criterion has code, test, report, or explicit downstream boundary evidence. |
+| G6 Acceptance completeness | PASS | C01/C02 and every original issue criterion have code, test, report, or explicit downstream-boundary evidence. |
 
 Critical-gate result: PASS
 
@@ -339,7 +434,7 @@ Critical-gate result: PASS
 | Gate | Status | Applicability Evidence |
 |---|---|---|
 | G7 Persistence alignment and PostgreSQL evidence | PASS | T02 changes no persistence, mapper, record, migration, or API-to-PostgreSQL path and makes no PostgreSQL claim; T05 ownership is explicit. |
-| G8 Lifecycle, trust, and audit bypass prevention | PASS | Create/update mutable inputs cannot set lifecycle, revision, timestamps, or audit fields; lifecycle and audit remain explicit downstream commands. |
+| G8 Lifecycle, trust, and audit bypass prevention | PASS | Persisted state cannot be mutated around revision checks; create/update inputs still cannot set lifecycle, revision, timestamps, or audit fields, and downstream commands remain explicit. |
 
 ## Correction-Cycle History
 
@@ -347,6 +442,7 @@ Critical-gate result: PASS
 |---:|---:|---|---|---:|---|---|
 | 1 | 96 | One E501 finding, two formatter targets, and four MyPy narrowing findings remained after the first 98 focused tests passed. | Wrapped the assertion, formatted files, narrowed validator and relationship types, documented creator/evidence ownership, rejected boolean confidence, and hardened safe legacy-copy assessment. | 100 | 112 focused tests, repository-wide quality checks, reports, links, ownership, diff, safety, and CI run 53 passed. | CLOSED |
 | 2 | 100 | Exact final-head validation reported 237 passes after the final twelve hardening tests, while the report retained the earlier 225-pass snapshot. | Updated the report to the exact final-head count and preserved the earlier snapshot as implementation history. | 100 | 237 passed/4 skipped, MyPy 46 files, Ruff zero, format 59, pip, validator 40/1, report-v2, and all-report validation passed. | CLOSED |
+| 3 | 89 | Independent review `4763553373` found shallow persisted-state mutability and type-conflating ordinary equality on the previous head. | Added the public canonical immutable snapshot, detached access, type-preserving complete-state comparison, and 21 correction-specific tests without changing T08 or downstream contracts. | 100 | 133 focused, 3 C01, 18 C02, 258/4 full pytest, MyPy 46, Ruff, format 59, pip, safety, and implementation-head CI run 56 pass; current reviewer score remains pending. | CLOSED |
 
 ## Recommended Follow-up Issues
 
@@ -366,3 +462,7 @@ Critical-gate result: PASS
 ## Blockers
 
 None.
+
+## Recommendation
+
+READY FOR INDEPENDENT RE-REVIEW
