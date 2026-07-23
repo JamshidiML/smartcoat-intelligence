@@ -93,7 +93,7 @@ was run or claimed for T02.
 | Existing T08 context tests | PASS | 44 ContextReference and KnowledgeContext tests passed. |
 | Existing API route tests | PASS | 8 current API tests passed. |
 | V2 API and persistence regression subset | PASS | 6 tests passed and 94 were deselected; current model, schema, OpenAPI, imports, and database record remained isolated from v2. |
-| Final full pytest | PASS | 225 tests passed and 4 PostgreSQL-opt-in tests skipped. |
+| Final full pytest | PASS | 237 tests passed and 4 PostgreSQL-opt-in tests skipped. |
 | Final MyPy | PASS | No issues in 46 source files. |
 | Final Ruff | PASS | Repository-wide Ruff reported zero findings. |
 | Final Ruff format | PASS | All 59 files were already formatted. |
@@ -296,6 +296,7 @@ scans are defense in depth and not a replacement for later production controls.
 | Item | Source | Points | Status | Action or Evidence |
 |---|---|---:|---|---|
 | C01 | First static-quality pass | 0 | RESOLVED | Wrapped one E501 assertion, applied Ruff formatting, narrowed four MyPy annotations, added explicit creator/evidence boundaries and legacy-copy hardening, then reran focused and repository-wide validation. |
+| C02 | Exact final-head validation | 0 | RESOLVED | Final hardening tests increased the suite from the earlier 225-pass snapshot to 237 passes; synchronized the report to the exact final-head result and reran report validation. |
 
 ## Codex Self-Score
 
@@ -344,7 +345,8 @@ Critical-gate result: PASS
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
-| 1 | 96 | One E501 finding, two formatter targets, and four MyPy narrowing findings remained after the first 98 focused tests passed. | Wrapped the assertion, formatted files, narrowed validator and relationship types, documented creator/evidence ownership, rejected boolean confidence, and hardened safe legacy-copy assessment. | 100 | 112 focused tests, 225 passed/4 skipped full suite, MyPy 46 files, Ruff zero, format 59, pip, validators, reports, links, ownership, diff, safety, and CI run 53 passed. | CLOSED |
+| 1 | 96 | One E501 finding, two formatter targets, and four MyPy narrowing findings remained after the first 98 focused tests passed. | Wrapped the assertion, formatted files, narrowed validator and relationship types, documented creator/evidence ownership, rejected boolean confidence, and hardened safe legacy-copy assessment. | 100 | 112 focused tests, repository-wide quality checks, reports, links, ownership, diff, safety, and CI run 53 passed. | CLOSED |
+| 2 | 100 | Exact final-head validation reported 237 passes after the final twelve hardening tests, while the report retained the earlier 225-pass snapshot. | Updated the report to the exact final-head count and preserved the earlier snapshot as implementation history. | 100 | 237 passed/4 skipped, MyPy 46 files, Ruff zero, format 59, pip, validator 40/1, report-v2, and all-report validation passed. | CLOSED |
 
 ## Recommended Follow-up Issues
 
