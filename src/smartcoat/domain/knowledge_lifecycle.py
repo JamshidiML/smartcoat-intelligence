@@ -385,23 +385,15 @@ def project_lifecycle_review_status(
     """Compute the read-only compatibility projection and fail closed."""
 
     if lifecycle is LifecycleState.DEPRECATED:
-        previous = history.last_pre_deprecation_lifecycle
         if (
             not history.has_ever_left_draft
-            or previous is None
-            or previous in {LifecycleState.DRAFT, LifecycleState.DEPRECATED}
+            or history.last_pre_deprecation_lifecycle is not LifecycleState.APPROVED
         ):
             raise KnowledgeLifecycleError(
                 "lifecycle_history_inconsistent",
-                "deprecated lifecycle requires a valid pre-deprecation lifecycle",
+                "deprecated lifecycle requires approved as its pre-deprecation lifecycle",
             )
-        projection = _DIRECT_REVIEW_PROJECTIONS.get(previous)
-        if projection is None:
-            raise KnowledgeLifecycleError(
-                "lifecycle_history_inconsistent",
-                "pre-deprecation lifecycle cannot be projected",
-            )
-        return projection
+        return LifecycleReviewProjection.VALIDATED
 
     if history.last_pre_deprecation_lifecycle is not None:
         raise KnowledgeLifecycleError(

@@ -845,14 +845,6 @@ def test_incomplete_capture_returns_one_deterministic_error(
             ),
             LifecycleReviewProjection.VALIDATED,
         ),
-        (
-            LifecycleState.DEPRECATED,
-            LifecycleHistoryFacts(
-                has_ever_left_draft=True,
-                last_pre_deprecation_lifecycle=LifecycleState.REVIEWED,
-            ),
-            LifecycleReviewProjection.ACCEPTED,
-        ),
     ),
 )
 def test_review_projection_matrix(
@@ -863,27 +855,59 @@ def test_review_projection_matrix(
     assert project_lifecycle_review_status(lifecycle, history) is expected
 
 
+def test_deprecated_projection_accepts_approved_predecessor() -> None:
+    history = LifecycleHistoryFacts(
+        has_ever_left_draft=True,
+        last_pre_deprecation_lifecycle=LifecycleState.APPROVED,
+    )
+
+    assert (
+        project_lifecycle_review_status(LifecycleState.DEPRECATED, history)
+        is LifecycleReviewProjection.VALIDATED
+    )
+
+
+@pytest.mark.parametrize(
+    "predecessor",
+    (
+        None,
+        LifecycleState.DRAFT,
+        LifecycleState.CAPTURED,
+        LifecycleState.REVIEWED,
+        LifecycleState.VALIDATED,
+        LifecycleState.REJECTED,
+        LifecycleState.DEPRECATED,
+    ),
+)
+def test_deprecated_projection_rejects_every_non_approved_predecessor(
+    predecessor: LifecycleState | None,
+) -> None:
+    history = LifecycleHistoryFacts(
+        has_ever_left_draft=True,
+        last_pre_deprecation_lifecycle=predecessor,
+    )
+
+    with pytest.raises(KnowledgeLifecycleError) as error:
+        project_lifecycle_review_status(LifecycleState.DEPRECATED, history)
+
+    assert error.value.code == "lifecycle_history_inconsistent"
+
+
+def test_deprecated_projection_rejects_approved_predecessor_without_history() -> None:
+    history = LifecycleHistoryFacts(
+        has_ever_left_draft=False,
+        last_pre_deprecation_lifecycle=LifecycleState.APPROVED,
+    )
+
+    with pytest.raises(KnowledgeLifecycleError) as error:
+        project_lifecycle_review_status(LifecycleState.DEPRECATED, history)
+
+    assert error.value.code == "lifecycle_history_inconsistent"
+
+
 @pytest.mark.parametrize(
     ("lifecycle", "history"),
     (
-        (
-            LifecycleState.DEPRECATED,
-            LifecycleHistoryFacts(has_ever_left_draft=True),
-        ),
-        (
-            LifecycleState.DEPRECATED,
-            LifecycleHistoryFacts(
-                has_ever_left_draft=True,
-                last_pre_deprecation_lifecycle=LifecycleState.DEPRECATED,
-            ),
-        ),
-        (
-            LifecycleState.DEPRECATED,
-            LifecycleHistoryFacts(
-                has_ever_left_draft=False,
-                last_pre_deprecation_lifecycle=LifecycleState.APPROVED,
-            ),
-        ),
         (
             LifecycleState.REVIEWED,
             LifecycleHistoryFacts(has_ever_left_draft=False),
