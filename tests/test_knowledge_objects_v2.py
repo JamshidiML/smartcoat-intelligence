@@ -35,6 +35,7 @@ from smartcoat.domain.knowledge_objects_v2 import (
     KnowledgeObjectV2CoreRecord,
     KnowledgeObjectV2CreateCommand,
     KnowledgeObjectV2MutableState,
+    KnowledgeObjectV2PersistedStateSnapshot,
     KnowledgeObjectV2UpdateCommand,
     LegacyCompatibilityBlocker,
     OwnerReference,
@@ -190,6 +191,7 @@ def test_value_objects_forbid_extra_fields(
         KnowledgeObjectV2MutableState,
         KnowledgeObjectV2CreateCommand,
         KnowledgeObjectV2UpdateCommand,
+        KnowledgeObjectV2PersistedStateSnapshot,
         KnowledgeObjectV2CoreRecord,
     ],
 )
@@ -618,7 +620,7 @@ def test_update_evaluation_rejects_stale_revision_before_no_op_comparison() -> N
     command = KnowledgeObjectV2UpdateCommand(
         object_id=current.object_id,
         expected_revision=current.revision - 1,
-        replacement=current.mutable_state,
+        replacement=current.mutable_state.to_mutable_state(),
     )
 
     with pytest.raises(KnowledgeObjectUpdateError) as error:
@@ -631,6 +633,7 @@ def test_update_evaluation_detects_normalized_no_op_without_mutation() -> None:
     current = core_record()
     original = current.model_dump(mode="json")
     replacement = mutable_state(title="  Synthetic adhesion observation  ")
+    replacement_before = replacement.model_dump(mode="json")
     command = KnowledgeObjectV2UpdateCommand(
         object_id=current.object_id,
         expected_revision=current.revision,
@@ -641,21 +644,227 @@ def test_update_evaluation_detects_normalized_no_op_without_mutation() -> None:
 
     assert disposition is UpdateDisposition.NO_OP
     assert current.model_dump(mode="json") == original
+    assert replacement.model_dump(mode="json") == replacement_before
 
 
 def test_update_evaluation_detects_material_change_without_incrementing_revision() -> None:
     current = core_record()
+    before = current.model_dump(mode="json")
+    replacement = current.mutable_state.to_mutable_state()
+    replacement.title = "Changed synthetic title"
+    replacement_before = replacement.model_dump(mode="json")
     command = KnowledgeObjectV2UpdateCommand(
         object_id=current.object_id,
         expected_revision=current.revision,
-        replacement=current.mutable_state.model_copy(update={"title": "Changed synthetic title"}),
+        replacement=replacement,
     )
 
     disposition = evaluate_knowledge_object_update(current, command)
 
     assert disposition is UpdateDisposition.MATERIAL_CHANGE
+    assert current.model_dump(mode="json") == before
+    assert replacement.model_dump(mode="json") == replacement_before
     assert current.revision == 3
     assert current.updated_at == CREATED_AT + timedelta(minutes=10)
+
+
+@pytest.mark.parametrize(
+    ("persisted_value", "replacement_value"),
+    [
+        (True, 1),
+        (False, 0),
+        (1, 1.0),
+    ],
+)
+def test_update_comparison_preserves_direct_json_scalar_types(
+    persisted_value: object,
+    replacement_value: object,
+) -> None:
+    current = core_record(mutable_state=mutable_state(content={"value": persisted_value}))
+    command = KnowledgeObjectV2UpdateCommand(
+        object_id=current.object_id,
+        expected_revision=current.revision,
+        replacement=mutable_state(content={"value": replacement_value}),
+    )
+
+    assert evaluate_knowledge_object_update(current, command) is UpdateDisposition.MATERIAL_CHANGE
+
+
+@pytest.mark.parametrize(
+    ("persisted_value", "replacement_value"),
+    [
+        (True, 1),
+        (False, 0),
+        (1, 1.0),
+    ],
+)
+@pytest.mark.parametrize(
+    "container",
+    [
+        pytest.param(lambda value: [value], id="nested-list"),
+        pytest.param(lambda value: {"nested": value}, id="nested-object"),
+    ],
+)
+def test_update_comparison_preserves_nested_json_scalar_types(
+    persisted_value: object,
+    replacement_value: object,
+    container: Callable[[object], object],
+) -> None:
+    current = core_record(
+        mutable_state=mutable_state(content={"value": container(persisted_value)})
+    )
+    command = KnowledgeObjectV2UpdateCommand(
+        object_id=current.object_id,
+        expected_revision=current.revision,
+        replacement=mutable_state(content={"value": container(replacement_value)}),
+    )
+
+    assert evaluate_knowledge_object_update(current, command) is UpdateDisposition.MATERIAL_CHANGE
+
+
+def test_update_comparison_ignores_dictionary_insertion_order() -> None:
+    persisted_content = {
+        "outer": {"first": 1, "second": [True, {"third": 3.0}]},
+        "last": "synthetic",
+    }
+    replacement_content = {
+        "last": "synthetic",
+        "outer": {"second": [True, {"third": 3.0}], "first": 1},
+    }
+    current = core_record(mutable_state=mutable_state(content=persisted_content))
+    command = KnowledgeObjectV2UpdateCommand(
+        object_id=current.object_id,
+        expected_revision=current.revision,
+        replacement=mutable_state(content=replacement_content),
+    )
+
+    assert evaluate_knowledge_object_update(current, command) is UpdateDisposition.NO_OP
+
+
+def test_update_comparison_keeps_json_list_order_material() -> None:
+    current = core_record(mutable_state=mutable_state(content={"ordered": [1, 2, 3]}))
+    command = KnowledgeObjectV2UpdateCommand(
+        object_id=current.object_id,
+        expected_revision=current.revision,
+        replacement=mutable_state(content={"ordered": [3, 2, 1]}),
+    )
+
+    assert evaluate_knowledge_object_update(current, command) is UpdateDisposition.MATERIAL_CHANGE
+
+
+@pytest.mark.parametrize(
+    ("field", "persisted", "replacement"),
+    [
+        ("tags", ["first", "second"], ["second", "first"]),
+        (
+            "evidence_ids",
+            ["evidence-synthetic-a", "evidence-synthetic-b"],
+            ["evidence-synthetic-b", "evidence-synthetic-a"],
+        ),
+        (
+            "context",
+            KnowledgeContext(
+                references=[
+                    context_reference(reference_id="SYN-PROJECT-001"),
+                    context_reference(reference_id="SYN-PROJECT-002"),
+                ]
+            ),
+            KnowledgeContext(
+                references=[
+                    context_reference(reference_id="SYN-PROJECT-002"),
+                    context_reference(reference_id="SYN-PROJECT-001"),
+                ]
+            ),
+        ),
+        (
+            "knowledge_relationships",
+            [
+                KnowledgeObjectRelationship(
+                    target_object_id=SYNTHETIC_RELATED_ID,
+                    relationship_type="supports",
+                ),
+                KnowledgeObjectRelationship(
+                    target_object_id=UUID("10000000-0000-4000-8000-000000000003"),
+                    relationship_type="qualifies",
+                ),
+            ],
+            [
+                KnowledgeObjectRelationship(
+                    target_object_id=UUID("10000000-0000-4000-8000-000000000003"),
+                    relationship_type="qualifies",
+                ),
+                KnowledgeObjectRelationship(
+                    target_object_id=SYNTHETIC_RELATED_ID,
+                    relationship_type="supports",
+                ),
+            ],
+        ),
+        (
+            "decision_relationships",
+            [
+                DecisionObjectRelationship(
+                    target_decision_id=SYNTHETIC_DECISION_ID,
+                    relationship_type="informs",
+                ),
+                DecisionObjectRelationship(
+                    target_decision_id=UUID("20000000-0000-4000-8000-000000000002"),
+                    relationship_type="supports",
+                ),
+            ],
+            [
+                DecisionObjectRelationship(
+                    target_decision_id=UUID("20000000-0000-4000-8000-000000000002"),
+                    relationship_type="supports",
+                ),
+                DecisionObjectRelationship(
+                    target_decision_id=SYNTHETIC_DECISION_ID,
+                    relationship_type="informs",
+                ),
+            ],
+        ),
+    ],
+)
+def test_update_comparison_keeps_ordered_state_collections_material(
+    field: str,
+    persisted: object,
+    replacement: object,
+) -> None:
+    current = core_record(mutable_state=mutable_state(**{field: persisted}))
+    command = KnowledgeObjectV2UpdateCommand(
+        object_id=current.object_id,
+        expected_revision=current.revision,
+        replacement=mutable_state(**{field: replacement}),
+    )
+
+    assert evaluate_knowledge_object_update(current, command) is UpdateDisposition.MATERIAL_CHANGE
+
+
+def test_stale_typed_change_fails_before_comparison() -> None:
+    current = core_record(mutable_state=mutable_state(content={"value": True}))
+    command = KnowledgeObjectV2UpdateCommand(
+        object_id=current.object_id,
+        expected_revision=current.revision - 1,
+        replacement=mutable_state(content={"value": 1}),
+    )
+
+    with pytest.raises(KnowledgeObjectUpdateError) as error:
+        evaluate_knowledge_object_update(current, command)
+
+    assert error.value.code == "stale_revision"
+
+
+def test_target_mismatch_fails_before_stale_typed_change() -> None:
+    current = core_record(mutable_state=mutable_state(content={"value": True}))
+    command = KnowledgeObjectV2UpdateCommand(
+        object_id=uuid4(),
+        expected_revision=current.revision - 1,
+        replacement=mutable_state(content={"value": 1}),
+    )
+
+    with pytest.raises(KnowledgeObjectUpdateError) as error:
+        evaluate_knowledge_object_update(current, command)
+
+    assert error.value.code == "knowledge_object_target_mismatch"
 
 
 def test_core_record_requires_positive_persisted_revision() -> None:
@@ -693,13 +902,130 @@ def test_core_record_is_frozen() -> None:
         record.revision = 4
 
 
-def test_core_record_serialization_round_trip() -> None:
-    record = core_record()
+def test_persisted_snapshot_isolates_every_source_alias() -> None:
+    source_content = {"nested": {"items": [1, 2]}}
+    source_reference = context_reference(attributes={"labels": ["before"]})
+    source_context = KnowledgeContext(references=[source_reference])
+    source_owner = OwnerReference(owner_id="actor_source", role="author")
+    source_uncertainty = UncertaintyDeclaration(
+        kind=UncertaintyKind.ESTIMATE,
+        confidence=0.5,
+        note="Before",
+    )
+    source_knowledge_relationship = KnowledgeObjectRelationship(
+        target_object_id=SYNTHETIC_RELATED_ID,
+        relationship_type="supports",
+        target_revision=2,
+    )
+    source_decision_relationship = DecisionObjectRelationship(
+        target_decision_id=SYNTHETIC_DECISION_ID,
+        relationship_type="informs",
+        target_revision=1,
+    )
+    source_state = mutable_state(
+        owner=source_owner,
+        uncertainty=source_uncertainty,
+        tags=["before"],
+        content=source_content,
+        context=source_context,
+        evidence_ids=["evidence-before"],
+        knowledge_relationships=[source_knowledge_relationship],
+        decision_relationships=[source_decision_relationship],
+    )
+    record = core_record(mutable_state=source_state)
+    serialized_before = record.model_dump_json()
 
-    restored = KnowledgeObjectV2CoreRecord.model_validate_json(record.model_dump_json())
+    source_state.title = "After"
+    source_state.description = "After"
+    source_owner.owner_id = "actor_after"
+    source_state.owner.role = "reviewer"
+    source_uncertainty.confidence = 0.9
+    source_state.uncertainty = None
+    source_state.tags = ("after",)
+    source_content["nested"]["items"].append(3)  # type: ignore[index,union-attr]
+    source_state.content["nested"]["items"].append(4)  # type: ignore[index,union-attr]
+    source_reference.display_name = "After"
+    source_reference.attributes["labels"].append("after")  # type: ignore[union-attr]
+    source_context.references.append(context_reference(reference_id="SYN-PROJECT-002"))
+    source_state.evidence_ids = ("evidence-after",)
+    source_knowledge_relationship.relationship_type = "contradicts"
+    source_decision_relationship.relationship_type = "supersedes"
+
+    assert record.model_dump_json() == serialized_before
+    assert record.mutable_state.title == "Synthetic adhesion observation"
+    assert record.mutable_state.owner == OwnerReference(owner_id="actor_source", role="author")
+    assert record.mutable_state.uncertainty == UncertaintyDeclaration(
+        kind=UncertaintyKind.ESTIMATE,
+        confidence=0.5,
+        note="Before",
+    )
+    assert record.mutable_state.tags == ("before",)
+    assert record.mutable_state.content == {"nested": {"items": [1, 2]}}
+    assert record.mutable_state.context.references[0].display_name == "Synthetic project"
+    assert record.mutable_state.context.references[0].attributes == {"labels": ["before"]}
+    assert record.mutable_state.evidence_ids == ("evidence-before",)
+    assert record.mutable_state.knowledge_relationships[0].relationship_type == "supports"
+    assert record.mutable_state.decision_relationships[0].relationship_type == "informs"
+
+
+def test_persisted_snapshot_defensive_access_prevents_direct_nested_mutation() -> None:
+    record = core_record()
+    snapshot = record.mutable_state
+    serialized_before = record.model_dump_json()
+
+    with pytest.raises(ValidationError, match="frozen_instance"):
+        snapshot.title = "Blocked"
+    with pytest.raises(ValidationError, match="frozen_instance"):
+        snapshot.tags = ("blocked",)
+    with pytest.raises(ValidationError, match="frozen_instance"):
+        snapshot.evidence_ids = ("blocked",)
+
+    owner = snapshot.owner
+    owner.owner_id = "actor_after"
+    owner.role = "reviewer"
+    uncertainty = snapshot.uncertainty
+    assert uncertainty is not None
+    uncertainty.confidence = 0.9
+    uncertainty.note = "After"
+    content = snapshot.content
+    content["observation"] = "After"
+    content["nested"] = {"items": [1]}
+    nested = content["nested"]
+    assert isinstance(nested, dict)
+    nested["items"] = [2]
+    context = snapshot.context
+    context.references[0].display_name = "After"
+    context.references[0].attributes["labels"] = ["after"]
+    context.references.append(context_reference(reference_id="SYN-PROJECT-002"))
+    knowledge_relationship = snapshot.knowledge_relationships[0]
+    knowledge_relationship.relationship_type = "contradicts"
+    decision_relationship = snapshot.decision_relationships[0]
+    decision_relationship.relationship_type = "supersedes"
+
+    assert record.model_dump_json() == serialized_before
+    assert snapshot.owner.owner_id == "actor_synthetic_author"
+    assert snapshot.uncertainty is not None
+    assert snapshot.uncertainty.confidence == 0.75
+    assert snapshot.content["observation"] == "Generalized synthetic result"
+    assert len(snapshot.context.references) == 1
+    assert snapshot.context.references[0].display_name == "Synthetic project"
+    assert snapshot.context.references[0].attributes == {}
+    assert snapshot.knowledge_relationships[0].relationship_type == "supports"
+    assert snapshot.decision_relationships[0].relationship_type == "informs"
+
+
+def test_core_record_serialization_round_trip_is_stable_and_immutable() -> None:
+    record = core_record()
+    serialized = record.model_dump_json()
+
+    restored = KnowledgeObjectV2CoreRecord.model_validate_json(serialized)
+    restored.mutable_state.content["observation"] = "Detached change"
 
     assert restored == record
     assert restored.lifecycle_state is LifecycleState.DRAFT
+    assert isinstance(restored.mutable_state, KnowledgeObjectV2PersistedStateSnapshot)
+    assert restored.model_dump_json() == serialized
+    assert restored.mutable_state.content["observation"] == "Generalized synthetic result"
 
 
 def legacy_object(**overrides: object) -> KnowledgeObject:
@@ -912,5 +1238,9 @@ def test_current_database_record_shape_remains_release_1_7_only() -> None:
 
 def test_public_domain_exports_resolve_v2_types_lazily() -> None:
     from smartcoat.domain import KnowledgeObjectV2CoreRecord as ExportedCoreRecord
+    from smartcoat.domain import (
+        KnowledgeObjectV2PersistedStateSnapshot as ExportedPersistedStateSnapshot,
+    )
 
     assert ExportedCoreRecord is KnowledgeObjectV2CoreRecord
+    assert ExportedPersistedStateSnapshot is KnowledgeObjectV2PersistedStateSnapshot

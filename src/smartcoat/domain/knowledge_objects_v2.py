@@ -18,7 +18,16 @@ from enum import StrEnum
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializationInfo,
+    ValidationInfo,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
 from smartcoat.domain.base import LifecycleState
@@ -440,6 +449,116 @@ class KnowledgeObjectV2MutableState(BaseModel):
         return self
 
 
+def _canonical_mutable_state_json(state: KnowledgeObjectV2MutableState) -> str:
+    """Return a deterministic, type-preserving representation of complete state."""
+
+    return json.dumps(
+        state.model_dump(mode="json"),
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+
+
+class KnowledgeObjectV2PersistedStateSnapshot(BaseModel):
+    """Public alias-free persisted-state contract for downstream composition.
+
+    The canonical JSON is validated on construction and is the only retained
+    representation. Every field property and ``to_mutable_state`` call returns
+    newly reconstructed state, so mutable command models and T08 context models
+    can never alias the persisted snapshot.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    canonical_state_json: str = Field(repr=False, exclude=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def build_canonical_snapshot(cls, value: Any) -> dict[str, str] | Any:
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, KnowledgeObjectV2MutableState):
+            state = value
+        elif isinstance(value, dict) and set(value) == {"canonical_state_json"}:
+            serialized = value["canonical_state_json"]
+            if not isinstance(serialized, str):
+                return value
+            try:
+                payload = json.loads(serialized)
+            except json.JSONDecodeError as error:
+                raise ValueError("canonical_state_json must contain valid JSON") from error
+            state = KnowledgeObjectV2MutableState.model_validate(payload)
+        else:
+            state = KnowledgeObjectV2MutableState.model_validate(value)
+        return {"canonical_state_json": _canonical_mutable_state_json(state)}
+
+    @model_serializer(mode="plain")
+    def serialize_state(self, info: SerializationInfo) -> dict[str, Any]:
+        return self.to_mutable_state().model_dump(mode=info.mode)
+
+    @classmethod
+    def from_mutable_state(
+        cls,
+        state: KnowledgeObjectV2MutableState,
+    ) -> KnowledgeObjectV2PersistedStateSnapshot:
+        return cls.model_validate(state)
+
+    def to_mutable_state(self) -> KnowledgeObjectV2MutableState:
+        """Return a detached command-compatible copy of the persisted state."""
+
+        return KnowledgeObjectV2MutableState.model_validate_json(self.canonical_state_json)
+
+    @property
+    def title(self) -> str:
+        return self.to_mutable_state().title
+
+    @property
+    def description(self) -> str | None:
+        return self.to_mutable_state().description
+
+    @property
+    def knowledge_type(self) -> KnowledgeObjectType:
+        return self.to_mutable_state().knowledge_type
+
+    @property
+    def owner(self) -> OwnerReference:
+        return self.to_mutable_state().owner
+
+    @property
+    def confidentiality(self) -> ConfidentialityLevel:
+        return self.to_mutable_state().confidentiality
+
+    @property
+    def uncertainty(self) -> UncertaintyDeclaration | None:
+        return self.to_mutable_state().uncertainty
+
+    @property
+    def tags(self) -> tuple[str, ...]:
+        return self.to_mutable_state().tags
+
+    @property
+    def content(self) -> dict[str, JsonValue]:
+        return self.to_mutable_state().content
+
+    @property
+    def context(self) -> KnowledgeContext:
+        return self.to_mutable_state().context
+
+    @property
+    def evidence_ids(self) -> tuple[str, ...]:
+        return self.to_mutable_state().evidence_ids
+
+    @property
+    def knowledge_relationships(self) -> tuple[KnowledgeObjectRelationship, ...]:
+        return self.to_mutable_state().knowledge_relationships
+
+    @property
+    def decision_relationships(self) -> tuple[DecisionObjectRelationship, ...]:
+        return self.to_mutable_state().decision_relationships
+
+
 class KnowledgeObjectV2CreateCommand(BaseModel):
     """Unpersisted create intent; identity, lifecycle, revision, and time are server-owned."""
 
@@ -479,7 +598,7 @@ class KnowledgeObjectV2CoreRecord(BaseModel):
     lifecycle_state: LifecycleState
     created_at: datetime
     updated_at: datetime
-    mutable_state: KnowledgeObjectV2MutableState
+    mutable_state: KnowledgeObjectV2PersistedStateSnapshot
 
     @field_validator("organization_id", mode="before")
     @classmethod
@@ -507,9 +626,10 @@ class KnowledgeObjectV2CoreRecord(BaseModel):
                 "knowledge_v2_updated_before_created",
                 "updated_at must not precede created_at",
             )
+        persisted_state = self.mutable_state.to_mutable_state()
         if any(
             relationship.target_object_id == self.object_id
-            for relationship in self.mutable_state.knowledge_relationships
+            for relationship in persisted_state.knowledge_relationships
         ):
             raise _custom_error(
                 "knowledge_v2_self_relationship",
@@ -547,7 +667,10 @@ def evaluate_knowledge_object_update(
             "stale_revision",
             "the update command expected revision does not match the current record",
         )
-    if command.replacement == current.mutable_state:
+    if (
+        _canonical_mutable_state_json(command.replacement)
+        == current.mutable_state.canonical_state_json
+    ):
         return UpdateDisposition.NO_OP
     return UpdateDisposition.MATERIAL_CHANGE
 
