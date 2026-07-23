@@ -4,7 +4,7 @@ import os
 import re
 import threading
 import time
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -34,6 +34,7 @@ from smartcoat.domain.evidence_provenance import (
     EvidenceCompleteness,
     EvidenceReference,
     EvidenceType,
+    KnowledgeObjectV2EvidenceComposition,
     ProvenanceCompleteness,
     ProvenanceTransformation,
     ProvenanceV2,
@@ -237,6 +238,8 @@ def _mutable_state(
     *,
     title: str = "Synthetic persisted coating observation",
     content_marker: str = "initial",
+    tags: Sequence[str] = ("synthetic", "coating"),
+    evidence_ids: Sequence[str] = ("evidence-synthetic-1",),
     knowledge_relationships: Sequence[KnowledgeObjectRelationship] = (),
     decision_relationships: Sequence[DecisionObjectRelationship] = (),
 ) -> KnowledgeObjectV2MutableState:
@@ -251,7 +254,7 @@ def _mutable_state(
             confidence=0.75,
             note="Synthetic bounded uncertainty.",
         ),
-        tags=("synthetic", "coating"),
+        tags=tuple(tags),
         content={
             "marker": content_marker,
             "boolean_true": True,
@@ -261,41 +264,58 @@ def _mutable_state(
             "ordered": [True, 1, 1.0, False, None],
         },
         context=KnowledgeContext(references=_context_references()),
-        evidence_ids=("evidence-synthetic-1",),
+        evidence_ids=tuple(evidence_ids),
         knowledge_relationships=tuple(knowledge_relationships),
         decision_relationships=tuple(decision_relationships),
     )
 
 
-def _evidence() -> tuple[EvidenceReference, ...]:
-    return (
-        EvidenceReference(
-            evidence_id="evidence-synthetic-1",
-            evidence_type=EvidenceType.MEASUREMENT,
-            completeness=EvidenceCompleteness.COMPLETE,
-            title="Synthetic measurement reference",
-            source_reference="synthetic://measurement/1",
-            source_system="synthetic-test-catalog",
-            captured_by="synthetic-operator",
-            captured_at=NOW,
-            source_created_at=None,
-            integrity=None,
-            media_type="application/json",
-            confidentiality=ConfidentialityLevel.INTERNAL,
-            context_reference=_context_references()[0],
+def _evidence_reference(
+    *,
+    evidence_id: str = "evidence-synthetic-1",
+    title: str = "Synthetic measurement reference",
+    source_reference: str = "synthetic://measurement/1",
+    source_system: str = "synthetic-test-catalog",
+    context_reference: ContextReference | None = None,
+) -> EvidenceReference:
+    return EvidenceReference(
+        evidence_id=evidence_id,
+        evidence_type=EvidenceType.MEASUREMENT,
+        completeness=EvidenceCompleteness.COMPLETE,
+        title=title,
+        source_reference=source_reference,
+        source_system=source_system,
+        captured_by="synthetic-operator",
+        captured_at=NOW,
+        source_created_at=None,
+        integrity=None,
+        media_type="application/json",
+        confidentiality=ConfidentialityLevel.INTERNAL,
+        context_reference=(
+            _context_references()[0] if context_reference is None else context_reference
         ),
     )
 
 
-def _provenance() -> ProvenanceV2:
+def _evidence() -> tuple[EvidenceReference, ...]:
+    return (_evidence_reference(),)
+
+
+def _provenance(
+    *,
+    source_reference: str = "synthetic://knowledge/1",
+    transformations: Sequence[ProvenanceTransformation] | None = None,
+) -> ProvenanceV2:
     return ProvenanceV2(
         source_system="synthetic-test-catalog",
-        source_reference="synthetic://knowledge/1",
+        source_reference=source_reference,
         created_by="synthetic-operator",
         creation_method=CreationMethod.MANUAL,
         captured_at=NOW,
         source_created_at=None,
-        transformation_history=(
+        transformation_history=tuple(transformations)
+        if transformations is not None
+        else (
             ProvenanceTransformation(
                 transformation_type="synthetic_normalization",
                 performed_by="synthetic-pipeline",
@@ -314,6 +334,8 @@ def _create(
     factory: sessionmaker[Session],
     *,
     state: KnowledgeObjectV2MutableState | None = None,
+    evidence: Sequence[EvidenceReference] | None = None,
+    provenance: ProvenanceV2 | None = None,
     organization_id: str = "synthetic-org",
 ) -> UUID:
     with KnowledgeUnitOfWork(factory) as unit:
@@ -322,8 +344,8 @@ def _create(
                 organization_id=organization_id,
                 mutable_state=state or _mutable_state(),
             ),
-            evidence=_evidence(),
-            provenance=_provenance(),
+            evidence=tuple(evidence) if evidence is not None else _evidence(),
+            provenance=provenance if provenance is not None else _provenance(),
         )
         object_id = created.core.object_id
         unit.commit()
@@ -351,6 +373,108 @@ def _eligible_deletion_plan(
         LifecycleHistoryFacts(has_ever_left_draft=False),
         DraftDeletionFacts(has_inbound_governed_references=False),
     )
+
+
+def _replace_evidence(
+    reference: EvidenceReference,
+    **changes: object,
+) -> EvidenceReference:
+    payload = reference.model_dump(mode="python")
+    payload.update(changes)
+    return EvidenceReference.model_validate(payload)
+
+
+def _replace_provenance(
+    provenance: ProvenanceV2,
+    **changes: object,
+) -> ProvenanceV2:
+    payload = provenance.model_dump(mode="python")
+    payload.update(changes)
+    return ProvenanceV2.model_validate(payload)
+
+
+def _aggregate_xmins(session: Session, object_id: UUID) -> dict[str, tuple[str, ...]]:
+    statements = {
+        "root": text(
+            "SELECT xmin::text FROM knowledge_objects_v2 "
+            "WHERE object_id = :object_id ORDER BY object_id"
+        ),
+        "tags": text(
+            "SELECT xmin::text FROM knowledge_object_v2_tags "
+            "WHERE object_id = :object_id ORDER BY position"
+        ),
+        "evidence": text(
+            "SELECT xmin::text FROM knowledge_object_v2_evidence "
+            "WHERE object_id = :object_id ORDER BY position"
+        ),
+        "provenance": text(
+            "SELECT xmin::text FROM knowledge_object_v2_provenance "
+            "WHERE object_id = :object_id ORDER BY object_id"
+        ),
+        "context": text(
+            "SELECT xmin::text FROM knowledge_object_v2_context "
+            "WHERE object_id = :object_id ORDER BY position"
+        ),
+        "knowledge_relationships": text(
+            "SELECT xmin::text FROM knowledge_object_v2_knowledge_relationships "
+            "WHERE source_object_id = :object_id ORDER BY position"
+        ),
+        "decision_relationships": text(
+            "SELECT xmin::text FROM knowledge_object_v2_decision_relationships "
+            "WHERE source_object_id = :object_id ORDER BY position"
+        ),
+    }
+    return {
+        name: tuple(session.scalars(statement, {"object_id": object_id}).all())
+        for name, statement in statements.items()
+    }
+
+
+def _is_full_root_select(statement: str) -> bool:
+    normalized = " ".join(statement.split())
+    return (
+        normalized.startswith(
+            "SELECT knowledge_objects_v2.object_id, knowledge_objects_v2.organization_id"
+        )
+        and "knowledge_objects_v2.contract_version" in normalized
+    )
+
+
+def _read_with_root_interleaving(
+    engine: Engine,
+    *,
+    object_id: UUID,
+    writer: Callable[[int], None],
+    trigger_limit: int = 1,
+) -> tuple[KnowledgeObjectV2EvidenceComposition | None, int]:
+    trigger_count = 0
+    connection = engine.connect()
+
+    def commit_after_root(
+        _connection: object,
+        _cursor: object,
+        statement: str,
+        _parameters: object,
+        _context: object,
+        _executemany: bool,
+    ) -> None:
+        nonlocal trigger_count
+        if trigger_count >= trigger_limit or not _is_full_root_select(statement):
+            return
+        trigger_count += 1
+        writer(trigger_count)
+
+    event.listen(connection, "after_cursor_execute", commit_after_root)
+    try:
+        with Session(bind=connection, autoflush=False, expire_on_commit=False) as session:
+            result = KnowledgeObjectV2Repository(session).get(
+                object_id=object_id,
+                organization_id="synthetic-org",
+            )
+    finally:
+        event.remove(connection, "after_cursor_execute", commit_after_root)
+        connection.close()
+    return result, trigger_count
 
 
 def test_live_target_guardrails_reject_unsafe_inputs() -> None:
@@ -666,6 +790,627 @@ def test_noop_material_stale_target_and_atomic_two_session_race(
         assert target_mismatch.value.code == "knowledge_object_target_mismatch"
 
     assert engine.pool.status()
+
+
+@pytest.mark.parametrize(
+    "change",
+    (
+        "title",
+        "source_reference",
+        "source_system",
+        "context_attributes",
+        "context_scalar_identity",
+    ),
+)
+def test_evidence_only_material_changes_increment_revision(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+    change: str,
+) -> None:
+    _, factory = migrated_store
+    object_id = _create(factory)
+    original = _evidence()[0]
+    if change == "title":
+        replacement = _replace_evidence(original, title="Changed synthetic title")
+    elif change == "source_reference":
+        replacement = _replace_evidence(
+            original,
+            source_reference="synthetic://measurement/changed",
+        )
+    elif change == "source_system":
+        replacement = _replace_evidence(
+            original,
+            source_system="synthetic-alternate-catalog",
+        )
+    else:
+        context = original.context_reference
+        assert context is not None
+        context_payload = context.model_dump(mode="python")
+        attributes = dict(context.attributes)
+        if change == "context_attributes":
+            attributes["synthetic_added"] = "changed"
+        else:
+            attributes["boolean_true"] = 1
+        context_payload["attributes"] = attributes
+        replacement = _replace_evidence(
+            original,
+            context_reference=ContextReference.model_validate(context_payload),
+        )
+    assert replacement.canonical_metadata_json != original.canonical_metadata_json
+
+    with factory() as session:
+        repository = KnowledgeObjectV2Repository(session)
+        before = repository.load_for_controlled_mutation(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+        updated = repository.stage_material_update(
+            organization_id="synthetic-org",
+            object_id=object_id,
+            command=KnowledgeObjectV2UpdateCommand(
+                object_id=object_id,
+                expected_revision=1,
+                replacement=before.core.mutable_state.to_mutable_state(),
+            ),
+            evidence=(replacement,),
+        )
+        session.commit()
+
+    assert updated.core.revision == 2
+    assert updated.core.updated_at > before.core.updated_at
+    assert (
+        updated.core.mutable_state.canonical_state_json
+        == before.core.mutable_state.canonical_state_json
+    )
+    assert updated.evidence[0].canonical_metadata_json == replacement.canonical_metadata_json
+    if change == "context_scalar_identity":
+        loaded_context = updated.evidence[0].context_reference
+        assert loaded_context is not None
+        assert type(loaded_context.attributes["boolean_true"]) is int
+
+
+def test_provenance_only_and_ordered_composition_changes_are_material(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    _, factory = migrated_store
+    provenance_id = _create(factory)
+    with factory() as session:
+        repository = KnowledgeObjectV2Repository(session)
+        current = repository.load_for_controlled_mutation(
+            object_id=provenance_id,
+            organization_id="synthetic-org",
+        )
+        changed_provenance = _replace_provenance(
+            current.provenance,
+            source_reference="synthetic://knowledge/changed",
+        )
+        provenance_updated = repository.stage_material_update(
+            organization_id="synthetic-org",
+            object_id=provenance_id,
+            command=KnowledgeObjectV2UpdateCommand(
+                object_id=provenance_id,
+                expected_revision=1,
+                replacement=current.core.mutable_state.to_mutable_state(),
+            ),
+            provenance=changed_provenance,
+        )
+        session.commit()
+    assert provenance_updated.core.revision == 2
+    assert (
+        provenance_updated.core.mutable_state.canonical_state_json
+        == current.core.mutable_state.canonical_state_json
+    )
+    assert provenance_updated.provenance.source_reference == "synthetic://knowledge/changed"
+
+    first_transformation = ProvenanceTransformation(
+        transformation_type="synthetic_first",
+        performed_by="synthetic-pipeline",
+        performed_at=NOW,
+        source_reference="synthetic://measurement/1",
+    )
+    second_transformation = ProvenanceTransformation(
+        transformation_type="synthetic_second",
+        performed_by="synthetic-pipeline",
+        performed_at=NOW + timedelta(seconds=1),
+        source_reference="synthetic://measurement/2",
+    )
+    ordered_provenance = _provenance(transformations=(first_transformation, second_transformation))
+    transformation_id = _create(factory, provenance=ordered_provenance)
+    with factory() as session:
+        repository = KnowledgeObjectV2Repository(session)
+        current = repository.load_for_controlled_mutation(
+            object_id=transformation_id,
+            organization_id="synthetic-org",
+        )
+        reordered_provenance = _replace_provenance(
+            current.provenance,
+            transformation_history=(second_transformation, first_transformation),
+        )
+        reordered = repository.stage_material_update(
+            organization_id="synthetic-org",
+            object_id=transformation_id,
+            command=KnowledgeObjectV2UpdateCommand(
+                object_id=transformation_id,
+                expected_revision=1,
+                replacement=current.core.mutable_state.to_mutable_state(),
+            ),
+            provenance=reordered_provenance,
+        )
+        session.commit()
+    assert reordered.core.revision == 2
+    assert tuple(
+        item.transformation_type for item in reordered.provenance.transformation_history
+    ) == ("synthetic_second", "synthetic_first")
+
+    first_evidence = _evidence_reference()
+    second_evidence = _evidence_reference(
+        evidence_id="evidence-synthetic-2",
+        title="Synthetic second measurement",
+        source_reference="synthetic://measurement/2",
+        context_reference=_context_references()[1],
+    )
+    evidence_id = _create(
+        factory,
+        state=_mutable_state(evidence_ids=("evidence-synthetic-1", "evidence-synthetic-2")),
+        evidence=(first_evidence, second_evidence),
+    )
+    with factory() as session:
+        repository = KnowledgeObjectV2Repository(session)
+        reordered = repository.stage_material_update(
+            organization_id="synthetic-org",
+            object_id=evidence_id,
+            command=KnowledgeObjectV2UpdateCommand(
+                object_id=evidence_id,
+                expected_revision=1,
+                replacement=_mutable_state(
+                    evidence_ids=("evidence-synthetic-2", "evidence-synthetic-1")
+                ),
+            ),
+            evidence=(second_evidence, first_evidence),
+        )
+        session.commit()
+    assert reordered.core.revision == 2
+    assert tuple(item.evidence_id for item in reordered.evidence) == (
+        "evidence-synthetic-2",
+        "evidence-synthetic-1",
+    )
+
+
+def test_identical_complete_composition_is_a_strict_noop(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    _, factory = migrated_store
+    object_id = _create(factory)
+    with factory() as session:
+        repository = KnowledgeObjectV2Repository(session)
+        before = repository.load_for_controlled_mutation(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+        before_xmins = _aggregate_xmins(session, object_id)
+
+        state_payload = before.core.mutable_state.to_mutable_state().model_dump(mode="python")
+        state_payload["content"] = dict(reversed(state_payload["content"].items()))
+        reordered_state = KnowledgeObjectV2MutableState.model_validate(state_payload)
+
+        evidence_payload = before.evidence[0].model_dump(mode="python")
+        context = before.evidence[0].context_reference
+        assert context is not None
+        context_payload = context.model_dump(mode="python")
+        context_payload["attributes"] = dict(reversed(context.attributes.items()))
+        evidence_payload["context_reference"] = context_payload
+        reordered_evidence = EvidenceReference.model_validate(evidence_payload)
+        supplied_provenance = ProvenanceV2.model_validate(
+            before.provenance.model_dump(mode="python")
+        )
+
+        no_op = repository.stage_material_update(
+            organization_id="synthetic-org",
+            object_id=object_id,
+            command=KnowledgeObjectV2UpdateCommand(
+                object_id=object_id,
+                expected_revision=1,
+                replacement=reordered_state,
+            ),
+            evidence=(reordered_evidence,),
+            provenance=supplied_provenance,
+        )
+        session.commit()
+
+    with factory() as session:
+        after = KnowledgeObjectV2Repository(session).load_for_controlled_mutation(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+        after_xmins = _aggregate_xmins(session, object_id)
+
+    assert no_op.core.revision == 1
+    assert no_op.core.updated_at == before.core.updated_at
+    assert after.core.revision == 1
+    assert after.core.updated_at == before.core.updated_at
+    assert after_xmins == before_xmins
+
+
+def test_complete_composition_precedence_and_validation_failures_remain_deterministic(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    _, factory = migrated_store
+    object_id = _create(factory)
+    changed_evidence = _replace_evidence(_evidence()[0], title="Changed once")
+    changed_provenance = _provenance(source_reference="synthetic://knowledge/stale-replacement")
+    with factory() as session:
+        repository = KnowledgeObjectV2Repository(session)
+        current = repository.load_for_controlled_mutation(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+        repository.stage_material_update(
+            organization_id="synthetic-org",
+            object_id=object_id,
+            command=KnowledgeObjectV2UpdateCommand(
+                object_id=object_id,
+                expected_revision=1,
+                replacement=current.core.mutable_state.to_mutable_state(),
+            ),
+            evidence=(changed_evidence,),
+        )
+        session.commit()
+
+    with factory() as session:
+        repository = KnowledgeObjectV2Repository(session)
+        current = repository.load_for_controlled_mutation(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+        with pytest.raises(KnowledgeObjectV2RepositoryError) as stale:
+            repository.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=1,
+                    replacement=current.core.mutable_state.to_mutable_state(),
+                ),
+                evidence=(_replace_evidence(changed_evidence, title="Changed twice"),),
+            )
+        assert stale.value.code == "stale_revision"
+
+        with pytest.raises(KnowledgeObjectV2RepositoryError) as stale_provenance:
+            repository.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=1,
+                    replacement=current.core.mutable_state.to_mutable_state(),
+                ),
+                provenance=changed_provenance,
+            )
+        assert stale_provenance.value.code == "stale_revision"
+
+        with pytest.raises(KnowledgeObjectV2RepositoryError) as target_mismatch:
+            repository.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=uuid4(),
+                    expected_revision=1,
+                    replacement=current.core.mutable_state.to_mutable_state(),
+                ),
+                evidence=(_replace_evidence(changed_evidence, title="Changed twice"),),
+                provenance=changed_provenance,
+            )
+        assert target_mismatch.value.code == "knowledge_object_target_mismatch"
+
+        replacement_payload = current.core.mutable_state.to_mutable_state().model_dump(
+            mode="python"
+        )
+        replacement_payload["evidence_ids"] = ("evidence-synthetic-2",)
+        with pytest.raises(KnowledgeObjectV2RepositoryError) as missing_evidence:
+            repository.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=2,
+                    replacement=KnowledgeObjectV2MutableState.model_validate(replacement_payload),
+                ),
+            )
+        assert missing_evidence.value.code == "replacement_evidence_required"
+
+        incomplete_provenance = ProvenanceV2(
+            transformation_history=(),
+            completeness=ProvenanceCompleteness.LEGACY_INCOMPLETE,
+        )
+        with pytest.raises(ValueError, match="canonical_provenance_incomplete"):
+            repository.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=2,
+                    replacement=current.core.mutable_state.to_mutable_state(),
+                ),
+                provenance=incomplete_provenance,
+            )
+
+
+@pytest.mark.parametrize("material_dimension", ("evidence", "provenance"))
+def test_evidence_and_provenance_updates_roll_back_with_uow_failure(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+    material_dimension: str,
+) -> None:
+    _, factory = migrated_store
+    object_id = _create(factory)
+    with factory() as session:
+        before = KnowledgeObjectV2Repository(session).load_for_controlled_mutation(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+
+    with pytest.raises(RuntimeError, match="synthetic participant failure"):
+        with KnowledgeUnitOfWork(
+            factory,
+            participants=(FailingParticipant(),),
+        ) as unit:
+            current = unit.knowledge_objects.load_for_controlled_mutation(
+                object_id=object_id,
+                organization_id="synthetic-org",
+            )
+            replacement_evidence = (
+                (_replace_evidence(current.evidence[0], title="Rolled back title"),)
+                if material_dimension == "evidence"
+                else None
+            )
+            replacement_provenance = (
+                _replace_provenance(
+                    current.provenance,
+                    source_reference="synthetic://knowledge/rolled-back",
+                )
+                if material_dimension == "provenance"
+                else None
+            )
+            unit.knowledge_objects.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=1,
+                    replacement=current.core.mutable_state.to_mutable_state(),
+                ),
+                evidence=replacement_evidence,
+                provenance=replacement_provenance,
+            )
+            unit.commit()
+
+    with factory() as session:
+        after = KnowledgeObjectV2Repository(session).load_for_controlled_mutation(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+    assert after.core.revision == 1
+    assert after.core.updated_at == before.core.updated_at
+    assert after.evidence[0].canonical_metadata_json == before.evidence[0].canonical_metadata_json
+    assert after.provenance.model_dump_json() == before.provenance.model_dump_json()
+
+
+def test_revision_verified_read_retries_root_and_multiple_child_update(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, factory = migrated_store
+    object_id = _create(factory)
+
+    def writer(_attempt: int) -> None:
+        with factory() as session:
+            repository = KnowledgeObjectV2Repository(session)
+            current = repository.load_for_controlled_mutation(
+                object_id=object_id,
+                organization_id="synthetic-org",
+            )
+            repository.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=current.core.revision,
+                    replacement=_mutable_state(
+                        title="Concurrent complete title",
+                        content_marker="concurrent-complete",
+                        tags=("replacement", "coherent"),
+                    ),
+                ),
+                evidence=(
+                    _replace_evidence(
+                        current.evidence[0],
+                        title="Concurrent replacement evidence",
+                    ),
+                ),
+                provenance=_replace_provenance(
+                    current.provenance,
+                    source_reference="synthetic://knowledge/concurrent-complete",
+                ),
+            )
+            session.commit()
+
+    loaded, trigger_count = _read_with_root_interleaving(
+        engine,
+        object_id=object_id,
+        writer=writer,
+    )
+
+    assert trigger_count == 1
+    assert loaded is not None
+    assert loaded.core.revision == 2
+    assert loaded.core.mutable_state.title == "Concurrent complete title"
+    assert loaded.core.mutable_state.content["marker"] == "concurrent-complete"
+    assert loaded.core.mutable_state.tags == ("replacement", "coherent")
+    assert loaded.evidence[0].title == "Concurrent replacement evidence"
+    assert loaded.provenance.source_reference == "synthetic://knowledge/concurrent-complete"
+
+
+def test_revision_verified_read_retries_evidence_and_provenance_only_update(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, factory = migrated_store
+    object_id = _create(factory)
+
+    def writer(_attempt: int) -> None:
+        with factory() as session:
+            repository = KnowledgeObjectV2Repository(session)
+            current = repository.load_for_controlled_mutation(
+                object_id=object_id,
+                organization_id="synthetic-org",
+            )
+            repository.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=current.core.revision,
+                    replacement=current.core.mutable_state.to_mutable_state(),
+                ),
+                evidence=(
+                    _replace_evidence(
+                        current.evidence[0],
+                        source_reference="synthetic://measurement/concurrent",
+                    ),
+                ),
+                provenance=_replace_provenance(
+                    current.provenance,
+                    source_reference="synthetic://knowledge/concurrent",
+                ),
+            )
+            session.commit()
+
+    loaded, trigger_count = _read_with_root_interleaving(
+        engine,
+        object_id=object_id,
+        writer=writer,
+    )
+
+    assert trigger_count == 1
+    assert loaded is not None
+    assert loaded.core.revision == 2
+    assert loaded.core.mutable_state.content["marker"] == "initial"
+    assert loaded.evidence[0].source_reference == "synthetic://measurement/concurrent"
+    assert loaded.provenance.source_reference == "synthetic://knowledge/concurrent"
+
+
+def test_revision_verified_read_retries_lifecycle_only_update(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, factory = migrated_store
+    object_id = _create(factory)
+
+    def writer(_attempt: int) -> None:
+        with factory() as session:
+            repository = KnowledgeObjectV2Repository(session)
+            current = repository.load_for_controlled_mutation(
+                object_id=object_id,
+                organization_id="synthetic-org",
+            )
+            plan = KnowledgeLifecyclePlanner(FixedClock()).plan_transition(
+                current.core,
+                SubmitDraftCommand(
+                    object_id=object_id,
+                    expected_revision=current.core.revision,
+                    actor=LifecycleActor(
+                        actor_id="synthetic-concurrent-actor",
+                        role="knowledge_steward",
+                    ),
+                    submission_note="Synthetic concurrent capture submission.",
+                ),
+                LifecycleHistoryFacts(has_ever_left_draft=False),
+            )
+            repository.stage_lifecycle_transition(
+                organization_id="synthetic-org",
+                plan=plan,
+            )
+            session.commit()
+
+    loaded, trigger_count = _read_with_root_interleaving(
+        engine,
+        object_id=object_id,
+        writer=writer,
+    )
+
+    assert trigger_count == 1
+    assert loaded is not None
+    assert loaded.core.revision == 2
+    assert loaded.core.lifecycle_state is LifecycleState.CAPTURED
+    assert loaded.core.mutable_state.content["marker"] == "initial"
+
+
+def test_revision_verified_read_retries_concurrent_deletion(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, factory = migrated_store
+    object_id = _create(factory)
+
+    def writer(_attempt: int) -> None:
+        with factory() as session:
+            repository = KnowledgeObjectV2Repository(session)
+            plan = _eligible_deletion_plan(repository, object_id=object_id)
+            repository.stage_eligible_draft_deletion(
+                organization_id="synthetic-org",
+                plan=plan,
+            )
+            session.commit()
+
+    loaded, trigger_count = _read_with_root_interleaving(
+        engine,
+        object_id=object_id,
+        writer=writer,
+    )
+
+    assert trigger_count == 1
+    assert loaded is None
+
+
+def test_revision_verified_read_retry_exhaustion_is_bounded_and_releases_connection(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, factory = migrated_store
+    object_id = _create(factory)
+    writer_attempts: list[int] = []
+
+    def writer(attempt: int) -> None:
+        writer_attempts.append(attempt)
+        with factory() as session:
+            repository = KnowledgeObjectV2Repository(session)
+            current = repository.load_for_controlled_mutation(
+                object_id=object_id,
+                organization_id="synthetic-org",
+            )
+            repository.stage_material_update(
+                organization_id="synthetic-org",
+                object_id=object_id,
+                command=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=current.core.revision,
+                    replacement=_mutable_state(content_marker=f"retry-{attempt}"),
+                ),
+            )
+            session.commit()
+
+    with pytest.raises(KnowledgeObjectV2RepositoryError) as exhausted:
+        _read_with_root_interleaving(
+            engine,
+            object_id=object_id,
+            writer=writer,
+            trigger_limit=3,
+        )
+
+    assert exhausted.value.code == "aggregate_read_retry_exhausted"
+    assert writer_attempts == [1, 2, 3]
+    with engine.connect() as connection:
+        assert connection.scalar(text("SELECT 1")) == 1
+    with factory() as session:
+        final = KnowledgeObjectV2Repository(session).load_for_controlled_mutation(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+    assert final.core.revision == 4
+    assert final.core.mutable_state.content["marker"] == "retry-3"
 
 
 def test_valid_lifecycle_plan_persists_exactly_and_stale_plan_fails(

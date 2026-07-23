@@ -41,6 +41,23 @@ def test_cross_organization_lookup_uses_both_identity_predicates() -> None:
     assert "knowledge_objects_v2.organization_id" in compiled
 
 
+def test_revision_verification_uses_both_identity_predicates() -> None:
+    session = Mock(spec=Session)
+    session.scalar.return_value = 2
+    repository = KnowledgeObjectV2Repository(session)
+
+    revision = repository._current_revision(
+        object_id=uuid4(),
+        organization_id="synthetic-org-a",
+    )
+
+    assert revision == 2
+    statement = session.scalar.call_args.args[0]
+    compiled = str(statement.compile(dialect=postgresql.dialect()))
+    assert "knowledge_objects_v2.object_id" in compiled
+    assert "knowledge_objects_v2.organization_id" in compiled
+
+
 def test_mutation_surfaces_do_not_accept_generic_governance_fields() -> None:
     material_parameters = inspect.signature(
         KnowledgeObjectV2Repository.stage_material_update

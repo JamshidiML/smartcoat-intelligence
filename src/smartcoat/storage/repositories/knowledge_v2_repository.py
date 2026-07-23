@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import UUID, uuid4
@@ -26,7 +28,6 @@ from smartcoat.domain.knowledge_objects_v2 import (
     KnowledgeObjectV2CreateCommand,
     KnowledgeObjectV2PersistedStateSnapshot,
     KnowledgeObjectV2UpdateCommand,
-    UpdateDisposition,
     evaluate_knowledge_object_update,
 )
 from smartcoat.storage.database.knowledge_v2_models import (
@@ -54,8 +55,30 @@ class KnowledgeObjectV2RepositoryError(ValueError):
         super().__init__(f"{code}: {message}")
 
 
+@dataclass(frozen=True)
+class _KnowledgeObjectV2ChildRecords:
+    tags: tuple[KnowledgeObjectV2TagRecord, ...]
+    evidence: tuple[KnowledgeObjectV2EvidenceRecord, ...]
+    provenance: KnowledgeObjectV2ProvenanceRecord | None
+    context: tuple[KnowledgeObjectV2ContextRecord, ...]
+    knowledge_relationships: tuple[KnowledgeObjectV2KnowledgeRelationshipRecord, ...]
+    decision_relationships: tuple[KnowledgeObjectV2DecisionRelationshipRecord, ...]
+
+
+def _canonical_provenance_json(provenance: ProvenanceV2) -> str:
+    return json.dumps(
+        provenance.model_dump(mode="json"),
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+
+
 class KnowledgeObjectV2Repository:
     """PostgreSQL staging primitives. Transaction commit belongs to the Unit of Work."""
+
+    _MAX_AGGREGATE_READ_ATTEMPTS = 3
 
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -119,7 +142,10 @@ class KnowledgeObjectV2Repository:
         records = composition_to_persistence_records(composition)
         self._session.add_all(records.all_records()[1:])
         self._session.flush()
-        return self._load_composition(root)
+        return self.load_for_controlled_mutation(
+            object_id=root.object_id,
+            organization_id=root.organization_id,
+        )
 
     def get(
         self,
@@ -127,8 +153,32 @@ class KnowledgeObjectV2Repository:
         object_id: UUID,
         organization_id: str,
     ) -> KnowledgeObjectV2EvidenceComposition | None:
-        root = self._root(object_id=object_id, organization_id=organization_id)
-        return self._load_composition(root) if root is not None else None
+        for _ in range(self._MAX_AGGREGATE_READ_ATTEMPTS):
+            root = self._root(object_id=object_id, organization_id=organization_id)
+            if root is None:
+                return None
+
+            children = self._load_child_records(root)
+            verified_revision = self._current_revision(
+                object_id=object_id,
+                organization_id=organization_id,
+            )
+            if verified_revision == root.revision:
+                return persistence_records_to_composition(
+                    root,
+                    tags=children.tags,
+                    evidence=children.evidence,
+                    provenance=children.provenance,
+                    context=children.context,
+                    knowledge_relationships=children.knowledge_relationships,
+                    decision_relationships=children.decision_relationships,
+                )
+            self._session.expire_all()
+
+        raise KnowledgeObjectV2RepositoryError(
+            "aggregate_read_retry_exhausted",
+            "the Knowledge Object v2 changed during every bounded aggregate read attempt",
+        )
 
     def load_for_controlled_mutation(
         self,
@@ -174,11 +224,9 @@ class KnowledgeObjectV2Repository:
             organization_id=organization_id,
         )
         try:
-            disposition = evaluate_knowledge_object_update(current.core, command)
+            evaluate_knowledge_object_update(current.core, command)
         except KnowledgeObjectUpdateError as error:
             raise KnowledgeObjectV2RepositoryError(error.code, str(error)) from error
-        if disposition is UpdateDisposition.NO_OP:
-            return current
 
         replacement_evidence = tuple(evidence) if evidence is not None else current.evidence
         if (
@@ -189,19 +237,33 @@ class KnowledgeObjectV2Repository:
                 "replacement_evidence_required",
                 "changed evidence IDs require a complete structured evidence replacement",
             )
-        replacement_provenance = provenance or current.provenance
-        provisional_core = KnowledgeObjectV2CoreRecord(
+        replacement_provenance = provenance if provenance is not None else current.provenance
+        desired_core = KnowledgeObjectV2CoreRecord(
             object_id=current.core.object_id,
             organization_id=current.core.organization_id,
-            revision=current.core.revision + 1,
+            revision=current.core.revision,
             lifecycle_state=current.core.lifecycle_state,
             created_at=current.core.created_at,
-            updated_at=datetime.now(UTC),
+            updated_at=current.core.updated_at,
             mutable_state=KnowledgeObjectV2PersistedStateSnapshot.from_mutable_state(
                 command.replacement
             ),
         )
-        KnowledgeObjectV2EvidenceComposition(
+        desired_composition = KnowledgeObjectV2EvidenceComposition(
+            core=desired_core,
+            evidence=replacement_evidence,
+            provenance=replacement_provenance,
+        )
+        if self._materially_identical(current, desired_composition):
+            return current
+
+        provisional_core = desired_core.model_copy(
+            update={
+                "revision": current.core.revision + 1,
+                "updated_at": datetime.now(UTC),
+            }
+        )
+        state_composition = KnowledgeObjectV2EvidenceComposition(
             core=provisional_core,
             evidence=replacement_evidence,
             provenance=replacement_provenance,
@@ -230,11 +292,7 @@ class KnowledgeObjectV2Repository:
         self._replace_mutable_children(
             object_id=current.core.object_id,
             organization_id=organization_id,
-            state_composition=KnowledgeObjectV2EvidenceComposition(
-                core=provisional_core,
-                evidence=replacement_evidence,
-                provenance=replacement_provenance,
-            ),
+            state_composition=state_composition,
         )
         self._session.flush()
         self._session.expire_all()
@@ -413,56 +471,92 @@ class KnowledgeObjectV2Repository:
             )
         return root
 
-    def _load_composition(
+    def _load_child_records(
         self,
         root: KnowledgeObjectV2Record,
-    ) -> KnowledgeObjectV2EvidenceComposition:
+    ) -> _KnowledgeObjectV2ChildRecords:
         organization_id = root.organization_id
         object_id = root.object_id
-        tags = self._session.scalars(
-            select(KnowledgeObjectV2TagRecord).where(
-                KnowledgeObjectV2TagRecord.organization_id == organization_id,
-                KnowledgeObjectV2TagRecord.object_id == object_id,
-            )
-        ).all()
-        evidence = self._session.scalars(
-            select(KnowledgeObjectV2EvidenceRecord).where(
-                KnowledgeObjectV2EvidenceRecord.organization_id == organization_id,
-                KnowledgeObjectV2EvidenceRecord.object_id == object_id,
-            )
-        ).all()
+        tags = tuple(
+            self._session.scalars(
+                select(KnowledgeObjectV2TagRecord).where(
+                    KnowledgeObjectV2TagRecord.organization_id == organization_id,
+                    KnowledgeObjectV2TagRecord.object_id == object_id,
+                )
+            ).all()
+        )
+        evidence = tuple(
+            self._session.scalars(
+                select(KnowledgeObjectV2EvidenceRecord).where(
+                    KnowledgeObjectV2EvidenceRecord.organization_id == organization_id,
+                    KnowledgeObjectV2EvidenceRecord.object_id == object_id,
+                )
+            ).all()
+        )
         provenance = self._session.scalar(
             select(KnowledgeObjectV2ProvenanceRecord).where(
                 KnowledgeObjectV2ProvenanceRecord.organization_id == organization_id,
                 KnowledgeObjectV2ProvenanceRecord.object_id == object_id,
             )
         )
-        context = self._session.scalars(
-            select(KnowledgeObjectV2ContextRecord).where(
-                KnowledgeObjectV2ContextRecord.organization_id == organization_id,
-                KnowledgeObjectV2ContextRecord.object_id == object_id,
-            )
-        ).all()
-        knowledge_relationships = self._session.scalars(
-            select(KnowledgeObjectV2KnowledgeRelationshipRecord).where(
-                KnowledgeObjectV2KnowledgeRelationshipRecord.organization_id == organization_id,
-                KnowledgeObjectV2KnowledgeRelationshipRecord.source_object_id == object_id,
-            )
-        ).all()
-        decision_relationships = self._session.scalars(
-            select(KnowledgeObjectV2DecisionRelationshipRecord).where(
-                KnowledgeObjectV2DecisionRelationshipRecord.organization_id == organization_id,
-                KnowledgeObjectV2DecisionRelationshipRecord.source_object_id == object_id,
-            )
-        ).all()
-        return persistence_records_to_composition(
-            root,
+        context = tuple(
+            self._session.scalars(
+                select(KnowledgeObjectV2ContextRecord).where(
+                    KnowledgeObjectV2ContextRecord.organization_id == organization_id,
+                    KnowledgeObjectV2ContextRecord.object_id == object_id,
+                )
+            ).all()
+        )
+        knowledge_relationships = tuple(
+            self._session.scalars(
+                select(KnowledgeObjectV2KnowledgeRelationshipRecord).where(
+                    KnowledgeObjectV2KnowledgeRelationshipRecord.organization_id == organization_id,
+                    KnowledgeObjectV2KnowledgeRelationshipRecord.source_object_id == object_id,
+                )
+            ).all()
+        )
+        decision_relationships = tuple(
+            self._session.scalars(
+                select(KnowledgeObjectV2DecisionRelationshipRecord).where(
+                    KnowledgeObjectV2DecisionRelationshipRecord.organization_id == organization_id,
+                    KnowledgeObjectV2DecisionRelationshipRecord.source_object_id == object_id,
+                )
+            ).all()
+        )
+        return _KnowledgeObjectV2ChildRecords(
             tags=tags,
             evidence=evidence,
             provenance=provenance,
             context=context,
             knowledge_relationships=knowledge_relationships,
             decision_relationships=decision_relationships,
+        )
+
+    def _current_revision(
+        self,
+        *,
+        object_id: UUID,
+        organization_id: str,
+    ) -> int | None:
+        return self._session.scalar(
+            select(KnowledgeObjectV2Record.revision).where(
+                KnowledgeObjectV2Record.object_id == object_id,
+                KnowledgeObjectV2Record.organization_id == organization_id,
+            )
+        )
+
+    @staticmethod
+    def _materially_identical(
+        current: KnowledgeObjectV2EvidenceComposition,
+        desired: KnowledgeObjectV2EvidenceComposition,
+    ) -> bool:
+        return (
+            current.core.mutable_state.canonical_state_json
+            == desired.core.mutable_state.canonical_state_json
+            and tuple(reference.canonical_metadata_json for reference in current.evidence)
+            == tuple(reference.canonical_metadata_json for reference in desired.evidence)
+            and _canonical_provenance_json(current.provenance)
+            == _canonical_provenance_json(desired.provenance)
         )
 
     def _replace_mutable_children(
