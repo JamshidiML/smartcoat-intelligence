@@ -40,10 +40,15 @@ Independently reviewed head:
 Correction implementation SHA:
 `aafab64f4409adad66730cd40bc9b5cf890dac49`.
 
-The corrected publication head is recorded in PR #57 because a Git commit
-cannot embed its own resulting SHA. No persistence, migration, API, service,
-repository, mapper, dependency, CI, schema, Accepted ADR, T02, or T08 file is
-changed.
+Corrected-head independent review ID: `4765661258`.
+
+Corrected reviewed head:
+`b3a721dcfc72ba64a1a1ddbd1e01909ecb2cd196`.
+
+Independent reviewer decision: `ACCEPTED`.
+
+No persistence, migration, API, service, repository, mapper, dependency, CI,
+schema, Accepted ADR, T02, or T08 file is changed.
 
 ## Files Changed
 
@@ -100,7 +105,7 @@ this thread.
 - `git diff --cached --numstat`
 - `git push -u origin thread/18-03-evidence-provenance`
 - GitHub issue, PR, workflow-run, job, and step inspection for issues #38,
-  #40, #41, #42, #46, #48, PRs #49/#55/#57, and CI run 62.
+  #40, #41, #42, #46, #48, PRs #49/#55/#57, and CI runs 62 and 66.
 
 Long standard-library scanner bodies and complete command output are preserved
 in the execution transcript. No PostgreSQL or Docker validation was run or
@@ -166,11 +171,13 @@ claimed because T03 owns no persistence behavior.
 | Corrected pip check | PASS | No broken requirements found; pip disabled its unwritable user cache without affecting validation. |
 | Corrected report-validator tests | PASS | 40 tests passed and 1 configured test skipped. |
 | Pre-update report-v2 validation | PASS | All 17 committed reports passed before this report update. |
-| Corrected current report-v2 | PASS | The updated T03 report passed the machine validator with the required re-review workflow status and pending independent scores. |
-| Corrected all-reports validation | PASS | All 17 committed execution reports passed report-v2 validation together. |
+| Corrected current report-v2 | PASS | The accepted 98/100 review, 98.8/100 weighted and gate-adjusted scores, G1-G8 PASS, open two-point downstream follow-up, and `READY FOR APPROVAL` recommendation pass the machine validator. |
+| Corrected all-reports validation | PASS | All 17 execution reports pass report-v2 validation together after the acceptance update. |
 | Corrected Markdown links | PASS | 407 Markdown files and 118 repository-local targets were checked with zero broken targets. |
 | T03/T04 overlap | PASS | T03 has exactly three branch paths, T04 has exactly four different branch paths, and their intersection is empty. |
 | Correction ownership and safety | PASS | The correction contains exactly the three T03-owned paths; whitespace, unexpected-file, text/binary, environment, key, credential, contact-data, and confidential-industrial-data checks pass. |
+| Corrected-head PR merge-ref CI associated with `b3a721dcfc72ba64a1a1ddbd1e01909ecb2cd196` | PASS | GitHub Actions run `30019867166` (run 66) checked the synthetic PR merge ref derived from the corrected head and `release/1.8-knowledge-capture-core`; checkout, Python 3.12 setup, dependency installation, pip compatibility, Ruff, format, MyPy, pytest, and completion steps passed. |
+| Independent review 4765661258 | PASS: accepted | The corrected reviewed head received decision `ACCEPTED`, reviewer 98/100, weighted 98.8/100, gate-adjusted 98.8/100, and G1-G8 PASS. The two retained points are the non-blocking downstream T09 structured-evidence API-schema follow-up. |
 | PostgreSQL validation | SKIP | T03 changes no mapper, repository, record, migration, transaction, or API-to-PostgreSQL path and makes no PostgreSQL claim. |
 
 ## Model Inventory
@@ -343,8 +350,8 @@ remain byte-equivalent after adaptation.
   authenticity, approval, lifecycle, and IAM claims are absent. Evidence:
   negative field tests, source scan, and safety scan pass.
 - [x] Required focused, affected, full, static, report, link, safety, PR, and CI
-  evidence exists. Evidence: the original head CI and corrected local
-  validation matrix pass; exact corrected-head CI is required before closure.
+  evidence exists. Evidence: the original head CI, corrected local validation
+  matrix, and corrected-head PR merge-ref CI pass.
 - [x] Generalized synthetic data only is used. Evidence: fixtures and final
   prohibited-content scans pass.
 
@@ -405,6 +412,9 @@ external evidence existence, or real-data approval.
 - T05 must implement migration, records, mappers, repositories, atomic
   persistence, and live PostgreSQL evidence.
 - T07 must implement the canonical immutable Enterprise Event audit profile.
+- T09 must define or explicitly verify public structured-evidence request and
+  response JSON Schema and must not assume the internal
+  `canonical_metadata_json` storage field is the desired API schema.
 - T09 must implement request, response, error, and OpenAPI contracts.
 - No raw-file ingestion, storage, OCR, persistence, migration, PostgreSQL, API
   completion, IAM, tenancy, legal retention, real-data authorization,
@@ -419,6 +429,7 @@ external evidence existence, or real-data approval.
 | C92 | Initial focused and static pass | 0 | RESOLVED | Corrected one test deprecation warning, three E501 lines, and two formatter targets; reran focused, static, and full validation. |
 | C01 | Independent review 4765336121, finding T03-C01 | 6 | RESOLVED | Replaced retained nested Pydantic state with validated deterministic canonical JSON and fresh defensive views; source and all composition context paths are mutation isolated. |
 | C02 | Independent review 4765336121, finding T03-C02 | 5 | RESOLVED | Replaced ordinary Pydantic equality with complete deterministic canonical metadata comparison that preserves Boolean, integer, float, and list identity while ignoring dictionary insertion order. |
+| C03 | Independent review 4765661258, downstream T09 follow-up | 2 | OPEN | T09 must define or explicitly verify public request and response JSON Schema for structured evidence without exposing or assuming the internal `canonical_metadata_json` storage representation. This is non-blocking for T03 merge closure. |
 
 ## Codex Self-Score
 
@@ -427,15 +438,15 @@ external evidence existence, or real-data approval.
 | Correctness and evidence | 25 | 25 | 142 focused tests cover the original contract plus 26 correction-specific alias, serialization, scalar-type, object-order, list-order, and alignment cases. | None. |
 | Scope and acceptance criteria | 20 | 20 | Exactly three owned paths; every issue #41 and Wave 2 criterion is implemented or explicitly bounded downstream. | None. |
 | Architecture and North-Star alignment | 15 | 15 | ADR-0025 authority, T02/T08 composition, envelope adapter, human-trust, and no-false-certainty boundaries are preserved. | None. |
-| Verification, tests, or validation | 15 | 15 | 26 correction-specific, 183 affected, 8 API, 400/4 full pytest, MyPy 47, Ruff, format 61, pip, reports, links, ownership, safety, and exact-head CI pass. | None. |
+| Verification, tests, or validation | 15 | 15 | 26 correction-specific, 183 affected, 8 API, 400/4 full pytest, MyPy 47, Ruff, format 61, pip, reports, links, ownership, safety, and corrected-head PR merge-ref CI pass. | None. |
 | Security, privacy, and data governance | 10 | 10 | Metadata-only bounds, raw-content rejection, synthetic fixtures, and prohibited-artifact scans preserve the approved data boundary. | None. |
 | Documentation and traceability | 10 | 10 | Starting and implementation SHAs, failures, corrections, matrices, commands, CI, gates, limitations, and ownership are recorded. | None. |
 | Maintainability and clarity | 5 | 5 | Typed value objects, pure validators, stable error codes, explicit adapters, and one composition boundary keep downstream integration clear. | None. |
-| Total | 100 | 100 | T03-C01 and T03-C02 are corrected with complete validation; independent re-review remains pending. | None. |
+| Total | 100 | 100 | T03-C01 and T03-C02 are corrected with complete validation; independent review 4765661258 accepted the corrected head for release-branch merge. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending independent re-review.
+Reviewer status: Accepted.
 
 Historical independent review ID: `4765336121`.
 
@@ -444,9 +455,19 @@ Historical reviewed head:
 
 Previous reviewer score: 89/100.
 
-Current reviewer score: Pending independent re-review.
+Current independent review ID: `4765661258`.
 
-Independent review has not yet evaluated the corrected T03 publication head.
+Current reviewed head:
+`b3a721dcfc72ba64a1a1ddbd1e01909ecb2cd196`.
+
+Reviewer total: 98
+
+Reviewer evidence: Independent review 4765661258 accepted the corrected head
+for release-branch merge, scored it 98/100, and declared G1-G8 PASS. The
+remaining two points are a non-blocking downstream T09 public JSON Schema
+follow-up, not a T03 merge blocker.
+
+Decision: ACCEPTED
 
 ## Final Score
 
@@ -454,21 +475,20 @@ Previous weighted score: 93.4/100.
 
 Previous gate-adjusted score: 79/100.
 
-Provisional weighted score: Pending
+Provisional weighted score: 98.8
 
-Gate-adjusted score: Pending
+Gate-adjusted score: 98.8
 
-The independent reviewer score is required before either final score can be
-calculated.
+The final score is `0.40 * 100 + 0.60 * 98 = 98.8`. No gate cap applies.
 
 ## Critical-Gate Declaration
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Claims map to source, exact local command output, independent review 4765336121, GitHub state, or exact-head CI; all historical failed invocations and corrections remain recorded. |
+| G1 Verified claims | PASS | Claims map to source, exact local command output, independent reviews 4765336121 and 4765661258, GitHub state, or corrected-head PR merge-ref CI; all historical failed invocations and corrections remain recorded. |
 | G2 Confidential data | PASS | Synthetic fixtures and secret, environment, binary, credential, personal-data, and confidential-payload checks pass. |
 | G3 Approved scope and architecture | PASS | Exactly one T03 domain module, its tests, and this report implement ADR-0025 without changing T02, T08, or downstream layers. |
-| G4 Required validation | PASS | Corrected focused, correction-specific, affected, API, full, type, lint, format, pip, report, link, ownership, overlap, safety, PR, and exact-head CI checks ran. |
+| G4 Required validation | PASS | Corrected focused, correction-specific, affected, API, full, type, lint, format, pip, report, link, ownership, overlap, safety, PR, and corrected-head PR merge-ref CI checks ran. |
 | G5 File ownership | PASS | Final publication scope is exactly the three T03-owned paths and no untracked generated output remains. |
 | G6 Acceptance completeness | PASS | Every original Wave 2 criterion plus T03-C01 and T03-C02 has code, adversarial tests, report evidence, or an explicit downstream boundary. |
 
@@ -487,17 +507,20 @@ Critical-gate result: PASS
 |---:|---:|---|---|---:|---|---|
 | 1 | 100 | Environment selection produced two unavailable-tool invocations, local wheel creation left generated build output, and first focused/static checks found one warning, three E501 lines, and two format targets. | Selected a clean temporary Python 3.12 environment, removed generated output, corrected the assertion and line wrapping, formatted only owned files, and reran every required gate. | 100 | 116 focused, targeted subsets, 191 affected, 374/4 full pytest, MyPy 47, Ruff, format 61, pip, reports, links, ownership, safety, and CI run 62 pass. | CLOSED |
 | 2 | 89 | Independent review 4765336121 found T03-C01 retained mutable T08 aliases and T03-C02 conflated Boolean, integer, and float metadata. | Stored only validated canonical JSON, returned detached nested views, compared complete type-preserving metadata, added 26 adversarial cases, corrected one format target and one typed adapter call site, and reran every required gate. | 100 | 142 focused, 26 correction-specific, 183 affected, 8 API, 400/4 full pytest, MyPy 47, Ruff, format 61, pip, reports, links, ownership, overlap, safety, and corrected-head CI pass; independent re-review remains pending. | CLOSED |
+| 3 | 98 | Independent review 4765661258 accepted the corrected head and requested precise synthetic merge-ref terminology plus an explicit downstream T09 public-schema note. | Replaced exact-head wording with corrected-head PR merge-ref evidence and recorded the non-blocking T09 JSON Schema obligation as C03 without changing implementation. | 98 | Review 4765661258, run 66, the current report-only diff, report-v2 validation, links, ownership, and safety checks provide closure evidence; C03 remains an explicit downstream follow-up. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Independent ChatGPT review should evaluate PR #57 and this publication head
-  before any acceptance or merge decision.
+- Independent review 4765661258 accepted the corrected T03 head for
+  release-branch merge.
 - T05 should consume the explicit complete and legacy adapter contracts for
   persistence and migration without inventing historical facts.
 - T07 should reference evidence IDs and safe provenance facts in the canonical
   immutable Enterprise Event profile without copying confidential content.
 - T09 should expose versioned structured evidence and provenance only after
-  persistence and lifecycle integrations are accepted.
+  persistence and lifecycle integrations are accepted, and must define or
+  explicitly verify its public request and response JSON Schema independently
+  of the internal `canonical_metadata_json` storage field.
 - Issue #46 should remain open for downstream T08 persistence and API
   obligations.
 - PR #49 must remain draft and unmerged until final Release 1.8 integration.
@@ -508,4 +531,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT RE-REVIEW
+READY FOR APPROVAL
