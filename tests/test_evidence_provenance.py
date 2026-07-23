@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID, uuid5
@@ -99,6 +100,16 @@ def complete_evidence(**overrides: object) -> EvidenceReference:
     return EvidenceReference(**payload)
 
 
+def evidence_with_context_attributes(
+    attributes: dict[str, object],
+    **overrides: object,
+) -> EvidenceReference:
+    return complete_evidence(
+        context_reference=context_reference(attributes=attributes),
+        **overrides,
+    )
+
+
 def legacy_evidence(**overrides: object) -> EvidenceReference:
     payload: dict[str, object] = {
         "evidence_id": "legacy-evidence-001",
@@ -166,6 +177,28 @@ def assert_validation_code(error: ValidationError, code: str) -> None:
 def assert_composition_code(error: ValidationError, code: str) -> None:
     assert code in str(error)
     assert isinstance(error.errors()[0]["ctx"]["error"], EvidenceCompositionError)
+
+
+def mutate_context_attribute_list(context: ContextReference) -> None:
+    values = context.attributes["ordered_values"]
+    assert isinstance(values, list)
+    values.append("detached-change")
+
+
+def mutate_context_attribute_object(context: ContextReference) -> None:
+    values = context.attributes["object_values"]
+    assert isinstance(values, dict)
+    values["flag"] = False
+
+
+def assert_evidence_collection_code(
+    first: EvidenceReference,
+    second: EvidenceReference,
+    code: str,
+) -> None:
+    with pytest.raises(EvidenceReferenceCollectionError) as error:
+        validate_evidence_references((first, second))
+    assert error.value.code == code
 
 
 def test_canonical_vocabularies_have_exact_bounded_values() -> None:
@@ -372,6 +405,139 @@ def test_reference_serialization_round_trip_is_equivalent() -> None:
     assert restored.context_reference is not reference.context_reference
 
 
+def test_reference_retains_no_source_context_or_attribute_aliases() -> None:
+    ordered_values: list[object] = ["first", True, 1, 1.0]
+    object_values: dict[str, object] = {"flag": True, "count": 1}
+    attributes: dict[str, object] = {
+        "ordered_values": ordered_values,
+        "object_values": object_values,
+    }
+    source_context = context_reference(
+        version="v1",
+        source_reference="synthetic://context/source-001",
+        evidence_reference="synthetic://context/evidence-001",
+        attributes=attributes,
+    )
+    reference = complete_evidence(context_reference=source_context)
+    serialized_before = reference.model_dump_json()
+
+    source_context.reference_id = "SYN-MUTATED"
+    source_context.attributes["added_through_context"] = "changed"
+    mutate_context_attribute_list(source_context)
+    mutate_context_attribute_object(source_context)
+    attributes["added_through_input"] = "changed"
+    ordered_values.append("changed")
+    object_values["flag"] = False
+
+    assert reference.model_dump_json() == serialized_before
+    canonical_context = reference.context_reference
+    assert canonical_context is not None
+    assert canonical_context.reference_id == "SYN-TEST-001"
+    assert canonical_context.attributes == {
+        "object_values": {"count": 1, "flag": True},
+        "ordered_values": ["first", True, 1, 1.0],
+    }
+
+
+@pytest.mark.parametrize(
+    ("field_name", "mutator"),
+    [
+        ("context_type", lambda context: setattr(context, "context_type", ContextType.MATERIAL)),
+        ("reference_id", lambda context: setattr(context, "reference_id", "SYN-MUTATED")),
+        ("id_kind", lambda context: setattr(context, "id_kind", ContextIdKind.UUID)),
+        ("source_system", lambda context: setattr(context, "source_system", "changed")),
+        ("display_name", lambda context: setattr(context, "display_name", "Changed")),
+        ("version", lambda context: setattr(context, "version", "v2")),
+        (
+            "relationship_role",
+            lambda context: setattr(context, "relationship_role", "changed"),
+        ),
+        (
+            "source_reference",
+            lambda context: setattr(
+                context,
+                "source_reference",
+                "synthetic://context/changed",
+            ),
+        ),
+        (
+            "evidence_reference",
+            lambda context: setattr(
+                context,
+                "evidence_reference",
+                "synthetic://evidence/changed",
+            ),
+        ),
+        (
+            "attributes_scalar",
+            lambda context: context.attributes.__setitem__("flag", False),
+        ),
+        ("attributes_list", mutate_context_attribute_list),
+        ("attributes_object", mutate_context_attribute_object),
+    ],
+)
+def test_composition_context_views_cannot_mutate_canonical_state(
+    field_name: str,
+    mutator: Callable[[ContextReference], None],
+) -> None:
+    reference = complete_evidence(
+        evidence_id="evidence-001",
+        context_reference=context_reference(
+            version="v1",
+            source_reference="synthetic://context/source-001",
+            evidence_reference="synthetic://context/evidence-001",
+            attributes={
+                "flag": True,
+                "ordered_values": ["first", 1],
+                "object_values": {"flag": True},
+            },
+        ),
+    )
+    composition = KnowledgeObjectV2EvidenceComposition(
+        core=core_record(("evidence-001",)),
+        evidence=(reference,),
+        provenance=complete_provenance(),
+    )
+    serialized_before = composition.model_dump_json()
+    canonical_context_before = composition.evidence[0].context_reference
+    assert canonical_context_before is not None
+    context_json_before = canonical_context_before.model_dump_json()
+    detached_view = composition.evidence[0].context_reference
+    assert detached_view is not None
+
+    mutator(detached_view)
+
+    assert composition.model_dump_json() == serialized_before, field_name
+    canonical_context_after = composition.evidence[0].context_reference
+    assert canonical_context_after is not None
+    assert canonical_context_after is not detached_view
+    assert canonical_context_after.model_dump_json() == context_json_before
+
+
+def test_reference_round_trip_remains_equivalent_and_immutable() -> None:
+    reference = evidence_with_context_attributes(
+        {
+            "flag": True,
+            "ordered_values": [True, 1, 1.0],
+            "object_values": {"integer": 1, "float": 1.0},
+        }
+    )
+    serialized = reference.model_dump_json()
+    restored = EvidenceReference.model_validate_json(serialized)
+    detached_context = restored.context_reference
+    assert detached_context is not None
+
+    detached_context.reference_id = "SYN-MUTATED"
+    mutate_context_attribute_list(detached_context)
+    mutate_context_attribute_object(detached_context)
+
+    assert restored == reference
+    assert restored.model_dump_json() == serialized
+    assert restored.canonical_metadata_json == reference.canonical_metadata_json
+    assert restored.model_dump_json() == restored.model_dump_json()
+    assert "canonical_metadata_json" not in restored.model_dump()
+
+
 @pytest.mark.parametrize(
     ("algorithm", "value"),
     [
@@ -453,6 +619,84 @@ def test_evidence_collection_rejects_identity_conflict() -> None:
 
     assert error.value.code == "evidence_id_conflict"
     assert error.value.evidence_id == first.evidence_id
+
+
+@pytest.mark.parametrize(
+    ("first_value", "second_value"),
+    [
+        (True, 1),
+        (False, 0),
+        (1, 1.0),
+    ],
+)
+def test_context_scalar_types_are_distinct_for_evidence_identity(
+    first_value: object,
+    second_value: object,
+) -> None:
+    first = evidence_with_context_attributes({"value": first_value})
+    second = evidence_with_context_attributes({"value": second_value})
+
+    assert_evidence_collection_code(first, second, "evidence_id_conflict")
+
+
+@pytest.mark.parametrize(
+    ("first_value", "second_value"),
+    [
+        ([True], [1]),
+        ([False], [0]),
+        ([1], [1.0]),
+    ],
+)
+def test_context_list_scalar_types_are_distinct_for_evidence_identity(
+    first_value: list[object],
+    second_value: list[object],
+) -> None:
+    first = evidence_with_context_attributes({"values": first_value})
+    second = evidence_with_context_attributes({"values": second_value})
+
+    assert_evidence_collection_code(first, second, "evidence_id_conflict")
+
+
+@pytest.mark.parametrize(
+    ("first_value", "second_value"),
+    [
+        ({"value": True}, {"value": 1}),
+        ({"value": False}, {"value": 0}),
+        ({"value": 1}, {"value": 1.0}),
+    ],
+)
+def test_context_object_scalar_types_are_distinct_for_evidence_identity(
+    first_value: dict[str, object],
+    second_value: dict[str, object],
+) -> None:
+    first = evidence_with_context_attributes({"values": first_value})
+    second = evidence_with_context_attributes({"values": second_value})
+
+    assert_evidence_collection_code(first, second, "evidence_id_conflict")
+
+
+def test_context_dictionary_insertion_order_is_an_exact_duplicate() -> None:
+    first = evidence_with_context_attributes(
+        {
+            "alpha": {"integer": 1, "flag": True},
+            "beta": ["first", 2],
+        }
+    )
+    second = evidence_with_context_attributes(
+        {
+            "beta": ["first", 2],
+            "alpha": {"flag": True, "integer": 1},
+        }
+    )
+
+    assert_evidence_collection_code(first, second, "evidence_exact_duplicate")
+
+
+def test_context_list_order_is_an_evidence_identity_conflict() -> None:
+    first = evidence_with_context_attributes({"values": [True, "middle", 1]})
+    second = evidence_with_context_attributes({"values": [1, "middle", True]})
+
+    assert_evidence_collection_code(first, second, "evidence_id_conflict")
 
 
 def test_evidence_collection_rejects_excessive_size_without_reordering() -> None:
@@ -637,6 +881,41 @@ def test_canonical_composition_requires_exact_evidence_identity_alignment() -> N
 
     assert composition.core.mutable_state.evidence_ids == ("evidence-001",)
     assert tuple(item.evidence_id for item in composition.evidence) == ("evidence-001",)
+
+
+def test_corrected_evidence_order_and_t02_alignment_remain_exact() -> None:
+    evidence = (
+        evidence_with_context_attributes(
+            {"value": True},
+            evidence_id="evidence-001",
+        ),
+        evidence_with_context_attributes(
+            {"value": 1},
+            evidence_id="evidence-002",
+        ),
+        evidence_with_context_attributes(
+            {"value": 1.0},
+            evidence_id="evidence-003",
+        ),
+    )
+
+    assert validate_evidence_references(evidence) == evidence
+    composition = KnowledgeObjectV2EvidenceComposition(
+        core=core_record(("evidence-001", "evidence-002", "evidence-003")),
+        evidence=evidence,
+        provenance=complete_provenance(),
+    )
+
+    assert composition.core.mutable_state.evidence_ids == (
+        "evidence-001",
+        "evidence-002",
+        "evidence-003",
+    )
+    assert tuple(item.evidence_id for item in composition.evidence) == (
+        "evidence-001",
+        "evidence-002",
+        "evidence-003",
+    )
 
 
 def test_composition_rejects_missing_evidence_object() -> None:

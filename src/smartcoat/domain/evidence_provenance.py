@@ -7,6 +7,7 @@ or imply that an external source exists.
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -14,7 +15,16 @@ from enum import StrEnum
 from typing import Any, Literal
 from uuid import UUID, uuid5
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializationInfo,
+    ValidationInfo,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
 from smartcoat.domain.base import Provenance
@@ -175,10 +185,10 @@ class EvidenceIntegrity(BaseModel):
         return self
 
 
-class EvidenceReference(BaseModel):
-    """Canonical metadata-only evidence reference for new and legacy records."""
+class _EvidenceReferenceInput(BaseModel):
+    """Validated command-side shape used to build canonical evidence."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", validate_default=True)
 
     evidence_id: str = Field(min_length=1, max_length=MAX_EVIDENCE_ID_LENGTH)
     evidence_type: EvidenceType
@@ -267,7 +277,7 @@ class EvidenceReference(BaseModel):
         return normalized
 
     @model_validator(mode="after")
-    def validate_completeness(self) -> EvidenceReference:
+    def validate_completeness(self) -> _EvidenceReferenceInput:
         if self.title is None and self.description is None:
             raise _custom_error(
                 "evidence_title_or_description_required",
@@ -295,6 +305,115 @@ class EvidenceReference(BaseModel):
                 "legacy_incomplete evidence must use legacy_reference",
             )
         return self
+
+
+def _canonical_evidence_metadata_json(reference: _EvidenceReferenceInput) -> str:
+    """Return deterministic JSON that preserves scalar types and list order."""
+
+    return json.dumps(
+        reference.model_dump(mode="json"),
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+
+
+class EvidenceReference(BaseModel):
+    """Alias-free canonical evidence with detached T08 context views.
+
+    Input is validated through ``_EvidenceReferenceInput`` and immediately
+    reduced to deterministic canonical JSON. No supplied T08 model, attributes
+    dictionary, or nested list is retained. Every property reconstructs a new
+    detached view, so changing that view cannot alter canonical evidence.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    canonical_metadata_json: str = Field(repr=False, exclude=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def build_canonical_reference(cls, value: Any) -> dict[str, str] | Any:
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, _EvidenceReferenceInput):
+            reference = value
+        elif isinstance(value, dict) and set(value) == {"canonical_metadata_json"}:
+            serialized = value["canonical_metadata_json"]
+            if not isinstance(serialized, str):
+                return value
+            try:
+                payload = json.loads(serialized)
+            except json.JSONDecodeError as error:
+                raise ValueError("canonical_metadata_json must contain valid JSON") from error
+            reference = _EvidenceReferenceInput.model_validate(payload)
+        else:
+            reference = _EvidenceReferenceInput.model_validate(value)
+        return {"canonical_metadata_json": _canonical_evidence_metadata_json(reference)}
+
+    @model_serializer(mode="plain")
+    def serialize_metadata(self, info: SerializationInfo) -> dict[str, Any]:
+        return self._validated_metadata().model_dump(mode=info.mode)
+
+    def _validated_metadata(self) -> _EvidenceReferenceInput:
+        return _EvidenceReferenceInput.model_validate_json(self.canonical_metadata_json)
+
+    @property
+    def evidence_id(self) -> str:
+        return self._validated_metadata().evidence_id
+
+    @property
+    def evidence_type(self) -> EvidenceType:
+        return self._validated_metadata().evidence_type
+
+    @property
+    def completeness(self) -> EvidenceCompleteness:
+        return self._validated_metadata().completeness
+
+    @property
+    def title(self) -> str | None:
+        return self._validated_metadata().title
+
+    @property
+    def description(self) -> str | None:
+        return self._validated_metadata().description
+
+    @property
+    def source_reference(self) -> str:
+        return self._validated_metadata().source_reference
+
+    @property
+    def source_system(self) -> str | None:
+        return self._validated_metadata().source_system
+
+    @property
+    def captured_by(self) -> str | None:
+        return self._validated_metadata().captured_by
+
+    @property
+    def captured_at(self) -> datetime | None:
+        return self._validated_metadata().captured_at
+
+    @property
+    def source_created_at(self) -> datetime | None:
+        return self._validated_metadata().source_created_at
+
+    @property
+    def integrity(self) -> EvidenceIntegrity | None:
+        return self._validated_metadata().integrity
+
+    @property
+    def media_type(self) -> str | None:
+        return self._validated_metadata().media_type
+
+    @property
+    def confidentiality(self) -> ConfidentialityLevel | None:
+        return self._validated_metadata().confidentiality
+
+    @property
+    def context_reference(self) -> ContextReference | None:
+        return self._validated_metadata().context_reference
 
 
 class EvidenceReferenceCollectionError(ValueError):
@@ -338,7 +457,11 @@ def validate_evidence_references(
             continue
 
         first_index, first = existing
-        code = "evidence_exact_duplicate" if reference == first else "evidence_id_conflict"
+        code = (
+            "evidence_exact_duplicate"
+            if reference.canonical_metadata_json == first.canonical_metadata_json
+            else "evidence_id_conflict"
+        )
         raise EvidenceReferenceCollectionError(
             code,
             evidence_id=reference.evidence_id,
@@ -612,14 +735,16 @@ def adapt_legacy_evidence_reference(source_reference: str) -> LegacyEvidenceAdap
         field_name="legacy evidence source_reference",
         max_length=MAX_SOURCE_REFERENCE_LENGTH,
     )
-    reference = EvidenceReference(
-        evidence_id=_legacy_evidence_id(normalized),
-        evidence_type=EvidenceType.LEGACY_REFERENCE,
-        completeness=EvidenceCompleteness.LEGACY_INCOMPLETE,
-        description=(
-            "Legacy evidence reference retained without complete actor or capture-time facts."
-        ),
-        source_reference=normalized,
+    reference = EvidenceReference.model_validate(
+        {
+            "evidence_id": _legacy_evidence_id(normalized),
+            "evidence_type": EvidenceType.LEGACY_REFERENCE,
+            "completeness": EvidenceCompleteness.LEGACY_INCOMPLETE,
+            "description": (
+                "Legacy evidence reference retained without complete actor or capture-time facts."
+            ),
+            "source_reference": normalized,
+        }
     )
     return LegacyEvidenceAdapterResult(reference=reference)
 
