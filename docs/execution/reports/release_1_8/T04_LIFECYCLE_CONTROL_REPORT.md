@@ -41,9 +41,14 @@ Initial publication and independently reviewed SHA:
 Correction implementation SHA:
 `91fd13ac762c0a73cff3f51acca1dd4bcfed2e2f`.
 
-The final correction publication head and its exact-head CI are recorded by PR
-#56 and the issue evidence comments because a Git commit cannot embed its own
-resulting SHA. The correction publication commit changes only this report.
+Corrected-head independent review ID: `4765663527`.
+
+Corrected reviewed head:
+`4b321955b5932b97728177e247bf2dbe09195189`.
+
+Independent reviewer decision: `ACCEPTED`.
+
+The administrative closure commit changes only this report.
 
 ## Files Changed
 
@@ -102,8 +107,11 @@ GitHub connector operations verified issues #38, #40, #41, #42, #46, and #48,
 PRs #49 and #55, created draft PR #56, corrected its initial SHA text, and
 inspected workflow run 61 and every job step. Correction Cycle 1 additionally
 verified review `4765339529`, the exact reviewed head, PR #56, and issues #42
-and #38 before editing. No PostgreSQL, Docker, migration, repository, mapper,
-route, or final event command was run.
+and #38 before editing. Administrative closure verified independent review
+`4765663527`, corrected head
+`4b321955b5932b97728177e247bf2dbe09195189`, and workflow run 65. No
+PostgreSQL, Docker, migration, repository, mapper, route, or final event command
+was run.
 
 ## Actual Results
 
@@ -133,7 +141,7 @@ route, or final event command was run.
 | Implementation commit and push | PASS | Commit `edf859d5bd4262ccd474ee152767bd6d47946785` was pushed normally with upstream tracking and no history rewrite. |
 | Draft PR creation | PASS | PR #56 is open, draft, unmerged, and targets `release/1.8-knowledge-capture-core`. |
 | Initial PR body SHA | FAIL: corrected publication metadata | The first body incorrectly expanded short SHA `edf859d`; GitHub's exact head was immediately used to replace it with `edf859d5bd4262ccd474ee152767bd6d47946785`. Repository content was unaffected. |
-| Implementation-head CI run 61 | PASS | Run `30015948231` passed checkout, Python 3.12 setup, dependency installation, pip compatibility, Ruff, format, MyPy, pytest, post-setup, and completion on the exact implementation SHA. |
+| Implementation-head PR merge-ref CI run 61 | PASS | Run `30015948231`, associated with implementation head `edf859d5bd4262ccd474ee152767bd6d47946785`, checked the synthetic PR merge ref derived from that head and the release base; checkout, Python 3.12 setup, dependency installation, pip compatibility, Ruff, format, MyPy, pytest, post-setup, and completion passed. |
 | Independent review `4765339529` | FAIL: CORRECTION REQUIRED on prior head | Review of exact head `8ee81c8411a9659da36b7699200af434156f7dfe` scored 91/100, provisional weighted 94.2/100, and gate-adjusted 79/100 because deprecated projection accepted impossible non-approved predecessor histories. |
 | Correction preflight | PASS | Before edits, local HEAD, upstream, and PR #56 head all exactly equaled reviewed SHA `8ee81c8411a9659da36b7699200af434156f7dfe`; the worktree was clean and the PR remained draft, open, unmerged, and based on the Release 1.8 branch. |
 | Worktree-local `.venv` correction invocations | FAIL: corrected environment selection | Both requested test commands failed before collection because this worktree has no `.venv/bin/python`; no test result was claimed, and the established shared environment at `../.venv` was used. |
@@ -163,6 +171,8 @@ route, or final event command was run.
 | Corrected T03/T04 zero overlap | PASS | Comparing both complete release-base branch diffs found zero shared paths. |
 | Corrected diff checks | PASS | Both release-base and uncommitted report diffs have no whitespace error. |
 | Corrected safety scan | PASS | All four owned paths are UTF-8 text and contain no secret, `.env`, binary, credential, email/personal-data, or raw industrial-data artifact indicator. |
+| Corrected-head PR merge-ref CI associated with `4b321955b5932b97728177e247bf2dbe09195189` | PASS | GitHub Actions run `30019449889` (run 65) checked the synthetic PR merge ref derived from the corrected head and `release/1.8-knowledge-capture-core`; checkout, Python 3.12 setup, dependency installation, pip compatibility, Ruff, format, MyPy, pytest, and completion steps passed. |
+| Independent review `4765663527` | PASS: accepted | The corrected reviewed head received decision `ACCEPTED`, Codex 99/100, reviewer 99/100, weighted 99.0/100, gate-adjusted 99.0/100, and G1-G8 PASS. |
 | PostgreSQL validation | SKIP | T04 owns no persistence behavior and makes no PostgreSQL evidence claim. |
 
 ## Model and Service Inventory
@@ -384,9 +394,9 @@ authorization, retention, external-existence, or real-data permission claim.
 - No route, mapper, migration, repository, PostgreSQL, production IAM,
   tenancy, legal-erasure, API-completion, real-data, or production-readiness
   result is claimed.
-- Independent re-review of the corrected publication head is pending, so the
-  self-score remains below 100 and current reviewer, weighted, and
-  gate-adjusted scores remain Pending.
+- Independent review `4765663527` accepted the corrected head at 99/100 with
+  G1-G8 PASS. The authoritative one-point documentation and traceability
+  deduction is retained without inflating either accepted score.
 
 ## Lost Points and Correction Items
 
@@ -396,7 +406,8 @@ authorization, retention, external-existence, or real-data permission claim.
 | C91 | Internal second pass and publication metadata | 0 | RESOLVED | Historical internal item: added immutable output consistency validators and four negative tests; corrected the PR-body SHA and safety-scanner regex, then reran both checks. |
 | C92 | Initial exact-head independent review | 0 | RESOLVED | Historical open-review item: independent review `4765339529` evaluated exact head `8ee81c8411a9659da36b7699200af434156f7dfe`, supplied the previous 91/94.2/79 scores, and created C01. |
 | C01 | Independent review `4765339529` on previous head | 9 | RESOLVED | Deprecated projection now requires true `has_ever_left_draft` and exact predecessor `approved`; exhaustive tests reject missing, draft, captured, reviewed, validated, rejected, deprecated, and false-history inputs while preserving the valid `validated` projection. |
-| C02 | Independent corrected-head re-review | 1 | OPEN | Independent ChatGPT re-review must evaluate the exact corrected publication head before approval, ready transition, or merge. |
+| C02 | Independent corrected-head re-review | 1 | RESOLVED | Independent review `4765663527` evaluated exact corrected head `4b321955b5932b97728177e247bf2dbe09195189`, accepted it for release-branch merge, and declared G1-G8 PASS. |
+| C03 | Independent review `4765663527`, retained score deduction | 1 | OPEN | Preserve the authoritative accepted 99/100 reviewer and Codex scores without retrospective inflation. The synthetic merge-ref terminology is corrected administratively; this retained point is non-blocking for T04 merge closure. |
 
 ## Codex Self-Score
 
@@ -407,9 +418,9 @@ authorization, retention, external-existence, or real-data permission claim.
 | Architecture and North-Star alignment | 15 | 15 | Lifecycle remains authoritative; human trust, explicit commands, deprecation, and bounded desired-work boundaries align. | None. |
 | Verification, tests, or validation | 15 | 15 | 9 correction-specific, 153 focused, 333 affected, 8 API, 411/4 full, type, lint, format, pip, report, link, ownership, safety, and CI evidence is recorded. | None. |
 | Security, privacy, and data governance | 10 | 10 | Synthetic fixtures, minimal audit requests, no arbitrary payloads, and prohibited-artifact scans preserve the boundary. | None. |
-| Documentation and traceability | 10 | 9 | Initial and correction commands, failures, review ID/head/scores, C01, matrices, ownership, limits, gates, and CI publication boundary are recorded. | Exact corrected-head independent re-review remains pending. |
+| Documentation and traceability | 10 | 9 | Initial and correction commands, failures, both review IDs and heads, accepted scores, C01, matrices, ownership, limits, gates, and corrected-head PR merge-ref CI are recorded. | The authoritative accepted 99/100 score retains one non-blocking documentation and traceability point. |
 | Maintainability and clarity | 5 | 5 | Explicit commands, one closed matrix, typed errors, immutable outputs, and pure planner separate concerns clearly. | None. |
-| Total | 100 | 99 | All in-scope correction implementation and local validation is complete for independent re-review. | One point remains open for independent corrected-head re-review. |
+| Total | 100 | 99 | Independent review `4765663527` accepted the corrected head for release-branch merge with all gates passing. | One authoritative non-blocking documentation and traceability point remains retained. |
 
 ## ChatGPT Reviewer Score
 
@@ -428,30 +439,38 @@ Previous-head gate-adjusted score: 79/100.
 Previous-head gate result: G1 PASS, G2 PASS, G3 FAIL, G4 FAIL, G5 PASS, G6
 FAIL, G7 PASS, and G8 FAIL.
 
-Current corrected-head reviewer status: Pending.
+Current independent review ID: `4765663527`.
 
-Reviewer status: Pending
+Current reviewed head:
+`4b321955b5932b97728177e247bf2dbe09195189`.
 
-The current reviewer, weighted, and gate-adjusted scores must be supplied by an
-independent re-review of the exact corrected publication head. The historical
-scores above apply only to the reviewed previous head.
+Reviewer status: Accepted.
+
+Reviewer total: 99
+
+Reviewer evidence: Independent review `4765663527` accepted the corrected head
+for release-branch merge, scored it 99/100, and declared G1-G8 PASS. The
+non-blocking evidence clarification is recorded with corrected-head PR
+merge-ref terminology.
+
+Decision: ACCEPTED
 
 ## Final Score
 
-Provisional weighted score: Pending
+Provisional weighted score: 99.0
 
-Gate-adjusted score: Pending
+Gate-adjusted score: 99.0
 
-The weighted and gate-adjusted scores remain pending until independent review.
+The final score is `0.40 * 99 + 0.60 * 99 = 99.0`. No gate cap applies.
 
 ## Critical-Gate Declaration
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Every current claim maps to source, executed commands, exact test counts, GitHub state, CI run 61, or review `4765339529`; prior failures and prior-head scores remain recorded. |
+| G1 Verified claims | PASS | Every current claim maps to source, executed commands, exact test counts, GitHub state, CI runs 61 and 65, or reviews `4765339529` and `4765663527`; prior failures and prior-head scores remain recorded. |
 | G2 Confidential data | PASS | Synthetic fixtures and secret, environment, binary, credential, personal-data, and confidential-data checks found no prohibited artifact. |
 | G3 Approved scope and architecture | PASS | ADR-0020/0022 authority, T02 consumption, explicit commands, approved-only deprecated projection, and downstream ownership are preserved. |
-| G4 Required validation | PASS | Correction-specific, focused, affected, API, full pytest, MyPy, Ruff, format, pip, report, link, ownership, safety, and implementation-head CI checks ran; exact correction-publication CI is reported outside this self-referential commit. |
+| G4 Required validation | PASS | Correction-specific, focused, affected, API, full pytest, MyPy, Ruff, format, pip, report, link, ownership, safety, implementation-head CI, and corrected-head PR merge-ref CI checks ran. |
 | G5 File ownership | PASS | The complete branch diff contains exactly the four authorized T04 paths and zero T03 or other-thread overlap. |
 | G6 Acceptance completeness | PASS | C01 and every issue #42 and Wave 2 T04 criterion have code, test, report, or explicit downstream-boundary evidence. |
 
@@ -469,13 +488,12 @@ Critical-gate result: PASS
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
 | 1 | 96 | First format check identified three files; internal review found output models should reject manual semantic contradictions; initial PR text contained an incorrect expanded SHA; the first safety regex did not compile. | Applied formatting, added output/action/revision/time/tombstone consistency checks and four tests, corrected PR metadata and scanner syntax, and reran local plus CI validation. | 99 | Historical evidence: 148 focused, 328 affected, 8 API, 406/4 full pytest, MyPy 48, Ruff, format 62, pip, reports, links, safety, and CI run 61 passed. | CLOSED |
-| 2 | 79 | Independent review `4765339529` scored the exact previous head 91/100, provisional weighted 94.2/100, and gate-adjusted 79/100 because deprecated projection accepted impossible non-approved lifecycle histories. | Required true left-draft history plus exact `approved` predecessor, returned only `validated`, removed reviewed acceptance, and added exhaustive predecessor and false-history regressions without changing transition, persistence, API, or event ownership. | 99 | 9 correction-specific, 153 focused, 333 affected, 8 API, 411/4 full pytest, MyPy 48, Ruff, format 62, and pip checks passed; report, safety, publication, and exact-head CI evidence follows. | OPEN |
+| 2 | 79 | Independent review `4765339529` scored the exact previous head 91/100, provisional weighted 94.2/100, and gate-adjusted 79/100 because deprecated projection accepted impossible non-approved lifecycle histories. | Required true left-draft history plus exact `approved` predecessor, returned only `validated`, removed reviewed acceptance, added exhaustive predecessor and false-history regressions, and recorded accepted corrected-head review `4765663527` with synthetic merge-ref terminology. | 99 | 9 correction-specific, 153 focused, 333 affected, 8 API, 411/4 full pytest, MyPy 48, Ruff, format 62, pip, reports, links, safety, run 65, reviewer 99/100, weighted 99.0/100, gate-adjusted 99.0/100, and G1-G8 PASS. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Independent ChatGPT should re-review exact corrected PR #56 head, verify C01,
-  and assign the authoritative current reviewer, weighted, and gate-adjusted
-  scores.
+- Independent review `4765663527` accepted exact corrected PR #56 head
+  `4b321955b5932b97728177e247bf2dbe09195189` for release-branch merge.
 - T07 should consume only the safe append request when defining the canonical
   typed Knowledge `EnterpriseEvent` profile.
 - T05 should supply trusted history/reference facts and execute compare-and-swap
@@ -489,4 +507,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT RE-REVIEW
+READY FOR APPROVAL
