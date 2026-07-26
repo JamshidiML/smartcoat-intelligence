@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
+from sqlalchemy.schema import CreateTable
 
 from smartcoat.domain.base import LifecycleState
 from smartcoat.domain.knowledge_audit import (
@@ -12,6 +13,7 @@ from smartcoat.domain.knowledge_audit import (
     KnowledgeAuditChangedField,
     KnowledgeAuditEventType,
 )
+from smartcoat.domain.knowledge_lifecycle import LifecycleAction
 from smartcoat.storage.database.knowledge_audit_models import (
     KnowledgeAuditEventRecord,
 )
@@ -53,6 +55,14 @@ def _record(
     *,
     sequence: int,
     event_id: UUID | None = None,
+    replacement_object_id: UUID | None = None,
+    event_type: str = "update",
+    lifecycle_action: str | None = None,
+    previous_lifecycle: str = "draft",
+    resulting_lifecycle: str = "draft",
+    previous_revision: int | None = None,
+    resulting_revision: int | None = None,
+    changed_fields_json: str = '["content"]',
 ) -> KnowledgeAuditEventRecord:
     return KnowledgeAuditEventRecord(
         event_id=event_id or uuid4(),
@@ -60,20 +70,46 @@ def _record(
         event_family="enterprise_event",
         organization_id="synthetic-org",
         object_id=OBJECT_ID,
-        event_type="update",
-        lifecycle_action=None,
+        event_type=event_type,
+        lifecycle_action=lifecycle_action,
         actor_id="synthetic-actor",
         actor_role="knowledge_author",
         occurred_at=NOW,
         recorded_at=NOW + timedelta(seconds=1),
         correlation_id=uuid4(),
-        previous_lifecycle="draft",
-        resulting_lifecycle="draft",
-        previous_revision=sequence,
-        resulting_revision=sequence + 1,
+        replacement_object_id=replacement_object_id,
+        previous_lifecycle=previous_lifecycle,
+        resulting_lifecycle=resulting_lifecycle,
+        previous_revision=previous_revision or sequence,
+        resulting_revision=resulting_revision or sequence + 1,
         reason_or_note="Synthetic update.",
-        changed_fields_json='["content"]',
+        changed_fields_json=changed_fields_json,
         audit_sequence=sequence,
+    )
+
+
+def _deprecation_request(
+    replacement_object_id: UUID | None,
+) -> KnowledgeAuditAppendRequest:
+    return KnowledgeAuditAppendRequest(
+        organization_id="synthetic-org",
+        object_id=OBJECT_ID,
+        event_type=KnowledgeAuditEventType.DEPRECATE,
+        lifecycle_action=LifecycleAction.DEPRECATE_APPROVED,
+        actor_id="synthetic-steward",
+        actor_role="knowledge_steward",
+        occurred_at=NOW,
+        correlation_id=uuid4(),
+        replacement_object_id=replacement_object_id,
+        previous_lifecycle=LifecycleState.APPROVED,
+        resulting_lifecycle=LifecycleState.DEPRECATED,
+        previous_revision=5,
+        resulting_revision=6,
+        reason_or_note="Replace synthetic approved knowledge.",
+        changed_fields=[
+            KnowledgeAuditChangedField.LIFECYCLE_STATE,
+            KnowledgeAuditChangedField.REVISION,
+        ],
     )
 
 
@@ -111,6 +147,32 @@ def test_stage_append_flushes_without_committing_and_returns_domain_event() -> N
     assert event.changed_fields == (KnowledgeAuditChangedField.CONTENT,)
 
 
+def test_ir_c02_replacement_stages_and_reconstructs_without_commit() -> None:
+    replacement_object_id = uuid4()
+    session = MagicMock(spec=Session)
+    session.scalar.return_value = None
+
+    def assign_server_fields() -> None:
+        record = session.add.call_args.args[0]
+        record.event_id = uuid4()
+        record.schema_version = "1"
+        record.event_family = "enterprise_event"
+        record.recorded_at = NOW + timedelta(seconds=1)
+        record.audit_sequence = 8
+
+    session.flush.side_effect = assign_server_fields
+    repository = KnowledgeAuditRepository(session)
+
+    event = repository.stage_append(
+        _deprecation_request(replacement_object_id),
+    )
+
+    staged = session.add.call_args.args[0]
+    assert staged.replacement_object_id == replacement_object_id
+    assert event.replacement_object_id == replacement_object_id
+    session.commit.assert_not_called()
+
+
 def test_every_query_contains_organization_and_object_predicates() -> None:
     session = MagicMock(spec=Session)
     session.scalar.return_value = None
@@ -139,10 +201,21 @@ def test_every_query_contains_organization_and_object_predicates() -> None:
 
 
 def test_history_returns_frozen_domain_events_in_repository_order() -> None:
+    replacement_object_id = uuid4()
     session = MagicMock(spec=Session)
     session.scalars.return_value.all.return_value = [
         _record(sequence=4),
-        _record(sequence=9),
+        _record(
+            sequence=9,
+            replacement_object_id=replacement_object_id,
+            event_type="deprecate",
+            lifecycle_action="deprecate_approved",
+            previous_lifecycle="approved",
+            resulting_lifecycle="deprecated",
+            previous_revision=5,
+            resulting_revision=6,
+            changed_fields_json='["lifecycle_state","revision"]',
+        ),
     ]
     repository = KnowledgeAuditRepository(session)
 
@@ -152,8 +225,21 @@ def test_history_returns_frozen_domain_events_in_repository_order() -> None:
     )
 
     assert tuple(event.audit_sequence for event in events) == (4, 9)
+    assert events[-1].replacement_object_id == replacement_object_id
     with pytest.raises(Exception, match="frozen"):
         events[0].actor_id = "changed"  # type: ignore[misc]
+
+
+def test_ir_c02_metadata_limits_replacement_without_foreign_key() -> None:
+    ddl = str(
+        CreateTable(KnowledgeAuditEventRecord.__table__).compile(dialect=postgresql.dialect())
+    )
+
+    assert "replacement_object_id UUID" in ddl
+    assert "ck_knowledge_audit_events_v2_replacement" in ddl
+    assert "event_type = 'deprecate'" in ddl
+    assert "lifecycle_action = 'deprecate_approved'" in ddl
+    assert "FOREIGN KEY(replacement_object_id)" not in ddl
 
 
 def test_repository_surface_is_append_only_and_has_no_commit_method() -> None:

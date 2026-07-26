@@ -55,6 +55,11 @@ def upgrade() -> None:
             postgresql.UUID(as_uuid=True),
             nullable=False,
         ),
+        sa.Column(
+            "replacement_object_id",
+            postgresql.UUID(as_uuid=True),
+            nullable=True,
+        ),
         sa.Column("previous_lifecycle", sa.String(length=32), nullable=True),
         sa.Column("resulting_lifecycle", sa.String(length=32), nullable=True),
         sa.Column("previous_revision", sa.Integer(), nullable=True),
@@ -106,6 +111,12 @@ def upgrade() -> None:
         sa.CheckConstraint(
             "recorded_at >= occurred_at",
             name="ck_knowledge_audit_events_v2_timestamp_order",
+        ),
+        sa.CheckConstraint(
+            "replacement_object_id IS NULL OR "
+            "(event_type = 'deprecate' "
+            "AND lifecycle_action = 'deprecate_approved')",
+            name="ck_knowledge_audit_events_v2_replacement",
         ),
         sa.PrimaryKeyConstraint("event_id"),
         sa.UniqueConstraint(

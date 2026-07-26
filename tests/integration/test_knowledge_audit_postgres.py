@@ -65,7 +65,10 @@ from smartcoat.domain.knowledge_objects_v2 import (
     KnowledgeObjectV2UpdateCommand,
     OwnerReference,
 )
-from smartcoat.services.knowledge_audit_service import KnowledgeAuditService
+from smartcoat.services.knowledge_audit_service import (
+    KnowledgeAuditService,
+    KnowledgeAuditServiceError,
+)
 from smartcoat.storage.database.base import Base
 from smartcoat.storage.database.knowledge_audit_models import (
     KnowledgeAuditEventRecord,
@@ -76,6 +79,7 @@ from smartcoat.storage.repositories.knowledge_audit_repository import (
     KnowledgeAuditParticipant,
 )
 from smartcoat.storage.repositories.knowledge_v2_repository import (
+    KnowledgeObjectV2Repository,
     KnowledgeObjectV2RepositoryError,
 )
 
@@ -596,6 +600,431 @@ def _advance_to(
         ),
         correlation_id=uuid4(),
     )
+    if target is LifecycleState.APPROVED:
+        return
+    if target is LifecycleState.DEPRECATED:
+        service.transition(
+            organization_id="synthetic-org",
+            command=DeprecateApprovedCommand(
+                object_id=object_id,
+                expected_revision=5,
+                actor=LifecycleActor(
+                    actor_id="synthetic-steward",
+                    role="knowledge_steward",
+                ),
+                deprecation_reason="Synthetic deprecation.",
+            ),
+            correlation_id=uuid4(),
+        )
+        return
+    raise AssertionError(f"unsupported lifecycle target {target}")
+
+
+_NON_DRAFT_UPDATE_CASES = (
+    (LifecycleState.CAPTURED, 2),
+    (LifecycleState.REVIEWED, 3),
+    (LifecycleState.VALIDATED, 4),
+    (LifecycleState.APPROVED, 5),
+    (LifecycleState.REJECTED, 3),
+    (LifecycleState.DEPRECATED, 6),
+)
+
+
+@pytest.mark.parametrize(("lifecycle", "revision"), _NON_DRAFT_UPDATE_CASES)
+def test_ir_c01_non_draft_material_and_noop_updates_are_forbidden(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+    lifecycle: LifecycleState,
+    revision: int,
+) -> None:
+    _, factory = migrated_store
+    service = _service(factory)
+    object_id = _created(service)
+    _advance_to(service, object_id=object_id, target=lifecycle)
+    before_history = service.history_for_object(
+        organization_id="synthetic-org",
+        object_id=object_id,
+    )
+
+    for replacement in (
+        _state(content={"flag": False, "count": 1}),
+        _state(),
+    ):
+        with pytest.raises(KnowledgeAuditServiceError) as error:
+            service.update(
+                GovernedKnowledgeUpdateCommand(
+                    organization_id="synthetic-org",
+                    update=KnowledgeObjectV2UpdateCommand(
+                        object_id=object_id,
+                        expected_revision=revision,
+                        replacement=replacement,
+                    ),
+                    actor=LifecycleActor(
+                        actor_id="synthetic-author",
+                        role="knowledge_author",
+                    ),
+                    reason_or_note="Forbidden synthetic non-draft update.",
+                    correlation_id=uuid4(),
+                )
+            )
+        assert error.value.code == "knowledge_update_lifecycle_forbidden"
+
+    with factory() as session:
+        current = KnowledgeObjectV2Repository(session).get(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+    assert current is not None
+    assert current.core.lifecycle_state is lifecycle
+    assert current.core.revision == revision
+    assert (
+        service.history_for_object(
+            organization_id="synthetic-org",
+            object_id=object_id,
+        )
+        == before_history
+    )
+
+
+def test_ir_c01_approved_forbidden_update_preserves_xmin_children_and_audit(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, factory = migrated_store
+    service = _service(factory)
+    object_id = _created(service)
+    _advance_to(service, object_id=object_id, target=LifecycleState.APPROVED)
+
+    with factory() as session:
+        before = KnowledgeObjectV2Repository(session).get(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+    with engine.connect() as connection:
+        before_xmin = connection.scalar(
+            text(
+                "SELECT xmin::text FROM knowledge_objects_v2 "
+                "WHERE object_id = :object_id AND organization_id = :organization_id"
+            ),
+            {
+                "object_id": object_id,
+                "organization_id": "synthetic-org",
+            },
+        )
+    before_history = service.history_for_object(
+        organization_id="synthetic-org",
+        object_id=object_id,
+    )
+
+    with pytest.raises(
+        KnowledgeAuditServiceError,
+        match="knowledge_update_lifecycle_forbidden",
+    ):
+        service.update(
+            GovernedKnowledgeUpdateCommand(
+                organization_id="synthetic-org",
+                update=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=5,
+                    replacement=_state(content={"flag": False, "count": 1}),
+                ),
+                evidence=_evidence(title="Forbidden changed evidence"),
+                provenance=_provenance(note="Forbidden changed provenance"),
+                actor=LifecycleActor(
+                    actor_id="synthetic-author",
+                    role="knowledge_author",
+                ),
+                reason_or_note="Forbidden approved composition update.",
+                correlation_id=uuid4(),
+            )
+        )
+
+    with factory() as session:
+        after = KnowledgeObjectV2Repository(session).get(
+            object_id=object_id,
+            organization_id="synthetic-org",
+        )
+    with engine.connect() as connection:
+        after_xmin = connection.scalar(
+            text(
+                "SELECT xmin::text FROM knowledge_objects_v2 "
+                "WHERE object_id = :object_id AND organization_id = :organization_id"
+            ),
+            {
+                "object_id": object_id,
+                "organization_id": "synthetic-org",
+            },
+        )
+
+    assert after == before
+    assert after_xmin == before_xmin
+    assert (
+        service.history_for_object(
+            organization_id="synthetic-org",
+            object_id=object_id,
+        )
+        == before_history
+    )
+
+
+def test_ir_c01_stale_approved_update_wins_before_lifecycle_forbidden(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    _, factory = migrated_store
+    service = _service(factory)
+    object_id = _created(service)
+    _advance_to(service, object_id=object_id, target=LifecycleState.APPROVED)
+    before_history = service.history_for_object(
+        organization_id="synthetic-org",
+        object_id=object_id,
+    )
+
+    with pytest.raises(KnowledgeObjectV2RepositoryError) as error:
+        service.update(
+            GovernedKnowledgeUpdateCommand(
+                organization_id="synthetic-org",
+                update=KnowledgeObjectV2UpdateCommand(
+                    object_id=object_id,
+                    expected_revision=4,
+                    replacement=_state(content={"flag": False, "count": 1}),
+                ),
+                actor=LifecycleActor(
+                    actor_id="synthetic-author",
+                    role="knowledge_author",
+                ),
+                reason_or_note="Synthetic stale approved update.",
+                correlation_id=uuid4(),
+            )
+        )
+
+    assert error.value.code == "stale_revision"
+    assert (
+        service.history_for_object(
+            organization_id="synthetic-org",
+            object_id=object_id,
+        )
+        == before_history
+    )
+
+
+_RETURN_TO_DRAFT_LIVE_CASES = (
+    (
+        LifecycleState.CAPTURED,
+        LifecycleAction.REQUEST_CAPTURED_CORRECTION,
+        2,
+    ),
+    (
+        LifecycleState.REVIEWED,
+        LifecycleAction.REQUEST_REVIEWED_CORRECTION,
+        3,
+    ),
+    (
+        LifecycleState.VALIDATED,
+        LifecycleAction.REQUEST_VALIDATED_CORRECTION,
+        4,
+    ),
+    (
+        LifecycleState.REJECTED,
+        LifecycleAction.REOPEN_REJECTED,
+        3,
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("source", "action", "revision"),
+    _RETURN_TO_DRAFT_LIVE_CASES,
+)
+def test_ir_c01_correction_or_reopen_then_draft_update_succeeds_live(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+    source: LifecycleState,
+    action: LifecycleAction,
+    revision: int,
+) -> None:
+    _, factory = migrated_store
+    service = _service(factory)
+    object_id = _created(service)
+    _advance_to(service, object_id=object_id, target=source)
+
+    transition = service.transition(
+        organization_id="synthetic-org",
+        command=_transition_command(
+            action,
+            object_id=object_id,
+            revision=revision,
+        ),
+        correlation_id=uuid4(),
+    )
+    updated = service.update(
+        GovernedKnowledgeUpdateCommand(
+            organization_id="synthetic-org",
+            update=KnowledgeObjectV2UpdateCommand(
+                object_id=object_id,
+                expected_revision=revision + 1,
+                replacement=_state(content={"flag": False, "count": 1}),
+            ),
+            actor=LifecycleActor(
+                actor_id="synthetic-author",
+                role="knowledge_author",
+            ),
+            reason_or_note="Update returned synthetic draft.",
+            correlation_id=uuid4(),
+        )
+    )
+
+    assert transition.knowledge is not None
+    assert transition.knowledge.core.lifecycle_state is LifecycleState.DRAFT
+    assert updated.knowledge is not None
+    assert updated.knowledge.core.lifecycle_state is LifecycleState.DRAFT
+    assert updated.knowledge.core.revision == revision + 2
+    assert updated.audit_event is not None
+
+
+def test_ir_c02_deprecation_replacement_round_trip_and_no_fk_retention(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    _, factory = migrated_store
+    service = _service(factory)
+    replacement_object_id = uuid4()
+    source_id = _created(service)
+    _advance_to(service, object_id=source_id, target=LifecycleState.APPROVED)
+
+    deprecated = service.transition(
+        organization_id="synthetic-org",
+        command=DeprecateApprovedCommand(
+            object_id=source_id,
+            expected_revision=5,
+            actor=LifecycleActor(
+                actor_id="synthetic-steward",
+                role="knowledge_steward",
+            ),
+            deprecation_reason="Replace synthetic approved knowledge.",
+            replacement_object_id=replacement_object_id,
+        ),
+        correlation_id=uuid4(),
+    )
+    history = service.history_for_object(
+        organization_id="synthetic-org",
+        object_id=source_id,
+    )
+
+    assert deprecated.audit_event is not None
+    assert deprecated.audit_event.replacement_object_id == replacement_object_id
+    assert history[-1].replacement_object_id == replacement_object_id
+    assert (
+        service.get_event(
+            organization_id="synthetic-org",
+            object_id=source_id,
+            event_id=history[-1].event_id,
+        )
+        == history[-1]
+    )
+    with factory() as session:
+        stored = session.get(KnowledgeAuditEventRecord, history[-1].event_id)
+        replacement_exists = session.get(KnowledgeObjectV2Record, replacement_object_id)
+    assert stored is not None
+    assert stored.replacement_object_id == replacement_object_id
+    assert replacement_exists is None
+
+    deletable_replacement_id = _created(service)
+    retained_source_id = _created(service)
+    _advance_to(
+        service,
+        object_id=retained_source_id,
+        target=LifecycleState.APPROVED,
+    )
+    service.transition(
+        organization_id="synthetic-org",
+        command=DeprecateApprovedCommand(
+            object_id=retained_source_id,
+            expected_revision=5,
+            actor=LifecycleActor(
+                actor_id="synthetic-steward",
+                role="knowledge_steward",
+            ),
+            deprecation_reason="Use a deletable synthetic replacement.",
+            replacement_object_id=deletable_replacement_id,
+        ),
+        correlation_id=uuid4(),
+    )
+    service.delete_draft(
+        organization_id="synthetic-org",
+        command=DeleteDraftCommand(
+            object_id=deletable_replacement_id,
+            expected_revision=1,
+            actor=LifecycleActor(
+                actor_id="synthetic-author",
+                role="knowledge_author",
+            ),
+            reason="Delete eligible synthetic replacement draft.",
+        ),
+        correlation_id=uuid4(),
+    )
+    retained_history = service.history_for_object(
+        organization_id="synthetic-org",
+        object_id=retained_source_id,
+    )
+    assert retained_history[-1].replacement_object_id == deletable_replacement_id
+    with factory() as session:
+        assert session.get(KnowledgeObjectV2Record, deletable_replacement_id) is None
+
+    second_id = _created(service)
+    _advance_to(service, object_id=second_id, target=LifecycleState.APPROVED)
+    without_replacement = service.transition(
+        organization_id="synthetic-org",
+        command=DeprecateApprovedCommand(
+            object_id=second_id,
+            expected_revision=5,
+            actor=LifecycleActor(
+                actor_id="synthetic-steward",
+                role="knowledge_steward",
+            ),
+            deprecation_reason="Deprecate without replacement.",
+        ),
+        correlation_id=uuid4(),
+    )
+    second_history = service.history_for_object(
+        organization_id="synthetic-org",
+        object_id=second_id,
+    )
+    assert without_replacement.audit_event is not None
+    assert without_replacement.audit_event.replacement_object_id is None
+    assert second_history[-1].replacement_object_id is None
+
+
+def test_ir_c02_database_rejects_replacement_on_non_deprecation(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, factory = migrated_store
+    service = _service(factory)
+    object_id = _created(service)
+    history = service.history_for_object(
+        organization_id="synthetic-org",
+        object_id=object_id,
+    )
+
+    with engine.begin() as connection:
+        with pytest.raises(DBAPIError, match="ck_knowledge_audit_events_v2_replacement"):
+            connection.execute(
+                text(
+                    "INSERT INTO knowledge_audit_events_v2 ("
+                    "event_id, schema_version, event_family, organization_id, "
+                    "object_id, event_type, lifecycle_action, actor_id, actor_role, "
+                    "occurred_at, correlation_id, replacement_object_id, "
+                    "previous_lifecycle, resulting_lifecycle, previous_revision, "
+                    "resulting_revision, reason_or_note, changed_fields_json"
+                    ") SELECT :event_id, schema_version, event_family, organization_id, "
+                    "object_id, event_type, lifecycle_action, actor_id, actor_role, "
+                    "occurred_at, :correlation_id, :replacement_object_id, "
+                    "previous_lifecycle, resulting_lifecycle, previous_revision, "
+                    "resulting_revision, reason_or_note, changed_fields_json "
+                    "FROM knowledge_audit_events_v2 WHERE event_id = :source_event_id"
+                ),
+                {
+                    "event_id": uuid4(),
+                    "correlation_id": uuid4(),
+                    "replacement_object_id": uuid4(),
+                    "source_event_id": history[0].event_id,
+                },
+            )
 
 
 def _transition_command(

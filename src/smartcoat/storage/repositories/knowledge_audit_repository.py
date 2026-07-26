@@ -71,6 +71,7 @@ def _event_from_record(record: KnowledgeAuditEventRecord) -> KnowledgeAuditEvent
         occurred_at=record.occurred_at,
         recorded_at=record.recorded_at,
         correlation_id=record.correlation_id,
+        replacement_object_id=record.replacement_object_id,
         previous_lifecycle=(
             LifecycleState(record.previous_lifecycle)
             if record.previous_lifecycle is not None
@@ -123,6 +124,7 @@ class KnowledgeAuditRepository:
             actor_role=request.actor_role,
             occurred_at=request.occurred_at,
             correlation_id=request.correlation_id,
+            replacement_object_id=request.replacement_object_id,
             previous_lifecycle=(
                 request.previous_lifecycle.value if request.previous_lifecycle is not None else None
             ),

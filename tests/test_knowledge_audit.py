@@ -10,8 +10,17 @@ from smartcoat.domain.knowledge_audit import (
     KnowledgeAuditEvent,
     KnowledgeAuditEventType,
     audit_event_type_for_lifecycle_action,
+    audit_request_from_lifecycle_plan,
 )
-from smartcoat.domain.knowledge_lifecycle import LifecycleAction
+from smartcoat.domain.knowledge_lifecycle import (
+    KnowledgeAuditAppendRequest as LifecycleAuditAppendRequest,
+)
+from smartcoat.domain.knowledge_lifecycle import (
+    LifecycleAction,
+    LifecycleActor,
+    LifecycleMutationPlan,
+    LifecycleReviewProjection,
+)
 
 NOW = datetime(2026, 7, 20, 12, 0, tzinfo=UTC)
 
@@ -121,6 +130,140 @@ def test_lifecycle_event_must_match_action_pair_and_revision() -> None:
             resulting_revision=7,
             changed_fields=["lifecycle_state", "revision"],
         )
+
+
+def _deprecation_event(**overrides: object) -> KnowledgeAuditEvent:
+    return _event(
+        event_type=KnowledgeAuditEventType.DEPRECATE,
+        lifecycle_action=LifecycleAction.DEPRECATE_APPROVED,
+        previous_lifecycle=LifecycleState.APPROVED,
+        resulting_lifecycle=LifecycleState.DEPRECATED,
+        previous_revision=5,
+        resulting_revision=6,
+        changed_fields=["lifecycle_state", "revision"],
+        **overrides,
+    )
+
+
+def test_ir_c02_deprecation_replacement_round_trips_or_remains_null() -> None:
+    replacement_object_id = uuid4()
+    with_replacement = _deprecation_event(
+        replacement_object_id=replacement_object_id,
+    )
+    without_replacement = _deprecation_event()
+    round_trip = KnowledgeAuditEvent.model_validate(with_replacement.model_dump(mode="json"))
+
+    assert with_replacement.replacement_object_id == replacement_object_id
+    assert round_trip.replacement_object_id == replacement_object_id
+    assert without_replacement.replacement_object_id is None
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {
+            "event_type": KnowledgeAuditEventType.CREATE,
+            "lifecycle_action": None,
+            "previous_lifecycle": None,
+            "resulting_lifecycle": LifecycleState.DRAFT,
+            "previous_revision": None,
+            "resulting_revision": 1,
+            "changed_fields": ["title", "revision"],
+        },
+        {},
+        {
+            "event_type": KnowledgeAuditEventType.DRAFT_DELETE,
+            "lifecycle_action": LifecycleAction.DELETE_DRAFT,
+            "previous_lifecycle": LifecycleState.DRAFT,
+            "resulting_lifecycle": None,
+            "previous_revision": 1,
+            "resulting_revision": None,
+            "changed_fields": [],
+        },
+        {
+            "event_type": KnowledgeAuditEventType.TRANSITION,
+            "lifecycle_action": LifecycleAction.SUBMIT_DRAFT,
+            "previous_lifecycle": LifecycleState.DRAFT,
+            "resulting_lifecycle": LifecycleState.CAPTURED,
+            "changed_fields": ["lifecycle_state", "revision"],
+        },
+        {
+            "event_type": KnowledgeAuditEventType.CORRECTION_REQUEST,
+            "lifecycle_action": LifecycleAction.REQUEST_CAPTURED_CORRECTION,
+            "previous_lifecycle": LifecycleState.CAPTURED,
+            "resulting_lifecycle": LifecycleState.DRAFT,
+            "changed_fields": ["lifecycle_state", "revision"],
+        },
+        {
+            "event_type": KnowledgeAuditEventType.REJECT,
+            "lifecycle_action": LifecycleAction.REJECT_CAPTURED,
+            "previous_lifecycle": LifecycleState.CAPTURED,
+            "resulting_lifecycle": LifecycleState.REJECTED,
+            "changed_fields": ["lifecycle_state", "revision"],
+        },
+        {
+            "event_type": KnowledgeAuditEventType.REOPEN,
+            "lifecycle_action": LifecycleAction.REOPEN_REJECTED,
+            "previous_lifecycle": LifecycleState.REJECTED,
+            "resulting_lifecycle": LifecycleState.DRAFT,
+            "changed_fields": ["lifecycle_state", "revision"],
+        },
+        {
+            "event_type": KnowledgeAuditEventType.APPROVE,
+            "lifecycle_action": LifecycleAction.APPROVE_VALIDATED,
+            "previous_lifecycle": LifecycleState.VALIDATED,
+            "resulting_lifecycle": LifecycleState.APPROVED,
+            "changed_fields": ["lifecycle_state", "revision"],
+        },
+    ],
+)
+def test_ir_c02_replacement_is_rejected_outside_deprecation(
+    overrides: dict[str, object],
+) -> None:
+    with pytest.raises(ValidationError):
+        _event(replacement_object_id=uuid4(), **overrides)
+
+
+def test_ir_c02_lifecycle_translation_preserves_exact_t04_replacement() -> None:
+    replacement_object_id = uuid4()
+    object_id = uuid4()
+    actor = LifecycleActor(
+        actor_id="synthetic-steward",
+        role="knowledge_steward",
+    )
+    lifecycle_request = LifecycleAuditAppendRequest(
+        object_id=object_id,
+        action=LifecycleAction.DEPRECATE_APPROVED,
+        previous_lifecycle=LifecycleState.APPROVED,
+        resulting_lifecycle=LifecycleState.DEPRECATED,
+        actor=actor,
+        reason_or_note="Replace synthetic approved knowledge.",
+        expected_revision=5,
+        resulting_revision=6,
+        occurred_at=NOW,
+        replacement_object_id=replacement_object_id,
+    )
+    plan = LifecycleMutationPlan(
+        object_id=object_id,
+        action=LifecycleAction.DEPRECATE_APPROVED,
+        from_lifecycle=LifecycleState.APPROVED,
+        to_lifecycle=LifecycleState.DEPRECATED,
+        expected_revision=5,
+        resulting_revision=6,
+        actor=actor,
+        note_or_reason="Replace synthetic approved knowledge.",
+        occurred_at=NOW,
+        resulting_review_projection=LifecycleReviewProjection.ACCEPTED,
+        audit_append_request=lifecycle_request,
+    )
+
+    audit_request = audit_request_from_lifecycle_plan(
+        organization_id="synthetic-org",
+        plan=plan,
+        correlation_id=uuid4(),
+    )
+
+    assert audit_request.replacement_object_id == replacement_object_id
 
 
 @pytest.mark.parametrize(

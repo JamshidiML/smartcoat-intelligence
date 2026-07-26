@@ -63,7 +63,10 @@ from smartcoat.domain.knowledge_objects_v2 import (
     OwnerReference,
     evaluate_knowledge_object_update,
 )
-from smartcoat.services.knowledge_audit_service import KnowledgeAuditService
+from smartcoat.services.knowledge_audit_service import (
+    KnowledgeAuditService,
+    KnowledgeAuditServiceError,
+)
 from smartcoat.storage.repositories.knowledge_audit_repository import (
     KnowledgeAuditParticipant,
 )
@@ -591,6 +594,248 @@ def test_dictionary_order_noop_creates_zero_events_and_stale_fails_first() -> No
     assert len(events) == 1
 
 
+_EDITABILITY_CASES = (
+    (LifecycleState.DRAFT, 1, True),
+    (LifecycleState.CAPTURED, 2, False),
+    (LifecycleState.REVIEWED, 3, False),
+    (LifecycleState.VALIDATED, 4, False),
+    (LifecycleState.APPROVED, 5, False),
+    (LifecycleState.REJECTED, 3, False),
+    (LifecycleState.DEPRECATED, 6, False),
+)
+
+
+def _update_command(
+    *,
+    object_id: UUID,
+    expected_revision: int,
+    replacement: KnowledgeObjectV2MutableState,
+    organization_id: str = "synthetic-org",
+) -> GovernedKnowledgeUpdateCommand:
+    return GovernedKnowledgeUpdateCommand(
+        organization_id=organization_id,
+        update=KnowledgeObjectV2UpdateCommand(
+            object_id=object_id,
+            expected_revision=expected_revision,
+            replacement=replacement,
+        ),
+        actor=LifecycleActor(
+            actor_id="synthetic-author",
+            role="knowledge_author",
+        ),
+        reason_or_note="Synthetic governed update.",
+        correlation_id=uuid4(),
+    )
+
+
+@pytest.mark.parametrize(
+    ("lifecycle", "revision", "editable"),
+    _EDITABILITY_CASES,
+)
+def test_ir_c01_seven_state_material_update_matrix(
+    lifecycle: LifecycleState,
+    revision: int,
+    editable: bool,
+) -> None:
+    service, repository, events = _service()
+    object_id, _ = _created(service)
+    repository.force_lifecycle(
+        object_id=object_id,
+        lifecycle=lifecycle,
+        revision=revision,
+    )
+    before = repository.objects[object_id]
+    before_events = tuple(events)
+    command = _update_command(
+        object_id=object_id,
+        expected_revision=revision,
+        replacement=_state(content={"result": False, "sample_count": 3}),
+    )
+
+    if editable:
+        result = service.update(command)
+        assert result.knowledge is not None
+        assert result.knowledge.core.revision == revision + 1
+        assert result.audit_event is not None
+        assert result.audit_event.event_type is KnowledgeAuditEventType.UPDATE
+        return
+
+    with pytest.raises(KnowledgeAuditServiceError) as error:
+        service.update(command)
+
+    assert error.value.code == "knowledge_update_lifecycle_forbidden"
+    assert repository.objects[object_id] == before
+    assert tuple(events) == before_events
+
+
+@pytest.mark.parametrize(
+    ("lifecycle", "revision", "editable"),
+    _EDITABILITY_CASES,
+)
+def test_ir_c01_seven_state_noop_update_matrix(
+    lifecycle: LifecycleState,
+    revision: int,
+    editable: bool,
+) -> None:
+    service, repository, events = _service()
+    object_id, _ = _created(service)
+    repository.force_lifecycle(
+        object_id=object_id,
+        lifecycle=lifecycle,
+        revision=revision,
+    )
+    before = repository.objects[object_id]
+    before_events = tuple(events)
+    command = _update_command(
+        object_id=object_id,
+        expected_revision=revision,
+        replacement=_state(),
+    )
+
+    if editable:
+        result = service.update(command)
+        assert result.knowledge == before
+        assert result.audit_event is None
+        assert tuple(events) == before_events
+        return
+
+    with pytest.raises(KnowledgeAuditServiceError) as error:
+        service.update(command)
+
+    assert error.value.code == "knowledge_update_lifecycle_forbidden"
+    assert repository.objects[object_id] == before
+    assert tuple(events) == before_events
+
+
+def test_ir_c01_stale_and_organization_precedence_remain_fail_closed() -> None:
+    service, repository, events = _service()
+    object_id, _ = _created(service)
+    repository.force_lifecycle(
+        object_id=object_id,
+        lifecycle=LifecycleState.APPROVED,
+        revision=5,
+    )
+    before = repository.objects[object_id]
+    before_events = tuple(events)
+
+    with pytest.raises(KnowledgeObjectV2RepositoryError) as stale_error:
+        service.update(
+            _update_command(
+                object_id=object_id,
+                expected_revision=4,
+                replacement=_state(content={"result": False}),
+            )
+        )
+    with pytest.raises(KnowledgeObjectV2RepositoryError) as missing_error:
+        service.update(
+            _update_command(
+                object_id=object_id,
+                expected_revision=5,
+                replacement=_state(content={"result": False}),
+                organization_id="other-synthetic-org",
+            )
+        )
+
+    assert stale_error.value.code == "stale_revision"
+    assert missing_error.value.code == "knowledge_object_not_found"
+    assert repository.objects[object_id] == before
+    assert tuple(events) == before_events
+
+
+_RETURN_TO_DRAFT_CASES: tuple[
+    tuple[LifecycleState, int, LifecycleTransitionCommand],
+    ...,
+] = (
+    (
+        LifecycleState.CAPTURED,
+        2,
+        RequestCapturedCorrectionCommand(
+            object_id=uuid4(),
+            expected_revision=2,
+            actor=LifecycleActor(actor_id="reviewer", role="reviewer"),
+            correction_reason="Return captured knowledge to draft.",
+        ),
+    ),
+    (
+        LifecycleState.REVIEWED,
+        3,
+        RequestReviewedCorrectionCommand(
+            object_id=uuid4(),
+            expected_revision=3,
+            actor=LifecycleActor(actor_id="reviewer", role="reviewer"),
+            correction_reason="Return reviewed knowledge to draft.",
+        ),
+    ),
+    (
+        LifecycleState.VALIDATED,
+        4,
+        RequestValidatedCorrectionCommand(
+            object_id=uuid4(),
+            expected_revision=4,
+            actor=LifecycleActor(actor_id="validator", role="validator"),
+            correction_reason="Return validated knowledge to draft.",
+        ),
+    ),
+    (
+        LifecycleState.REJECTED,
+        3,
+        ReopenRejectedCommand(
+            object_id=uuid4(),
+            expected_revision=3,
+            actor=LifecycleActor(
+                actor_id="synthetic-author",
+                role="knowledge_author",
+            ),
+            reopen_reason="Reopen rejected knowledge as draft.",
+        ),
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("source", "revision", "template"),
+    _RETURN_TO_DRAFT_CASES,
+)
+def test_ir_c01_correction_or_reopen_then_draft_update_succeeds(
+    source: LifecycleState,
+    revision: int,
+    template: LifecycleTransitionCommand,
+) -> None:
+    service, repository, events = _service()
+    object_id, _ = _created(service)
+    repository.force_lifecycle(
+        object_id=object_id,
+        lifecycle=source,
+        revision=revision,
+    )
+
+    transition = service.transition(
+        organization_id="synthetic-org",
+        command=template.model_copy(update={"object_id": object_id}),
+        correlation_id=uuid4(),
+    )
+    updated = service.update(
+        _update_command(
+            object_id=object_id,
+            expected_revision=revision + 1,
+            replacement=_state(content={"result": False}),
+        )
+    )
+
+    assert transition.knowledge is not None
+    assert transition.knowledge.core.lifecycle_state is LifecycleState.DRAFT
+    assert updated.knowledge is not None
+    assert updated.knowledge.core.lifecycle_state is LifecycleState.DRAFT
+    assert updated.knowledge.core.revision == revision + 2
+    assert updated.audit_event is not None
+    assert tuple(event.event_type for event in events[-2:]) == (
+        KnowledgeAuditEventType.CORRECTION_REQUEST
+        if source is not LifecycleState.REJECTED
+        else KnowledgeAuditEventType.REOPEN,
+        KnowledgeAuditEventType.UPDATE,
+    )
+
+
 _TRANSITION_CASES: tuple[
     tuple[
         LifecycleAction,
@@ -767,7 +1012,63 @@ def test_all_accepted_lifecycle_actions_create_one_mapped_event(
         KnowledgeAuditChangedField.LIFECYCLE_STATE,
         KnowledgeAuditChangedField.REVISION,
     )
+    assert result.audit_event.replacement_object_id is None
     assert len(events) == 2
+
+
+def test_ir_c02_deprecation_preserves_optional_replacement_in_audit_sink() -> None:
+    replacement_object_id = uuid4()
+    service, repository, events = _service()
+    object_id, _ = _created(service)
+    repository.force_lifecycle(
+        object_id=object_id,
+        lifecycle=LifecycleState.APPROVED,
+        revision=5,
+    )
+
+    with_replacement = service.transition(
+        organization_id="synthetic-org",
+        command=DeprecateApprovedCommand(
+            object_id=object_id,
+            expected_revision=5,
+            actor=LifecycleActor(
+                actor_id="synthetic-steward",
+                role="knowledge_steward",
+            ),
+            deprecation_reason="Replace synthetic approved knowledge.",
+            replacement_object_id=replacement_object_id,
+        ),
+        correlation_id=uuid4(),
+    )
+
+    assert with_replacement.audit_event is not None
+    assert with_replacement.audit_event.replacement_object_id == replacement_object_id
+    assert events[-1].replacement_object_id == replacement_object_id
+
+    second_service, second_repository, second_events = _service()
+    second_id, _ = _created(second_service)
+    second_repository.force_lifecycle(
+        object_id=second_id,
+        lifecycle=LifecycleState.APPROVED,
+        revision=5,
+    )
+    without_replacement = second_service.transition(
+        organization_id="synthetic-org",
+        command=DeprecateApprovedCommand(
+            object_id=second_id,
+            expected_revision=5,
+            actor=LifecycleActor(
+                actor_id="synthetic-steward",
+                role="knowledge_steward",
+            ),
+            deprecation_reason="Deprecate without a replacement.",
+        ),
+        correlation_id=uuid4(),
+    )
+
+    assert without_replacement.audit_event is not None
+    assert without_replacement.audit_event.replacement_object_id is None
+    assert second_events[-1].replacement_object_id is None
 
 
 def test_invalid_lifecycle_action_creates_no_event() -> None:

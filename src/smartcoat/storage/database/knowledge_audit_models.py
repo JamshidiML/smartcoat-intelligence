@@ -67,6 +67,12 @@ class KnowledgeAuditEventRecord(Base):
             "recorded_at >= occurred_at",
             name="ck_knowledge_audit_events_v2_timestamp_order",
         ),
+        CheckConstraint(
+            "replacement_object_id IS NULL OR "
+            "(event_type = 'deprecate' "
+            "AND lifecycle_action = 'deprecate_approved')",
+            name="ck_knowledge_audit_events_v2_replacement",
+        ),
         UniqueConstraint(
             "audit_sequence",
             name="uq_knowledge_audit_events_v2_sequence",
@@ -115,6 +121,7 @@ class KnowledgeAuditEventRecord(Base):
         server_default=text("clock_timestamp()"),
     )
     correlation_id: Mapped[PythonUUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    replacement_object_id: Mapped[PythonUUID | None] = mapped_column(UUID(as_uuid=True))
     previous_lifecycle: Mapped[str | None] = mapped_column(String(32))
     resulting_lifecycle: Mapped[str | None] = mapped_column(String(32))
     previous_revision: Mapped[int | None] = mapped_column(Integer)

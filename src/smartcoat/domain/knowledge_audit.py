@@ -200,6 +200,7 @@ class _KnowledgeAuditPayload(BaseModel):
     actor_role: str = Field(min_length=1, max_length=MAX_ROLE_LENGTH)
     occurred_at: datetime
     correlation_id: UUID
+    replacement_object_id: UUID | None = None
     previous_lifecycle: LifecycleState | None = None
     resulting_lifecycle: LifecycleState | None = None
     previous_revision: int | None = Field(default=None, gt=0)
@@ -278,6 +279,7 @@ class _KnowledgeAuditPayload(BaseModel):
         if self.event_type is KnowledgeAuditEventType.CREATE:
             if (
                 self.lifecycle_action is not None
+                or self.replacement_object_id is not None
                 or self.previous_lifecycle is not None
                 or self.previous_revision is not None
                 or self.resulting_lifecycle is not LifecycleState.DRAFT
@@ -293,6 +295,7 @@ class _KnowledgeAuditPayload(BaseModel):
         if self.event_type is KnowledgeAuditEventType.UPDATE:
             if (
                 self.lifecycle_action is not None
+                or self.replacement_object_id is not None
                 or self.previous_lifecycle is None
                 or self.resulting_lifecycle is not self.previous_lifecycle
                 or self.previous_revision is None
@@ -309,6 +312,7 @@ class _KnowledgeAuditPayload(BaseModel):
         if self.event_type is KnowledgeAuditEventType.DRAFT_DELETE:
             if (
                 self.lifecycle_action is not LifecycleAction.DELETE_DRAFT
+                or self.replacement_object_id is not None
                 or self.previous_lifecycle is not LifecycleState.DRAFT
                 or self.previous_revision is None
                 or self.resulting_lifecycle is not None
@@ -332,6 +336,10 @@ class _KnowledgeAuditPayload(BaseModel):
             self.lifecycle_action is LifecycleAction.DELETE_DRAFT
             or expected_event_type is not self.event_type
             or expected_lifecycles != (self.previous_lifecycle, self.resulting_lifecycle)
+            or (
+                self.lifecycle_action is not LifecycleAction.DEPRECATE_APPROVED
+                and self.replacement_object_id is not None
+            )
             or self.previous_revision is None
             or self.resulting_revision != self.previous_revision + 1
             or set(self.changed_fields)
@@ -440,6 +448,7 @@ def audit_request_from_lifecycle_plan(
         actor_role=plan.actor.role,
         occurred_at=plan.occurred_at,
         correlation_id=correlation_id,
+        replacement_object_id=plan.audit_append_request.replacement_object_id,
         previous_lifecycle=plan.from_lifecycle,
         resulting_lifecycle=plan.to_lifecycle,
         previous_revision=plan.expected_revision,

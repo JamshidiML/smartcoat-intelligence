@@ -37,6 +37,9 @@ from smartcoat.storage.repositories.knowledge_audit_repository import (
     KnowledgeAuditParticipant,
     KnowledgeAuditRepository,
 )
+from smartcoat.storage.repositories.knowledge_v2_repository import (
+    KnowledgeObjectV2RepositoryError,
+)
 from smartcoat.storage.unit_of_work import KnowledgeUnitOfWork
 
 
@@ -140,6 +143,27 @@ def _changed_fields(
     return tuple(changed)
 
 
+def _validate_update_preconditions(
+    current: KnowledgeObjectV2EvidenceComposition,
+    command: GovernedKnowledgeUpdateCommand,
+) -> None:
+    if command.update.object_id != current.core.object_id:
+        raise KnowledgeObjectV2RepositoryError(
+            "knowledge_object_target_mismatch",
+            "the update command target does not match the current record",
+        )
+    if command.update.expected_revision != current.core.revision:
+        raise KnowledgeObjectV2RepositoryError(
+            "stale_revision",
+            "the update command expected revision does not match the current record",
+        )
+    if current.core.lifecycle_state is not LifecycleState.DRAFT:
+        raise KnowledgeAuditServiceError(
+            "knowledge_update_lifecycle_forbidden",
+            "governed material updates are permitted only while lifecycle is draft",
+        )
+
+
 class KnowledgeAuditService:
     """The only Release 1.8 mutation path claiming mutation-plus-audit."""
 
@@ -220,6 +244,7 @@ class KnowledgeAuditService:
                 object_id=command.update.object_id,
                 organization_id=command.organization_id,
             )
+            _validate_update_preconditions(current, command)
             updated = unit_of_work.knowledge_objects.stage_material_update(
                 organization_id=command.organization_id,
                 object_id=command.update.object_id,
