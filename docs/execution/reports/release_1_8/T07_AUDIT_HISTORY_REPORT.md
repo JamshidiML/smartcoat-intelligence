@@ -40,6 +40,13 @@ branch head, passed both required jobs. The correction report-publication SHA
 and its exact-head CI are recorded in PR #59, issues #45 and #38, and the
 orchestrator response because a commit cannot contain its own SHA.
 
+Final independent re-review `4781807183` accepted corrected report head
+`dc128a71a7c0b5294eca5a43c51ab6118785a8b5` within T07 scope. The reviewer
+scored the corrected work 99/100; weighted and gate-adjusted scores are
+99.4/100; G1-G8 pass; IR-C01 and IR-C02 are resolved; and no blocker remains.
+This acceptance authorizes administrative approval only and does not claim
+Release 1.8 completion or production readiness.
+
 ## Files Changed
 
 - `.github/workflows/ci.yml`
@@ -183,6 +190,12 @@ metadata-only content.
 | First correction commit attempt | FAIL: corrected Git metadata permission | The sandbox denied creation of the linked-worktree index lock after the exact nine paths were staged. The approved normal commit then succeeded without changing staged content or rewriting history. |
 | Correction implementation commit and push | PASS | Commit `c241cf54264cb78718b952f21670d95832bf9fdf` was pushed normally to the existing branch; no force push, reset, rebase, or replacement branch was used. |
 | Correction implementation-head PR CI | PASS | Run `30201484822`, on the pull-request merge ref associated with corrected branch head `c241cf54264cb78718b952f21670d95832bf9fdf`, passed Python 3.12 tests in 38 seconds and PostgreSQL 16 migrations and persistence in 1 minute 11 seconds. |
+| Final independent re-review | PASS | Review `4781807183` accepted corrected report head `dc128a71a7c0b5294eca5a43c51ab6118785a8b5` within T07 scope at reviewer 99/100, weighted 99.4/100, gate-adjusted 99.4/100, G1-G8 PASS, with IR-C01 and IR-C02 resolved and no blockers. |
+| Final corrected-head PR merge-ref CI | PASS | Final corrected-head PR merge-ref CI run `30201653326` passed Python 3.12 tests in 38 seconds and PostgreSQL 16 migrations and persistence in 1 minute 8 seconds. |
+| First administrative report-v2 validation | FAIL: corrected score traceability | The unchanged validator required the one point implied by reviewer score 99 to remain represented as unresolved review debt. C06 records that unallocated, non-blocking point without inventing a reviewer finding; subsequent validation passed. |
+| First administrative combined live PostgreSQL gate | FAIL: corrected environment timing | 65 of 66 tests passed; the insert-time regression failed because the local Docker clock recorded one row about 0.98 milliseconds before the host occurrence timestamp. No code changed. Host and container clocks were inspected, the exact failed test then passed, and the complete 66-item suite passed with zero skips on rerun. |
+| Administrative pre-merge validation | PASS | IR-C01 31, IR-C02 15, T07 39 domain plus 41 service, 19 persistence, 489 affected, 22 ingestion, 654 passed plus 63 expected skips full, and 66 live PostgreSQL tests with zero skips passed. Pip, Ruff, format for 84 files, MyPy 57, validator 40 passed plus one configured skip, all 20 reports, 410 Markdown files and 118 local links also passed. |
+| Administrative scope and safety | PASS | The administrative diff changes only this report; the complete PR remains exactly 13 owned paths; diff checks and text-file inspection pass. Secret scanning found only the synthetic local PostgreSQL service password in the pre-existing CI test configuration; personal-data and confidential-data matches are report-only negated boundary statements. No real secret, environment file, binary, personal record, or confidential industrial data is present. |
 
 ## Acceptance-Criteria Evidence
 
@@ -332,7 +345,13 @@ Downstream invariants:
 - Every governed child mutation must increment the aggregate-root revision.
 - T06 and T09 must not add child-only writes or bypass the governed audit
   service when claiming complete mutation behavior.
-- A future API must not expose `KnowledgeAuditAppendRequest` as caller input.
+- T09 must route every claimed governed mutation through
+  `KnowledgeAuditService`.
+- T09 must never expose `KnowledgeAuditAppendRequest` as caller input.
+- Direct database INSERT authenticity remains a deployment-permission
+  responsibility outside T07.
+- Replacement-target existence and authorization remain T09 or deployment
+  responsibilities and are not claimed by T07.
 - Legacy `/events` records must remain excluded from canonical Knowledge
   history.
 
@@ -345,6 +364,7 @@ Downstream invariants:
 | C03 | Independent review `4781619375` combined deduction | 13 | RESOLVED | Corrected both independent findings at exact reviewed head `e1cfd181f0737c9212e86d5ffc23a0cd06981e30`; the reviewer did not assign the 13 lost points between findings, so this row preserves the combined historical deduction without fabricating an allocation. |
 | C04 | IR-C01 draft-only governed material editability | 0 | RESOLVED | Added ordered lifecycle preconditions, a seven-state material and no-op matrix, stale and organization precedence, no-write approved evidence, and correction or reopen then update proofs. |
 | C05 | IR-C02 deprecation replacement preservation | 0 | RESOLVED | Added the canonical UUID field, exact T04 translation, nullable PostgreSQL persistence with bounded check and no foreign key, and complete positive, null, rejection, and retention proofs. |
+| C06 | Final independent re-review unallocated deduction | 1 | OPEN | Review `4781807183` scored 99/100 but supplied no additional finding. The one residual point remains visible as non-blocking review debt; IR-C01 and IR-C02 are resolved and no unsupported correction is fabricated. |
 | C90 | Initial focused test-double failures | 0 | RESOLVED | Assigned server-owned defaults in mock flush behavior and reran all focused and complete suites. |
 | C91 | Initial Ruff and format findings | 0 | RESOLVED | Removed the unused import, applied Ruff formatting, and reran repository-wide checks successfully. |
 | C92 | Initial sandboxed localhost denial | 0 | RESOLVED | Preserved the failed invocation, obtained approved local access, and ran all PostgreSQL suites with zero T07 skips. |
@@ -356,6 +376,7 @@ Downstream invariants:
 | C98 | First correction-focused Ruff and format | 0 | RESOLVED | Corrected import ordering and format-only findings, then reran focused and repository-wide Ruff and format checks successfully. |
 | C99 | First correction virtual-environment invocation | 0 | RESOLVED | Preserved the missing worktree-local executable result and reran every claimed check through the existing shared Release 1.8 environment. |
 | C100 | First correction commit attempt | 0 | RESOLVED | The approved normal commit created exact implementation SHA `c241cf54264cb78718b952f21670d95832bf9fdf` from unchanged staged content after the sandboxed index-lock denial. |
+| C102 | First administrative combined live PostgreSQL gate | 0 | RESOLVED | Preserved the host/container sub-millisecond clock-skew failure, changed no implementation, reran the exact failed test successfully, and then passed all 66 live items with zero skips. The documented ordinary clock-synchronization limitation remains. |
 
 ## Codex Self-Score
 
@@ -383,19 +404,26 @@ Historical independent review:
 - Finding IR-C01: draft-only governed material editability
 - Finding IR-C02: deprecation replacement reference preservation
 
-Reviewer status: Pending independent re-review.
+Final independent re-review: `4781807183`
 
-Corrected-head reviewer score, weighted score, gate-adjusted score, evidence,
-and decision remain pending. No independent-review acceptance is claimed.
+Corrected reviewed head: `dc128a71a7c0b5294eca5a43c51ab6118785a8b5`
+
+Reviewer total: 99
+
+Reviewer evidence: Independent re-review accepted the corrected work within
+T07 scope, confirmed IR-C01 and IR-C02 resolved, G1-G8 PASS, and no blockers.
+
+Reviewer decision: ACCEPTED WITHIN T07 SCOPE
 
 ## Final Score
 
-Provisional weighted score: Pending
+Provisional weighted score: 99.4
 
-Gate-adjusted score: Pending
+Gate-adjusted score: 99.4
 
 Codex contributes 40 percent and the independent reviewer contributes 60
-percent. No weighted score exists until independent review.
+percent. Codex 100 and reviewer 99 produce weighted score 99.4; every critical
+gate passes, so the gate-adjusted score remains 99.4.
 
 ## Critical-Gate Declaration
 
@@ -422,12 +450,12 @@ Critical-gate result: PASS
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
 | 1 | 96 | Internal review found transaction-start recording-time risk and two acceptance-matrix evidence gaps; validation also exposed test-double, formatting, sandbox, scanner, Git-permission, report-path, final remote-state, and PR-body quoting failures. | Used insert-time server recording, added wall-clock and post-append rollback proofs, corrected test doubles and formatting, reran with approved access, fixed scanner, report, and PR invocations, verified remote state, and preserved every failed result. | 100 | 29 domain, 21 service, 17 persistence, 22 T07 live, 483 affected, 22 ingestion, 622/49 full, 52/0 combined live, MyPy 57, Ruff, format, reports, links, safety, remote state, and runs `30198494465` plus `30198785192` pass. | CLOSED |
-| 2 | 87 | Independent review `4781619375` found non-draft complete-composition updates were permitted and the accepted T04 deprecation replacement UUID was dropped. | Enforced ordered draft editability, preserved exact replacement metadata through domain and PostgreSQL history, added bounded DDL without a foreign key, and expanded all required test matrices while preserving original history. | 100 | IR-C01 31, IR-C02 15, T07 39 domain plus 41 service plus 8 repository plus 36 live, 19 persistence, 489 affected, 22 ingestion, 654/63 full, 66/0 live, MyPy 57, Ruff, format, safety, and run `30201484822` pass. | CLOSED |
+| 2 | 87 | Independent review `4781619375` found non-draft complete-composition updates were permitted and the accepted T04 deprecation replacement UUID was dropped. | Enforced ordered draft editability, preserved exact replacement metadata through domain and PostgreSQL history, added bounded DDL without a foreign key, and expanded all required test matrices while preserving original history. | 99 | IR-C01 31, IR-C02 15, T07 39 domain plus 41 service plus 8 repository plus 36 live, 19 persistence, 489 affected, 22 ingestion, 654/63 full, 66/0 live, MyPy 57, Ruff, format, safety, run `30201653326`, and accepting re-review `4781807183` pass. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Independent ChatGPT review should evaluate PR #59 at the final exact report
-  head before any readiness or merge decision.
+- PR #59 may proceed through report-only administrative closure and controlled
+  merge after fresh administrative-head validation and CI pass.
 - T06 must preserve organization scope, deterministic root-revision behavior,
   and the no-child-only-write invariant when adding filters and pagination.
 - T09 must route governed mutations through T07 orchestration and must not
@@ -441,4 +469,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT RE-REVIEW
+READY FOR APPROVAL
