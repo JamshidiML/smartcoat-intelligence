@@ -80,7 +80,7 @@ LIVE_POSTGRES_OPT_IN = "true"
 TEST_SCHEMA_PATTERN = re.compile(r"^smartcoat_test_[a-z0-9_]+$")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BASELINE_REVISION = "0001_release_1_7_baseline"
-HEAD_REVISION = "0002_release_1_8_knowledge_v2"
+HEAD_REVISION = "0003_release_1_8_knowledge_audit"
 NOW = datetime(2026, 7, 23, 12, 0, tzinfo=UTC)
 
 

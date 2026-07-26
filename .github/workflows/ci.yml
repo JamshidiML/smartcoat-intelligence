@@ -106,5 +106,6 @@ jobs:
       - name: Run live migration and persistence suite
         run: >-
           python -m pytest
+          tests/integration/test_knowledge_audit_postgres.py
           tests/integration/test_knowledge_v2_postgres.py
           tests/integration/test_persistent_api_postgres.py
