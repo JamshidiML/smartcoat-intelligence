@@ -10,7 +10,7 @@ Branch: `thread/18-06-query-pagination`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/60
 
-Final status: `READY FOR INDEPENDENT REVIEW`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -28,6 +28,17 @@ PR merge-ref Actions run `30206463933` passed both required jobs at that
 implementation head. The report-publication commit and its exact final-head CI
 are necessarily recorded in PR #60, issues #44, #38, and #47, and the final
 orchestrator return because a commit cannot contain its own SHA.
+
+Independent review `4782602307` evaluated reviewed head
+`9327996ec74048bdf8f067b58954cb3cf0923997`, awarded 92/100, calculated a
+provisional weighted score of 95.2/100 and gate-adjusted score of 79/100, and
+returned `CORRECTION REQUIRED`. Correction Cycle 2 resolves IR-C01 and IR-C02
+in corrected implementation commit
+`99a6088aab7f6796a9c6510e803647a4fd65d7af`. PR merge-ref Actions run
+`30221107737`, associated with that branch head, passed both required jobs and
+executed all eleven corrected T06 live tests. The exact corrected report head
+and its later PR merge-ref CI remain external publication evidence because a
+commit cannot contain its own SHA.
 
 T06 adds no HTTP route, mutation path, audit write, Unit of Work, semantic or
 vector search, migration, or production authorization claim. All examples and
@@ -49,6 +60,11 @@ Issue #44 comment `5083844518` declared these exact nine owned paths before
 editing. There was no ownership amendment. The optional migration boundary was
 not activated because live PostgreSQL evidence did not identify a material
 accepted-query gap.
+
+Correction Cycle 2 issue comment `5085451819` declared the exact four-path
+correction ceiling before edits. Only the domain contract, its domain tests,
+the existing T06 live PostgreSQL test file, and this report changed during the
+cycle; the repository and service implementation remained untouched.
 
 ## Methods and Commands Executed
 
@@ -81,6 +97,25 @@ accepted-query gap.
 - `git push -u origin thread/18-06-query-pagination`
 - `gh pr create --draft --base release/1.8-knowledge-capture-core --head thread/18-06-query-pagination`
 - `gh pr view 60 --repo JamshidiML/smartcoat-intelligence`
+- `gh pr view 60 --repo JamshidiML/smartcoat-intelligence --json <review-and-state-fields>`
+- `python -m pytest -q tests/integration/test_knowledge_query_postgres.py -k 'ir_c01'`
+- `python -m pytest -q tests/test_knowledge_query.py -k 'ir_c02'`
+- `python -m pytest -q tests/test_knowledge_query.py`
+- `python -m pytest -q tests/test_knowledge_query_service.py`
+- `python -m pytest -q tests/persistence/test_knowledge_v2_query_repository.py`
+- `python -m pytest -q tests/persistence`
+- `python -m pytest -q <affected-T02-T03-T04-T05-T07-T08-paths>`
+- `python -m pytest -q tests/ingestion`
+- `SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true SMARTCOAT_TEST_DATABASE_URL=<redacted-local-synthetic-test-dsn> python -m pytest -q tests/integration/test_knowledge_query_postgres.py`
+- `SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true SMARTCOAT_TEST_DATABASE_URL=<redacted-local-synthetic-test-dsn> SMARTCOAT_TEST_SCHEMA=smartcoat_test_t06_correction_combined python -m pytest -q <T06-T07-T05-and-R1.7-live-paths>`
+- `python -m pytest -q tests/test_validate_execution_reports.py`
+- `python scripts/validate_execution_reports.py --require-count 21 <all-reports>`
+- `python scripts/validate_execution_reports.py docs/execution/reports/release_1_8/T06_QUERY_FILTERING_PAGINATION_REPORT.md`
+- `python <standard-library-Markdown-local-link-validator>`
+- `git diff --name-only 1c9f9b9d60cab097731f008dab2fa82626b52726..HEAD`
+- `git diff --name-only 9327996ec74048bdf8f067b58954cb3cf0923997..HEAD`
+- `git commit -m "Correct T06 pagination live semantics"`
+- `git push origin thread/18-06-query-pagination`
 
 The live DSN used a localhost PostgreSQL 16 container and a database name
 beginning with `smartcoat_test`. Credentials are redacted here. T06 fixtures
@@ -117,8 +152,8 @@ created a randomized isolated schema, migrated it through Alembic revision
 | Organization and compatibility boundary | PASS | Foreign-organization v2 rows, legacy Knowledge rows, and legacy Enterprise Events never appeared; a cross-organization cursor failed with the query-mismatch code before SQL. |
 | Read-only PostgreSQL proof | PASS | Successful reads left root revision, root `xmin`, child `xmin`, child count, and canonical audit count unchanged; captured collection SQL contained a bounded LIMIT and no INSERT, UPDATE, or DELETE. |
 | Cursor failure no-write proof | PASS | Invalid signature, changed filters, changed sort, changed organization, and a signed malformed position failed before any root query and created no audit row. |
-| Created-sort live-change semantics | PASS | A newly inserted row before the descending cursor did not enter later pages; a deleted later row disappeared; all remaining original IDs appeared once. |
-| Updated-sort live-change semantics | PASS | A not-yet-returned row moved before the cursor and was omitted; an already-returned row moved forward and did not reappear; no duplicate was produced. |
+| Historical created-desc live-change semantics | PASS | A newly inserted row before the descending cursor did not enter later pages; a deleted later row disappeared; all remaining original IDs appeared once. |
+| Historical updated-desc live-change semantics | PASS | A not-yet-returned row moved before the descending cursor and was omitted; an already-returned row moved to a newer timestamp, remained before the cursor, and did not reappear. This result never established the corresponding ascending behavior. |
 | Index inventory | PASS | All six expected root indexes plus organization/tag and context organization/type/reference indexes existed after the unchanged migration graph. |
 | PostgreSQL JSON plans | PASS | Eight representative statements returned valid JSON Plan documents. All had bounded LIMIT 26; observed plans are recorded below without planner-node assertions or production capacity claims. |
 | Optional migration decision | PASS | No 0004 migration was added; accepted shapes were bounded and live plans used existing root and child indexes. Context identity extensions remain an observed scale consideration, not evidence for schema change in this synthetic wave. |
@@ -143,6 +178,43 @@ created a randomized isolated schema, migrated it through Alembic revision
 | Implementation commit and push | PASS | Exact commit `5bdaaf7db3728893e3c72331a924d12018ea7777` was pushed normally with upstream tracking and no reset, rebase, force push, or history rewrite. |
 | Draft PR publication | PASS | PR #60 is open, draft, unmerged, cleanly mergeable, and targets the Release branch; issue #44 remains open. |
 | Implementation-head PR CI | PASS | Pull-request merge-ref run `30206463933` passed Python 3.12 and PostgreSQL 16 jobs at branch head `5bdaaf7db3728893e3c72331a924d12018ea7777`. |
+| Independent review `4782602307` | FAIL: correction required | Reviewed head `9327996ec74048bdf8f067b58954cb3cf0923997` received reviewer score 92/100, provisional weighted score 95.2/100, gate-adjusted score 79/100, and `CORRECTION REQUIRED` for IR-C01 and IR-C02. |
+| Correction preflight | PASS | Local and remote reviewed heads matched exactly; the worktree was clean; Release and main matched their protected SHAs; PR #60 remained open, draft, unmerged, and correctly targeted; PR #49 remained open, draft, and unmerged. |
+| Correction ownership | PASS | Issue #44 comment `5085451819` declared the four authorized correction paths and prohibited repository, service, schema, API, migration, dependency, CI, T09, and T10 changes before editing. |
+| First correction live-file format check | FAIL: corrected format-only difference | Ruff format reported one live PostgreSQL test file requiring formatting. Formatting was applied, and repository-wide format validation then passed all 91 files. |
+| Focused IR-C01 live PostgreSQL | PASS | Four direction-specific tests passed and seven unrelated T06 live tests were deselected. Tests used six deterministic synthetic rows per mutable-sort case, fixed timestamps and UUIDs, and no sleeps. |
+| Corrected created-time direction evidence | PASS | Descending insertion before the traversal position remained outside later pages; ascending insertion after the cursor entered a later page; in both cases a deleted later row disappeared and no returned ID duplicated. |
+| Corrected updated-desc evidence | PASS | A not-yet-returned row moved to a newer timestamp and was omitted; an already-returned row moved newer and appeared exactly once. Results match the descending keyset predicate. |
+| Corrected updated-asc evidence | PASS | An already-returned row moved to a newer timestamp beyond the ascending cursor and appeared exactly twice in the observed traversal. This is the documented changing-data consequence, not a defect in the predicate. |
+| Focused IR-C02 domain validation | PASS | Five page-invariant tests passed and 49 unrelated domain tests were deselected. Every empty continuation representation was rejected with typed code `knowledge_query_empty_continuation_page`, while valid empty terminal, non-empty terminal, and non-empty continuation pages were accepted. |
+| Corrected T06 domain and cursor tests | PASS | 54 tests passed. |
+| Unchanged T06 service tests | PASS | 12 tests passed. |
+| Unchanged T06 repository tests | PASS | 22 tests passed. |
+| Complete corrected T06 focused suite | PASS | 88 tests passed: 54 domain and cursor, 12 service, and 22 repository. |
+| Corrected T06 live PostgreSQL | PASS | All 11 T06 live tests passed with zero skips. |
+| Corrected persistence regression | PASS | All 41 persistence tests passed. |
+| Corrected affected-contract regression | PASS | 552 affected T02, T03, T04, T05, T07, and T08 tests passed; all 22 ingestion compatibility tests passed separately. |
+| Corrected combined live PostgreSQL | PASS | 77 tests passed with zero skips in 13.00 seconds: 11 T06, 36 T07, 25 T05, and 5 Release 1.7 persistent API regressions. |
+| Corrected full pytest | PASS | 743 tests passed, 73 expected opt-in or environment-configured tests skipped, and none failed. |
+| Corrected MyPy | PASS | No issues were found in 60 source files. |
+| Corrected Ruff | PASS | Repository-wide Ruff returned zero findings. |
+| Corrected Ruff format | PASS | All 91 files were formatted after the recorded first correction failure. |
+| Corrected pip compatibility | PASS | No broken requirements were found; the local pip cache emitted a non-product ownership warning only. |
+| Correction randomized-schema cleanup | PASS | A direct catalog query found zero residual schemas matching the T06 prefix after live validation. |
+| Corrected implementation commit and push | PASS | Commit `99a6088aab7f6796a9c6510e803647a4fd65d7af` contains only the three authorized implementation/test correction paths and was pushed normally without reset, rebase, force push, or history rewrite. |
+| Corrected implementation-head PR CI | PASS | Pull-request merge-ref run `30221107737`, associated with branch head `99a6088aab7f6796a9c6510e803647a4fd65d7af`, passed Python 3.12 tests and PostgreSQL 16 migrations and persistence. Its live step collected 77 tests, executed all 11 T06 tests plus 66 compatibility tests, and passed in 27.33 seconds with zero skips. |
+| First correction report-validator test invocation | FAIL: corrected runtime path | The resumed shell had no `python` command, so the invocation failed before collection. The shared Release 1.8 virtual-environment interpreter then ran 40 validator tests successfully with one configured integration skip. |
+| First correction all-report invocation | FAIL: corrected input set | The first command supplied only the eleven Release 1.8 reports while requiring 21. All eleven inputs passed individually, but the count gate failed. The corrected command supplied the ten Release 1.7 reports and eleven Release 1.8 reports; all 21 passed. |
+| Corrected T06 report-v2 validation | PASS | This corrected report passes the unchanged report-v2 validator. |
+| Corrected all-report validation | PASS | All 21 Release 1.7 and Release 1.8 reports pass with exact required count 21. |
+| Corrected Markdown local links | PASS | 411 Markdown files and 118 local links had zero broken targets. |
+| Exact correction scope | PASS | The reviewed-head diff contains exactly the four authorized correction paths with no missing or unexpected path. |
+| Complete PR scope | PASS | The Release-to-corrected-worktree diff contains exactly the original nine declared paths with no missing or unexpected path. |
+| Correction diff and unexpected-file checks | PASS | `git diff --check` returned no whitespace error; status contained only this authorized report after the three-path implementation commit; no untracked file existed. |
+| Corrected binary and environment-file scan | PASS | All nine PR paths are ASCII text, numeric diff output contains no binary marker, and no environment or binary filename exists. |
+| Corrected secret and credential scan | PASS | Added-line patterns found no credential, token, private key, or non-synthetic secret. |
+| Corrected email and personal-data scan | PASS | No email matched. Broad numeric results were reviewed as GitHub run and comment IDs, deterministic timestamps, and synthetic UUIDs; no phone number or personal record exists. |
+| Corrected confidential-data scan | PASS | No real or confidential industrial-data pattern or value matched; tests and reports remain synthetic, anonymized, generalized, or metadata-only. |
 
 ### PostgreSQL Planner Evidence
 
@@ -204,12 +276,22 @@ brittle assertions about a planner node on tiny data.
   contains no mutation, commit, flush, audit, or global list operation.
 - [x] Evidence: successful and failed queries leave revision, root and child
   `xmin`, child content, and audit count unchanged.
-- [x] Evidence: created-sort and updated-sort behavior under live changes
-  matches the documented non-snapshot contract.
+- [x] Evidence: unchanged datasets traverse deterministically in all four sort
+  modes with no duplicate or omitted ID and a null final cursor.
+- [x] Evidence: created-desc insertion before the traversal position stays out
+  of later pages, while created-asc insertion after the cursor may enter a
+  later page; deletions disappear in both directions.
+- [x] Evidence: updated-desc can omit a not-yet-returned row moved newer while
+  not repeating an already-returned row moved newer; updated-asc can repeat an
+  already-returned row moved newer beyond the cursor.
+- [x] Evidence: public pages reject every empty continuation representation
+  and accept empty terminal, non-empty terminal, and non-empty continuation
+  shapes while retaining count, page-size, frozen, and extra-forbid contracts.
 - [x] Evidence: existing indexes were inventoried and eight representative JSON
   plans were executed; no material migration need was demonstrated.
-- [x] Evidence: T06, T07, T05, Release 1.7, affected contracts, ingestion,
-  complete default, static, report, link, scope, and safety checks pass.
+- [x] Evidence: corrected T06, T07, T05, Release 1.7, affected contracts,
+  ingestion, complete default, static, report, link, scope, and safety checks
+  pass.
 - [x] Evidence: CI runs the T06 live suite before unchanged T07, T05, and
   Release 1.7 PostgreSQL suites, and implementation-head run `30206463933`
   passed both jobs.
@@ -251,7 +333,11 @@ payload, relationships, audit rows, and unrestricted JSON.
 Each immutable page contains the item tuple, returned count, requested page
 size, `has_more`, optional next cursor, and applied sort. The repository limits
 to requested size plus one, removes the sentinel, and returns a detached final
-position. A next cursor exists exactly when more rows were observed.
+position. A non-empty continuation page requires `returned_count` of at least
+one, `has_more=true`, and a non-null cursor. An empty page must have
+`returned_count=0`, `has_more=false`, and a null cursor. Non-empty terminal
+pages retain `has_more=false` and a null cursor. Count equality, page-size
+bounds, frozen models, and extra-field rejection remain enforced.
 
 ### Cursor and Fingerprint
 
@@ -335,18 +421,27 @@ production secret, or credential is committed.
 
 ## Known Limitations
 
-- Separate page requests do not share a database snapshot or repeatable-read
-  transaction.
-- On an unchanged dataset, traversal is deterministic with no duplicate or
-  omission.
-- For created-time sorting, a newly created row before the cursor is not
-  inserted into later pages; deleted rows disappear; existing created
-  positions are expected to remain immutable through governed behavior.
-- For updated-time sorting, a not-yet-returned row moved before the cursor may
-  be omitted from the remaining traversal. A returned row moved forward does
-  not reappear merely because its updated time increased.
-- Clients needing the most stable long traversal should select a created-time
-  sort and restart when strict freshness is required.
+- Keyset ordering is deterministic for the database state observed by each
+  individual statement. Separate page requests do not share a database
+  snapshot or repeatable-read transaction.
+- On an unchanged dataset, all four sorts traverse deterministically with no
+  duplicate or omitted ID and a null final cursor.
+- `created_at_desc`: a newly created row before the current position in
+  descending sort order does not enter later pages; deleted rows disappear;
+  governed behavior keeps existing `created_at` positions immutable.
+- `created_at_asc`: a newly created row normally falls after the cursor and may
+  enter a later page; deleted rows disappear; no snapshot claim is made.
+- `updated_at_desc`: a not-yet-returned row moved to a newer timestamp may move
+  before the cursor and be omitted; an already-returned row moved newer remains
+  before the cursor and does not reappear; deleted rows disappear.
+- `updated_at_asc`: an already-returned row moved to a newer timestamp may move
+  after the cursor and appear again; a not-yet-returned row may move farther
+  into later pages; duplicate-free and omission-free traversal is not
+  guaranteed while data changes; deleted rows disappear.
+- Created-time sorting is more stable for long traversals. Clients requiring
+  strict freshness or duplicate-free traversal over changing data must restart
+  or perform client-side ID deduplication. T06 does not provide snapshot or
+  repeatable-read pagination.
 - Cursors are signed, not encrypted, and key rotation or multi-key verification
   is not defined in T06.
 - T09 owns deployment key configuration, HTTP request and response mapping,
@@ -391,26 +486,43 @@ T10 remains dependent on independently accepted T06 and later T09 evidence.
 | C95 | Compose wildcard invocation | 0 | RESOLVED | Replaced the unmatched wildcard with repository file discovery and inspected the intended configuration. |
 | C96 | Standalone EXPLAIN source path | 0 | RESOLVED | The first process failed before setup; the corrected source path collected all eight plans and fixture cleanup completed. |
 | C97 | First T06 report-v2 validation | 0 | RESOLVED | Converted the nested planner table to equivalent prose and reran T06 plus all-report validation successfully. |
+| C98 | First correction live-file format check | 0 | RESOLVED | Applied Ruff format to the one reported live test file and verified all 91 repository files. |
+| C10 | Independent review `4782602307` | 8 | RESOLVED | Corrected both independent-review findings, added deterministic domain and live PostgreSQL evidence, and reran focused, regression, static, report, link, scope, safety, and CI validation. |
+| C11 | IR-C01 direction-specific live semantics | 0 | RESOLVED | Preserved the correct keyset predicates, proved both mutable-sort directions plus both created-time insertion directions, and replaced every direction-agnostic changing-data statement with the four-sort matrix. |
+| C12 | IR-C02 empty public continuation page | 0 | RESOLVED | The frozen public page model rejects every empty continuation shape with a typed error and still accepts all three valid terminal or continuation shapes. |
+| C99 | Correction validator runtime path | 0 | RESOLVED | Used the existing shared Release 1.8 virtual-environment interpreter after the resumed shell lacked a `python` command; 40 tests passed and one configured integration test skipped. |
+| C100 | Correction all-report input set | 0 | RESOLVED | Added the ten root Release 1.7 reports to the eleven Release 1.8 reports and reran the exact 21-report gate successfully. |
 
 ## Codex Self-Score
 
 | Category | Maximum | Awarded | Evidence | Deduction Reason |
 |---|---:|---:|---|---|
-| Correctness and evidence | 25 | 25 | Four deterministic sorts, half-open filters, all-of tags, exact context, signed fingerprint-bound cursors, live traversal, mutation semantics, and exact planner evidence pass. | None. |
+| Correctness and evidence | 25 | 25 | Four deterministic unchanged-data sorts, direction-specific changing-data behavior, the public empty-page invariant, filters, signed cursors, live traversal, and exact planner evidence pass. | None. |
 | Scope and acceptance criteria | 20 | 20 | Exact nine-path ownership completes every T06 criterion without routes, mutation, audit, search, schema, or T09/T10 work. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Immutable domain output, dedicated root-only read repository, pre-session cursor verification, organization scope, and unchanged governed mutation paths preserve accepted contracts. | None. |
-| Verification, tests, or validation | 15 | 15 | 83 focused, 37 persistence, 574 affected, 9 T06 live, 75 combined live, 738/71 full, MyPy 60, Ruff, format 91, pip, reports, links, safety, and both CI jobs pass. | None. |
+| Verification, tests, or validation | 15 | 15 | Corrected evidence includes 88 focused, 41 persistence, 552 affected plus 22 ingestion, 11 T06 live, 77 combined live, 743/73 full, MyPy 60, Ruff, format 91, pip, reports, links, safety, and both corrected-head CI jobs. | None. |
 | Security, privacy, and data governance | 10 | 10 | Minimum key length, HMAC verification, no raw cursor filters, bounded summaries, no writes/audits, localhost guards, synthetic fixtures, cleanup, and scans pass. | None. |
-| Documentation and traceability | 10 | 10 | Start SHA, ownership, complete contracts, cursor errors, live semantics, index plans, commands, failed invocations, corrections, limitations, gates, and downstream duties are recorded. | None. |
+| Documentation and traceability | 10 | 10 | Start and implementation SHAs, ownership, historical review, four-sort live semantics, page invariants, plans, commands, failed invocations, both correction cycles, limitations, gates, and downstream duties are recorded. | None. |
 | Maintainability and clarity | 5 | 5 | Three narrow implementation modules, canonical enums and models, one repository method, parameterized matrices, and non-brittle plan checks keep responsibilities explicit. | None. |
-| Total | 100 | 100 | Every in-scope acceptance criterion and critical gate has passing local, PostgreSQL, CI, scope, report, and safety evidence. | None. |
+| Total | 100 | 100 | Every corrected in-scope acceptance criterion and critical gate has passing local, PostgreSQL, CI, scope, report, and safety evidence. | None. |
 
 ## ChatGPT Reviewer Score
 
 Reviewer status: Pending
 
-Independent review has not yet scored the exact corrected T06 head. PR #60
-must remain draft and unmerged until that review is recorded.
+Historical independent review:
+
+- Independent review: `4782602307`
+- Reviewed head: `9327996ec74048bdf8f067b58954cb3cf0923997`
+- Historical reviewer score: 92/100
+- Historical provisional weighted score: 95.2/100
+- Historical gate-adjusted score: 79/100
+- Decision: `CORRECTION REQUIRED`
+- IR-C01: direction-specific updated-time changing-data semantics
+- IR-C02: empty continuation-page invariant
+
+The reviewer score for the exact corrected head is pending independent
+re-review. PR #60 must remain draft and unmerged until that review is recorded.
 
 ## Final Score
 
@@ -426,12 +538,12 @@ review.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Every claim maps to source, focused output, live PostgreSQL output, JSON plans, Git state, GitHub state, or Actions run `30206463933`; failed invocations remain visible. |
+| G1 Verified claims | PASS | Every corrected claim maps to source, focused output, live PostgreSQL output, JSON plans, Git state, GitHub state, or corrected-head PR merge-ref Actions evidence; historical findings and failed invocations remain visible. |
 | G2 Confidential data | PASS | Synthetic fixtures, injected synthetic keys, localhost guards, schema cleanup, text inspection, and secret, credential, personal, binary, environment, and industrial-data scans pass. |
-| G3 Approved scope and architecture | PASS | Exact nine declared paths implement a separate read-only query boundary; mutation, audit, route, migration, ADR, package export, T09, and T10 paths remain untouched. |
-| G4 Required validation | PASS | Focused, persistence, affected, ingestion, full, 9-item T06 live, 75-item combined live, static, dependency, report, link, diff, safety, and implementation-head CI validation passes. |
-| G5 File ownership | PASS | Pre-edit issue comment `5083844518` accounts for every changed path and no ownership amendment or unexpected file exists. |
-| G6 Acceptance completeness | PASS | Every T06 acceptance criterion is checked with domain, SQL, service, live PostgreSQL, index, compatibility, CI, or explicit non-production-boundary evidence. |
+| G3 Approved scope and architecture | PASS | The original exact nine paths and correction exact four-path ceiling preserve the separate read-only query boundary; repository predicates, mutation, audit, route, migration, ADR, package export, T09, and T10 paths remain untouched in correction. |
+| G4 Required validation | PASS | 88 focused, 41 persistence, 552 affected plus 22 ingestion, 743/73 full, 11-item T06 live, 77-item combined live, static, dependency, report, link, diff, safety, and corrected-head merge-ref CI validation pass. |
+| G5 File ownership | PASS | Pre-edit comments `5083844518` and `5085451819` account for the original nine-path PR scope and four-path correction ceiling; no unexpected file exists. |
+| G6 Acceptance completeness | PASS | Every T06 acceptance criterion, including IR-C01's four-sort changing-data matrix and IR-C02's public empty-page invariant, is checked with domain, SQL, service, live PostgreSQL, index, compatibility, CI, or explicit non-production-boundary evidence. |
 
 Critical-gate result: PASS
 
@@ -439,18 +551,19 @@ Critical-gate result: PASS
 
 | Gate | Status | Applicability Evidence |
 |---|---|---|
-| G7 PostgreSQL, cursor, ordering, and index correctness | PASS | All four keysets, equal timestamps, all filters, cursor binding/errors, 9 T06 live cases, 75 combined live cases, index inventory, eight JSON plans, bounded limits, and cleanup pass. |
-| G8 Read-only boundary and mutation/audit-bypass prevention | PASS | Public repository surface is one read method; service revalidates before session creation; captured SQL has no write; root revision and root/child `xmin` plus audit count remain unchanged; governed mutation and audit modules are untouched. |
+| G7 PostgreSQL, cursor, ordering, and index correctness | PASS | All four unchanged-data keysets, both updated-time mutation directions, both created-time insertion directions, equal timestamps, filters, cursor binding/errors, 11 T06 live cases, 77 combined live cases, indexes, plans, bounded limits, and cleanup pass. |
+| G8 Read-only boundary and mutation/audit-bypass prevention | PASS | Public repository surface remains one read method; service revalidates before session creation; captured SQL has no write; root revision and root/child `xmin` plus audit count remain unchanged; correction changed neither repository nor service; governed mutation and audit modules are untouched. |
 
 ## Correction-Cycle History
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
 | 1 | 94 | Initial Ruff and format findings plus internal review of bypass-constructed commands, direct repository bounds, and cursor canonicality; environment invocations also exposed network, Docker, glob, and source-path failures. | Corrected all static findings, added service and repository defense in depth, made cursor parsing strictly canonical, added six focused cases, reran live and complete suites, and preserved every failed invocation. | 100 | 83 focused, 9 T06 live, 75 combined live, 37 persistence, 574 affected, 738/71 full, MyPy 60, Ruff, format 91, pip, report tests, links, plans, safety, and run `30206463933` pass. | CLOSED |
+| 2 | 92 | Independent review `4782602307` found IR-C01's direction-agnostic mutable-sort statement false for `updated_at_asc` and IR-C02's public page contract permissive for empty continuation representations. | Kept the correct keyset predicates; added deterministic updated-desc, updated-asc, created-desc, and created-asc live evidence; added the typed public empty-page invariant and valid-shape tests; rewrote the four-sort semantics; preserved historical evidence. | 100 | 88 focused, 11 T06 live with zero skips, 77 combined live with zero skips, 41 persistence, 552 affected plus 22 ingestion, 743/73 full, MyPy 60, Ruff, format 91, pip, report tests, links, scope, safety, and corrected-head merge-ref CI pass. | CLOSED |
 
 ## Recommended Follow-up Issues
 
-- Independent ChatGPT review should evaluate exact T06 report-publication head
+- Independent ChatGPT re-review should evaluate exact T06 report-publication head
   and PR #60 before any readiness or merge transition.
 - Issue #44 should remain open until independent acceptance, administrative
   report update, controlled merge, and exact-merge validation.
@@ -467,4 +580,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT REVIEW
+READY FOR INDEPENDENT RE-REVIEW
