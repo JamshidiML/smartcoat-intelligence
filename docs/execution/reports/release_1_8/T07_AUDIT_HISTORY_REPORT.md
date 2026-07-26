@@ -143,6 +143,9 @@ metadata-only content.
 | Implementation-head PR CI | PASS | Run `30198494465`, associated with branch head `4ca70d30c5bfc4598f83dcf8b102b45944c7f0af`, passed Python 3.12 tests in 36 seconds and PostgreSQL 16 migrations/persistence in 1 minute 13 seconds on the pull-request merge ref. |
 | First post-report remote-state verification | FAIL: corrected execution permission | The sandbox denied the linked-worktree FETCH_HEAD write and GitHub API network calls; local read-only SHA checks still completed, but no remote-state result is claimed from the failed parts. |
 | Post-report remote-state verification | PASS | The approved rerun confirmed local and remote T07 heads matched, Release and main retained their protected SHAs, PR #49 remained open/draft/unmerged, PR #59 remained open/draft/unmerged at the expected head, and issue #45 remained open. |
+| Corrected report-head PR CI | PASS | Run `30198785192`, associated with report head `152a47a805d4d6a44ec3538f669b2a931c18d9d7`, passed Python 3.12 in 35 seconds and PostgreSQL 16 migrations/persistence in 1 minute 5 seconds. |
+| First final PR evidence synchronization | FAIL: corrected shell quoting | Unescaped Markdown backticks treated the run number as a shell command and omitted it from one PR sentence; the SHA update still landed and no file or Git history changed. |
+| Final PR evidence synchronization | PASS | A plain-quoted correction restored run `30198785192`; PR #59 then reported the exact head, remained open and draft, and retained the final CI evidence. |
 
 ## Acceptance-Criteria Evidence
 
@@ -281,6 +284,7 @@ Downstream invariants:
 | C94 | First Git metadata permission denial | 0 | RESOLVED | No index state changed; the approved normal stage and commit operation then succeeded. |
 | C95 | First report-v2 validation | 0 | RESOLVED | Removed one duplicate backticked path reference and reran the unchanged T07, all-report, and validator-test checks successfully. |
 | C96 | First post-report remote-state verification | 0 | RESOLVED | Preserved the sandbox and network denials, reran with approved Git and GitHub access, and verified all protected remote states exactly. |
+| C97 | First final PR evidence synchronization | 0 | RESOLVED | Replaced the unsafe Markdown-backtick substitution with plain text, restored the run number, and verified the PR body, final head, draft state, and open state. |
 
 ## Codex Self-Score
 
@@ -335,7 +339,7 @@ Critical-gate result: PASS
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
-| 1 | 96 | Internal review found transaction-start recording-time risk and two acceptance-matrix evidence gaps; validation also exposed test-double, formatting, sandbox, scanner, Git-permission, report-path, and final remote-state invocation failures. | Used insert-time server recording, added wall-clock and post-append rollback proofs, corrected test doubles and formatting, reran with approved access, fixed scanner and report invocations, verified remote state, and preserved every failed result. | 100 | 29 domain, 21 service, 17 persistence, 22 T07 live, 483 affected, 22 ingestion, 622/49 full, 52/0 combined live, MyPy 57, Ruff, format, reports, links, safety, remote state, and run `30198494465` pass. | CLOSED |
+| 1 | 96 | Internal review found transaction-start recording-time risk and two acceptance-matrix evidence gaps; validation also exposed test-double, formatting, sandbox, scanner, Git-permission, report-path, final remote-state, and PR-body quoting failures. | Used insert-time server recording, added wall-clock and post-append rollback proofs, corrected test doubles and formatting, reran with approved access, fixed scanner, report, and PR invocations, verified remote state, and preserved every failed result. | 100 | 29 domain, 21 service, 17 persistence, 22 T07 live, 483 affected, 22 ingestion, 622/49 full, 52/0 combined live, MyPy 57, Ruff, format, reports, links, safety, remote state, and runs `30198494465` plus `30198785192` pass. | CLOSED |
 
 ## Recommended Follow-up Issues
 
