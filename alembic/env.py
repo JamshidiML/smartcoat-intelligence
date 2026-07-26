@@ -6,7 +6,11 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool, text
 
 from alembic import context
-from smartcoat.storage.database import knowledge_v2_models, models
+from smartcoat.storage.database import (
+    knowledge_audit_models,
+    knowledge_v2_models,
+    models,
+)
 from smartcoat.storage.database.base import Base
 
 config = context.config
@@ -14,7 +18,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-_ = (models, knowledge_v2_models)
+_ = (models, knowledge_v2_models, knowledge_audit_models)
 target_metadata = Base.metadata
 
 
