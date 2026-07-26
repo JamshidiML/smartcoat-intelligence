@@ -10,7 +10,7 @@ Branch: `thread/18-07-audit-history`
 
 Draft PR: https://github.com/JamshidiML/smartcoat-intelligence/pull/59
 
-Final status: `READY FOR INDEPENDENT REVIEW`
+Final status: `READY FOR INDEPENDENT RE-REVIEW`
 
 ## Objective
 
@@ -30,6 +30,15 @@ was pushed normally and associated with draft PR CI run `30198494465`. Both
 jobs passed. The final report-publication SHA and its final exact-head CI are
 recorded in PR #59, issue #45, and the orchestrator response because a commit
 cannot contain its own SHA.
+
+Independent Review Correction Cycle 1 preserves that implementation history.
+Corrected implementation commit
+`c241cf54264cb78718b952f21670d95832bf9fdf` enforces draft-only governed
+material updates and retains the optional T04 deprecation replacement UUID.
+GitHub Actions run `30201484822`, on the PR merge ref associated with that
+branch head, passed both required jobs. The correction report-publication SHA
+and its exact-head CI are recorded in PR #59, issues #45 and #38, and the
+orchestrator response because a commit cannot contain its own SHA.
 
 ## Files Changed
 
@@ -70,6 +79,8 @@ was modified.
 - `python -m pytest -q tests/test_knowledge_audit.py`
 - `python -m pytest -q tests/test_knowledge_audit_service.py`
 - `python -m pytest -q tests/persistence`
+- `python -m pytest -q tests/test_knowledge_audit_service.py tests/integration/test_knowledge_audit_postgres.py -k ir_c01`
+- `python -m pytest -q tests/test_knowledge_audit.py tests/test_knowledge_audit_service.py tests/persistence/test_knowledge_audit_repository.py tests/integration/test_knowledge_audit_postgres.py -k ir_c02`
 - `python -m pytest -q <affected T02 T03 T04 T05 T08 paths>`
 - `python -m pytest -q tests/ingestion/test_manifest_validation.py`
 - `SMARTCOAT_RUN_LIVE_POSTGRES_TESTS=true SMARTCOAT_TEST_DATABASE_URL=<local-synthetic-test-dsn> python -m pytest -q tests/integration/test_knowledge_audit_postgres.py`
@@ -87,6 +98,8 @@ was modified.
 - `git push -u origin thread/18-07-audit-history`
 - `gh pr create --draft --base release/1.8-knowledge-capture-core --head thread/18-07-audit-history`
 - `gh pr checks 59 --repo JamshidiML/smartcoat-intelligence --watch --interval 10`
+- `git commit -m "Correct T07 audit lifecycle contracts"`
+- `git push origin thread/18-07-audit-history`
 
 The live DSN targets a localhost PostgreSQL 16 container and a database whose
 name begins with `smartcoat_test`. Credentials are intentionally redacted.
@@ -146,6 +159,30 @@ metadata-only content.
 | Corrected report-head PR CI | PASS | Run `30198785192`, associated with report head `152a47a805d4d6a44ec3538f669b2a931c18d9d7`, passed Python 3.12 in 35 seconds and PostgreSQL 16 migrations/persistence in 1 minute 5 seconds. |
 | First final PR evidence synchronization | FAIL: corrected shell quoting | Unescaped Markdown backticks treated the run number as a shell command and omitted it from one PR sentence; the SHA update still landed and no file or Git history changed. |
 | Final PR evidence synchronization | PASS | A plain-quoted correction restored run `30198785192`; PR #59 then reported the exact head, remained open and draft, and retained the final CI evidence. |
+| Historical independent review | FAIL: correction required | Independent review `4781619375` evaluated reviewed head `e1cfd181f0737c9212e86d5ffc23a0cd06981e30`, scored it 87/100, calculated provisional weighted score 92.2/100 and gate-adjusted score 79/100, and required IR-C01 plus IR-C02. |
+| Correction-cycle protected-state preflight | PASS | Local and remote branch heads exactly matched reviewed head `e1cfd181f0737c9212e86d5ffc23a0cd06981e30`; Release and main retained their required SHAs; PR #59 and PR #49 were open, draft, and unmerged; issues #45 and #38 were open; the worktree was clean. |
+| Correction ownership declaration | PASS | Issue #45 comment `5083356895` declared the exact ten-path correction boundary before edits. |
+| IR-C01 draft-only update enforcement | PASS | Organization-scoped lookup remains first; target and expected revision checks precede lifecycle editability; only draft reaches T05 complete-composition comparison and CAS. Non-draft material and no-op updates return typed code `knowledge_update_lifecycle_forbidden`. |
+| IR-C01 focused evidence | PASS | 31 focused service and live PostgreSQL cases passed, including all seven states, stale-before-lifecycle precedence, no-write behavior, and four correction or reopen paths back to draft. |
+| IR-C01 approved protection | PASS | Live PostgreSQL proves a forbidden approved composition update preserves content, evidence, provenance, child collections, revision 5, approved lifecycle, root `xmin`, and audit history. |
+| IR-C02 replacement preservation | PASS | The exact nested T04 `replacement_object_id` is copied into the canonical request, event, ORM row, repository mapping, and history. Non-deprecation domain payloads reject it. |
+| IR-C02 focused evidence | PASS | 15 focused domain, service, repository, and live PostgreSQL cases passed; replacement and null deprecation paths round-trip exactly. |
+| IR-C02 database boundary | PASS | Corrected 0003 and ORM metadata add one nullable PostgreSQL UUID with the required bounded check and no foreign key. Direct non-deprecation insertion is rejected; nonexistent and later-deleted replacement UUIDs remain readable in source history. |
+| First correction-focused Ruff and format | FAIL: corrected static findings | Import ordering and format-only differences in new correction tests were fixed with Ruff; repository-wide checks subsequently passed. |
+| First correction validation invocation | FAIL: corrected virtual-environment path | The worktree-local `./.venv/bin/ruff` path did not exist. The existing shared Release 1.8 virtual environment was used for all claimed validation. |
+| Correction T07 domain tests | PASS | 39 tests passed. |
+| Correction T07 service tests | PASS | 41 tests passed. |
+| Correction persistence tests | PASS | All 19 persistence tests passed, including 8 T07 repository tests. |
+| Correction T07 live PostgreSQL suite | PASS | All 36 T07 items passed with zero skips against migrated 0003. This includes upgrade, clean head, downgrade, re-upgrade, metadata, append-only, rollback, and randomized-schema cleanup checks. |
+| Correction affected contracts | PASS | 489 affected T02, T03, T04, T05, and T08 tests plus 22 ingestion compatibility tests passed. |
+| Correction default-mode pytest | PASS | 717 items were collected; 654 passed and 63 expected opt-in or environment-configured items skipped, with zero failures and zero deselections. |
+| Correction combined live PostgreSQL suites | PASS | All 66 items passed with zero skips: 36 T07, 25 T05, and 5 Release 1.7 persistent API regressions. |
+| Correction static and dependency gates | PASS | Pip found no broken requirements; Ruff returned zero findings; all 84 files were formatted; MyPy found no issues in 57 source files. |
+| Correction implementation safety | PASS | The implementation commit contains exactly nine authorized implementation and test paths; this report makes the complete correction diff exactly ten authorized paths; the release-base PR diff remains exactly 13 owned paths. All correction files are ASCII text, with no binary, environment file, secret, credential, personal record, or confidential industrial data. |
+| Correction report and link validation | PASS | The unchanged report-v2 test suite passed 40 tests with one expected environment-gated skip; this report and all 20 execution reports passed; 410 Markdown files and 118 local links had zero broken targets. |
+| First correction commit attempt | FAIL: corrected Git metadata permission | The sandbox denied creation of the linked-worktree index lock after the exact nine paths were staged. The approved normal commit then succeeded without changing staged content or rewriting history. |
+| Correction implementation commit and push | PASS | Commit `c241cf54264cb78718b952f21670d95832bf9fdf` was pushed normally to the existing branch; no force push, reset, rebase, or replacement branch was used. |
+| Correction implementation-head PR CI | PASS | Run `30201484822`, on the pull-request merge ref associated with corrected branch head `c241cf54264cb78718b952f21670d95832bf9fdf`, passed Python 3.12 tests in 38 seconds and PostgreSQL 16 migrations and persistence in 1 minute 11 seconds. |
 
 ## Acceptance-Criteria Evidence
 
@@ -185,6 +222,14 @@ metadata-only content.
 - [x] Scope, data, report, and safety gates are complete. Evidence: exact
   13-path ownership, 20 report validations, 118 local links, diff checks, and
   safety scans pass.
+- [x] Governed complete-composition updates are draft-only, including true
+  no-ops. Evidence: the seven-state service matrix and all 36 live T07 tests
+  prove typed rejection, stale-before-lifecycle precedence, unchanged approved
+  storage, and successful correction or reopen before later draft editing.
+- [x] Deprecation preserves the exact optional T04 replacement UUID without
+  adding content or target authorization semantics. Evidence: domain,
+  translation, service, repository, DDL, direct-insert, history, nonexistent
+  target, and later-deleted target tests pass.
 
 ## Architecture Impact
 
@@ -218,6 +263,19 @@ consumes `LifecycleMutationPlan` and `DraftDeletionPlan`, stages through the T05
 repository, queues one canonical request, flushes the internal participant on
 the same Session, and commits once.
 
+The governed material-update use case now performs organization-scoped lookup,
+target and expected-revision validation, and draft editability validation
+before asking T05 to compare or mutate the complete composition. A stale
+non-draft command therefore remains `stale_revision`, an organization mismatch
+remains a non-disclosing not-found result, and a valid non-draft no-op is still
+forbidden.
+
+The optional deprecation replacement is canonical audit metadata copied from
+the accepted nested T04 plan. It is stored as a nullable PostgreSQL UUID. A
+bounded check permits a non-null value only for `deprecate` with
+`deprecate_approved`; domain validation remains the complete semantic
+authority. There is deliberately no replacement-object foreign key.
+
 ## Security and Data Impact
 
 Audit summaries expose only normalized field names. They contain no previous
@@ -239,6 +297,10 @@ Fixtures are synthetic and metadata-only. No real or confidential industrial
 data, personal record, production formula, customer data, binary, secret, or
 credential is committed.
 
+The replacement UUID identifies no title, content, evidence, context, or
+relationship data. T07 neither resolves nor authorizes that target, and the
+event remains scoped to the deprecated source object's organization.
+
 ## Known Limitations
 
 - No public API route is added; T09 owns future explicit request, response,
@@ -259,6 +321,9 @@ credential is committed.
 - Audit sequence gaps after rollback are expected and do not weaken ordering.
 - Low-level T05 primitives remain available for persistence internals. Only
   the governed T07 service may claim complete mutation-plus-audit behavior.
+- Replacement-target existence, cross-organization authorization, and later
+  API validation remain outside T07. History intentionally retains the supplied
+  UUID when the target is absent or later deleted.
 - T06, T09, T10, Release 1.8 completion, production deployment, production
   readiness, voice, AI extraction, semantic search, and UI are not claimed.
 
@@ -277,6 +342,9 @@ Downstream invariants:
 |---|---|---:|---|---|
 | C01 | Internal second-pass clock review | 0 | RESOLVED | Replaced PostgreSQL transaction-start `now()` with insert-time `clock_timestamp()` and added a delayed wall-clock live regression; metadata and 22 live T07 tests pass. |
 | C02 | Acceptance-matrix rollback evidence | 0 | RESOLVED | Added explicit mutation-failure and post-append participant-failure tests, proving zero success events and atomic rollback of both tables. |
+| C03 | Independent review `4781619375` combined deduction | 13 | RESOLVED | Corrected both independent findings at exact reviewed head `e1cfd181f0737c9212e86d5ffc23a0cd06981e30`; the reviewer did not assign the 13 lost points between findings, so this row preserves the combined historical deduction without fabricating an allocation. |
+| C04 | IR-C01 draft-only governed material editability | 0 | RESOLVED | Added ordered lifecycle preconditions, a seven-state material and no-op matrix, stale and organization precedence, no-write approved evidence, and correction or reopen then update proofs. |
+| C05 | IR-C02 deprecation replacement preservation | 0 | RESOLVED | Added the canonical UUID field, exact T04 translation, nullable PostgreSQL persistence with bounded check and no foreign key, and complete positive, null, rejection, and retention proofs. |
 | C90 | Initial focused test-double failures | 0 | RESOLVED | Assigned server-owned defaults in mock flush behavior and reran all focused and complete suites. |
 | C91 | Initial Ruff and format findings | 0 | RESOLVED | Removed the unused import, applied Ruff formatting, and reran repository-wide checks successfully. |
 | C92 | Initial sandboxed localhost denial | 0 | RESOLVED | Preserved the failed invocation, obtained approved local access, and ran all PostgreSQL suites with zero T07 skips. |
@@ -285,6 +353,9 @@ Downstream invariants:
 | C95 | First report-v2 validation | 0 | RESOLVED | Removed one duplicate backticked path reference and reran the unchanged T07, all-report, and validator-test checks successfully. |
 | C96 | First post-report remote-state verification | 0 | RESOLVED | Preserved the sandbox and network denials, reran with approved Git and GitHub access, and verified all protected remote states exactly. |
 | C97 | First final PR evidence synchronization | 0 | RESOLVED | Replaced the unsafe Markdown-backtick substitution with plain text, restored the run number, and verified the PR body, final head, draft state, and open state. |
+| C98 | First correction-focused Ruff and format | 0 | RESOLVED | Corrected import ordering and format-only findings, then reran focused and repository-wide Ruff and format checks successfully. |
+| C99 | First correction virtual-environment invocation | 0 | RESOLVED | Preserved the missing worktree-local executable result and reran every claimed check through the existing shared Release 1.8 environment. |
+| C100 | First correction commit attempt | 0 | RESOLVED | The approved normal commit created exact implementation SHA `c241cf54264cb78718b952f21670d95832bf9fdf` from unchanged staged content after the sandboxed index-lock denial. |
 
 ## Codex Self-Score
 
@@ -293,18 +364,29 @@ Downstream invariants:
 | Correctness and evidence | 25 | 25 | Domain invariants, exact T04 mapping, atomic mutation/audit rollback, safe summaries, stable history, and direct DML rejection pass locally and on PostgreSQL. | None. |
 | Scope and acceptance criteria | 20 | 20 | Exact 13-path declared ownership implements every T07 criterion without T06, T09, T10, API, UI, legacy-event, or production-scope changes. | None. |
 | Architecture and North-Star alignment | 15 | 15 | Dedicated canonical audit storage, unchanged legacy events, accepted T04 plan authority, T05 Unit of Work reuse, and fail-closed boundaries align with accepted contracts. | None. |
-| Verification, tests, or validation | 15 | 15 | T07 29 domain, 21 service, 22 live, all 17 persistence, affected 483 plus 22 ingestion, 622/49 full, 52/0 live, MyPy 57, Ruff, format, reports, links, and both CI jobs pass. | None. |
+| Verification, tests, or validation | 15 | 15 | Correction evidence includes IR-C01 31, IR-C02 15, T07 39 domain plus 41 service plus 8 repository plus 36 live, 19 persistence, affected 489 plus 22 ingestion, 654/63 full, 66/0 combined live, MyPy 57, Ruff, format, and both implementation-head CI jobs. | None. |
 | Security, privacy, and data governance | 10 | 10 | Safe name-only summaries, organization-scoped reads, append-only DML guard, synthetic fixtures, target guardrails, cleanup, and prohibited-data scans pass. | None. |
 | Documentation and traceability | 10 | 10 | Start SHA, ownership, architecture rationale, migration graph, commands, failures, corrections, exact evidence, gates, and limitations are recorded. | None. |
 | Maintainability and clarity | 5 | 5 | Typed contracts, a narrow repository, explicit participant, bounded service, deterministic mappings, and focused tests keep responsibilities clear. | None. |
-| Total | 100 | 100 | All in-scope acceptance, quality, live PostgreSQL, compatibility, safety, publication, and implementation-head CI evidence passes. | None. |
+| Total | 100 | 100 | All corrected in-scope acceptance, quality, live PostgreSQL, compatibility, safety, normal publication, and implementation-head CI evidence passes. | None. |
 
 ## ChatGPT Reviewer Score
 
-Reviewer status: Pending independent review.
+Historical independent review:
 
-Reviewer score, findings, evidence, weighted score, and decision remain pending.
-No independent-review acceptance is claimed.
+- Independent review: `4781619375`
+- Reviewed head: `e1cfd181f0737c9212e86d5ffc23a0cd06981e30`
+- Historical reviewer score: 87/100
+- Historical provisional weighted score: 92.2/100
+- Historical gate-adjusted score: 79/100
+- Historical decision: CORRECTION REQUIRED
+- Finding IR-C01: draft-only governed material editability
+- Finding IR-C02: deprecation replacement reference preservation
+
+Reviewer status: Pending independent re-review.
+
+Corrected-head reviewer score, weighted score, gate-adjusted score, evidence,
+and decision remain pending. No independent-review acceptance is claimed.
 
 ## Final Score
 
@@ -319,12 +401,12 @@ percent. No weighted score exists until independent review.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| G1 Verified claims | PASS | Claims map to exact command output, source inspection, PostgreSQL behavior, issue comments, PR state, or Actions run `30198494465`; failed invocations remain recorded. |
+| G1 Verified claims | PASS | Claims map to exact command output, source inspection, PostgreSQL behavior, issue comments, PR state, or Actions runs `30198494465`, `30198785192`, and `30201484822`; failed invocations remain recorded. |
 | G2 Confidential data | PASS | Synthetic metadata-only fixtures, localhost target guards, cleanup, and secret, personal, binary, and prohibited-data scans pass. |
-| G3 Approved scope and architecture | PASS | Exact 13-path diff uses dedicated audit storage, leaves legacy event behavior intact, and does not start T06, T09, or T10. |
-| G4 Required validation | PASS | Full, focused, persistence, affected, live PostgreSQL, migration, static, report, link, diff, safety, and both required CI jobs pass. |
-| G5 File ownership | PASS | Original declaration plus one pre-edit amendment account for every changed path and no unexpected path exists. |
-| G6 Acceptance completeness | PASS | Every T07 criterion has implementation evidence, a passing test, or an explicit non-production boundary. |
+| G3 Approved scope and architecture | PASS | The correction changes exactly nine of ten authorized correction paths; the complete 13-path PR diff uses dedicated audit storage, leaves legacy event behavior intact, and does not start T06, T09, or T10. |
+| G4 Required validation | PASS | Full, IR-focused, T07, persistence, affected, 66-item live PostgreSQL, migration, static, report, link, diff, safety, and both corrected implementation-head CI jobs pass. |
+| G5 File ownership | PASS | Original declaration, one pre-edit implementation amendment, and correction comment `5083356895` account for every changed path with no unexpected path. |
+| G6 Acceptance completeness | PASS | Every original T07 criterion plus IR-C01 and IR-C02 has implementation evidence, a passing test, or an explicit non-production boundary. |
 
 Critical-gate result: PASS
 
@@ -332,14 +414,15 @@ Critical-gate result: PASS
 
 | Gate | Status | Applicability Evidence |
 |---|---|---|
-| G7 Migration, model, and PostgreSQL correctness | PASS | Exact metadata, 0002-to-0003 upgrade, clean head, downgrade/re-upgrade, 52 live tests, trigger rejection, transaction rollback, and cleanup pass. |
-| G8 Lifecycle, trust, and audit-bypass prevention | PASS | Every T04 action maps exactly, invalid and stale actions append nothing, no public append API exists, legacy caller events remain separate, and governed service operations queue one internal event in the shared transaction. |
+| G7 Migration, model, and PostgreSQL correctness | PASS | Exact corrected metadata, 0002-to-0003 upgrade, clean head, downgrade/re-upgrade, 66 live tests, replacement check, no foreign key, trigger rejection, transaction rollback, and cleanup pass. |
+| G8 Lifecycle, trust, and audit-bypass prevention | PASS | Draft-only updates, stale precedence, exact T04 replacement translation, every lifecycle mapping, zero-event invalid operations, no public append API, legacy separation, and shared-transaction append behavior pass. |
 
 ## Correction-Cycle History
 
 | Cycle | Starting Score | Findings | Corrections | Ending Score | Validation Evidence | Status |
 |---:|---:|---|---|---:|---|---|
 | 1 | 96 | Internal review found transaction-start recording-time risk and two acceptance-matrix evidence gaps; validation also exposed test-double, formatting, sandbox, scanner, Git-permission, report-path, final remote-state, and PR-body quoting failures. | Used insert-time server recording, added wall-clock and post-append rollback proofs, corrected test doubles and formatting, reran with approved access, fixed scanner, report, and PR invocations, verified remote state, and preserved every failed result. | 100 | 29 domain, 21 service, 17 persistence, 22 T07 live, 483 affected, 22 ingestion, 622/49 full, 52/0 combined live, MyPy 57, Ruff, format, reports, links, safety, remote state, and runs `30198494465` plus `30198785192` pass. | CLOSED |
+| 2 | 87 | Independent review `4781619375` found non-draft complete-composition updates were permitted and the accepted T04 deprecation replacement UUID was dropped. | Enforced ordered draft editability, preserved exact replacement metadata through domain and PostgreSQL history, added bounded DDL without a foreign key, and expanded all required test matrices while preserving original history. | 100 | IR-C01 31, IR-C02 15, T07 39 domain plus 41 service plus 8 repository plus 36 live, 19 persistence, 489 affected, 22 ingestion, 654/63 full, 66/0 live, MyPy 57, Ruff, format, safety, and run `30201484822` pass. | CLOSED |
 
 ## Recommended Follow-up Issues
 
@@ -358,4 +441,4 @@ None.
 
 ## Recommendation
 
-READY FOR INDEPENDENT REVIEW
+READY FOR INDEPENDENT RE-REVIEW
