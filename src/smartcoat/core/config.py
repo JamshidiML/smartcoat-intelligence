@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     database_url: str = "postgresql+psycopg://smartcoat:smartcoat@localhost:5432/smartcoat"
     secret_key: str = "change-me"
+    knowledge_cursor_signing_key: SecretStr | None = None
     enable_debug: bool = True
 
 
