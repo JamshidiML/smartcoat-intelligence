@@ -671,7 +671,7 @@ def test_organization_isolation_no_audit_no_write_and_legacy_exclusion(
     assert after_audits == before_audits
 
 
-def test_created_sort_live_insert_and_delete_match_keyset_contract(
+def test_ir_c01_created_at_desc_insert_before_cursor_is_not_returned(
     migrated_store: tuple[Engine, sessionmaker[Session]],
 ) -> None:
     _, factory = migrated_store
@@ -735,7 +735,71 @@ def test_created_sort_live_insert_and_delete_match_keyset_contract(
     assert set(returned) == set(original_ids) - {deleted_after_cursor}
 
 
-def test_updated_sort_move_before_cursor_can_omit_and_never_repeats_returned_row(
+def test_ir_c01_created_at_asc_insert_after_cursor_can_enter_later_page(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    _, factory = migrated_store
+    organization_id = "synthetic-created-asc-change-org"
+    original_ids = tuple(_uuid(5100 + offset) for offset in range(6))
+    for offset, object_id in enumerate(original_ids):
+        _insert_object(
+            factory,
+            object_id=object_id,
+            organization_id=organization_id,
+            created_at=BASE_TIME + timedelta(minutes=offset),
+        )
+    service = _service(factory)
+    first = service.query(
+        KnowledgeObjectV2Query(
+            organization_id=organization_id,
+            sort=KnowledgeQuerySort.CREATED_AT_ASC,
+            page_size=2,
+        )
+    )
+    assert first.next_cursor is not None
+    returned = tuple(item.object_id for item in first.items)
+
+    inserted_after_cursor = _uuid(5199)
+    _insert_object(
+        factory,
+        object_id=inserted_after_cursor,
+        organization_id=organization_id,
+        created_at=BASE_TIME + timedelta(hours=1),
+    )
+    deleted_after_cursor = original_ids[3]
+    with factory() as session:
+        session.execute(
+            text(
+                "DELETE FROM knowledge_objects_v2 "
+                "WHERE organization_id = :organization_id AND object_id = :object_id"
+            ),
+            {
+                "organization_id": organization_id,
+                "object_id": deleted_after_cursor,
+            },
+        )
+        session.commit()
+
+    cursor = first.next_cursor
+    while cursor is not None:
+        page = service.query(
+            KnowledgeObjectV2Query(
+                organization_id=organization_id,
+                sort=KnowledgeQuerySort.CREATED_AT_ASC,
+                page_size=2,
+                cursor=cursor,
+            )
+        )
+        returned += tuple(item.object_id for item in page.items)
+        cursor = page.next_cursor
+
+    assert len(returned) == len(set(returned))
+    assert inserted_after_cursor in returned
+    assert deleted_after_cursor not in returned
+    assert set(returned) == (set(original_ids) - {deleted_after_cursor}) | {inserted_after_cursor}
+
+
+def test_ir_c01_updated_at_desc_can_omit_moved_row_without_repeating_returned_row(
     migrated_store: tuple[Engine, sessionmaker[Session]],
 ) -> None:
     _, factory = migrated_store
@@ -803,6 +867,63 @@ def test_updated_sort_move_before_cursor_can_omit_and_never_repeats_returned_row
     assert returned.count(already_returned) == 1
     assert not_yet_returned not in returned
     assert set(returned) == set(original_ids) - {not_yet_returned}
+
+
+def test_ir_c01_updated_at_asc_can_repeat_returned_row_after_newer_update(
+    migrated_store: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    _, factory = migrated_store
+    organization_id = "synthetic-updated-asc-change-org"
+    original_ids = tuple(_uuid(6100 + offset) for offset in range(6))
+    for offset, object_id in enumerate(original_ids):
+        _insert_object(
+            factory,
+            object_id=object_id,
+            organization_id=organization_id,
+            created_at=BASE_TIME,
+            updated_at=BASE_TIME + timedelta(minutes=offset),
+        )
+    service = _service(factory)
+    first = service.query(
+        KnowledgeObjectV2Query(
+            organization_id=organization_id,
+            sort=KnowledgeQuerySort.UPDATED_AT_ASC,
+            page_size=2,
+        )
+    )
+    returned = tuple(item.object_id for item in first.items)
+    assert first.next_cursor is not None
+    already_returned = returned[0]
+    with factory() as session:
+        session.execute(
+            text(
+                "UPDATE knowledge_objects_v2 SET updated_at = :updated_at "
+                "WHERE organization_id = :organization_id AND object_id = :object_id"
+            ),
+            {
+                "updated_at": BASE_TIME + timedelta(hours=2),
+                "organization_id": organization_id,
+                "object_id": already_returned,
+            },
+        )
+        session.commit()
+
+    cursor = first.next_cursor
+    while cursor is not None:
+        page = service.query(
+            KnowledgeObjectV2Query(
+                organization_id=organization_id,
+                sort=KnowledgeQuerySort.UPDATED_AT_ASC,
+                page_size=2,
+                cursor=cursor,
+            )
+        )
+        returned += tuple(item.object_id for item in page.items)
+        cursor = page.next_cursor
+
+    assert returned.count(already_returned) == 2
+    assert len(returned) == len(original_ids) + 1
+    assert set(returned) == set(original_ids)
 
 
 def _signed_invalid_position_cursor(valid_cursor: str) -> str:

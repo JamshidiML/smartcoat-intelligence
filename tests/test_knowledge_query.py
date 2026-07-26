@@ -323,6 +323,75 @@ def test_page_metadata_invariants_are_enforced() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("has_more", "next_cursor"),
+    [
+        (True, "synthetic-cursor"),
+        (True, None),
+        (False, "synthetic-cursor"),
+    ],
+)
+def test_ir_c02_empty_continuation_page_is_rejected(
+    has_more: bool,
+    next_cursor: str | None,
+) -> None:
+    with pytest.raises(ValidationError) as captured:
+        KnowledgeObjectV2Page(
+            items=(),
+            returned_count=0,
+            requested_page_size=25,
+            has_more=has_more,
+            next_cursor=next_cursor,
+            applied_sort=KnowledgeQuerySort.UPDATED_AT_DESC,
+        )
+    assert captured.value.errors()[0]["type"] == "knowledge_query_empty_continuation_page"
+
+
+def test_ir_c02_zero_count_continuation_with_item_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="returned_count"):
+        KnowledgeObjectV2Page(
+            items=(_item(),),
+            returned_count=0,
+            requested_page_size=1,
+            has_more=True,
+            next_cursor="synthetic-cursor",
+            applied_sort=KnowledgeQuerySort.UPDATED_AT_DESC,
+        )
+
+
+def test_ir_c02_valid_terminal_and_continuation_page_shapes() -> None:
+    empty_terminal = KnowledgeObjectV2Page(
+        items=(),
+        returned_count=0,
+        requested_page_size=25,
+        has_more=False,
+        next_cursor=None,
+        applied_sort=KnowledgeQuerySort.UPDATED_AT_DESC,
+    )
+    non_empty_terminal = KnowledgeObjectV2Page(
+        items=(_item(),),
+        returned_count=1,
+        requested_page_size=1,
+        has_more=False,
+        next_cursor=None,
+        applied_sort=KnowledgeQuerySort.UPDATED_AT_DESC,
+    )
+    continuation = KnowledgeObjectV2Page(
+        items=(_item(),),
+        returned_count=1,
+        requested_page_size=1,
+        has_more=True,
+        next_cursor="synthetic-cursor",
+        applied_sort=KnowledgeQuerySort.UPDATED_AT_DESC,
+    )
+
+    assert empty_terminal.items == ()
+    assert empty_terminal.next_cursor is None
+    assert non_empty_terminal.has_more is False
+    assert continuation.has_more is True
+    assert continuation.next_cursor == "synthetic-cursor"
+
+
 def test_cursor_round_trip_uses_canonical_microseconds() -> None:
     codec = KnowledgeQueryCursorCodec(SYNTHETIC_KEY)
     fingerprint = hashlib.sha256(b"synthetic-query").hexdigest()

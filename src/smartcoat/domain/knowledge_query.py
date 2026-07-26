@@ -402,6 +402,11 @@ class KnowledgeObjectV2Page(BaseModel):
             raise ValueError("returned_count must equal the number of items")
         if self.returned_count > self.requested_page_size:
             raise ValueError("returned_count must not exceed requested_page_size")
+        if not self.items and (self.has_more or self.next_cursor is not None):
+            raise _custom_error(
+                "knowledge_query_empty_continuation_page",
+                "an empty public page must be terminal and must not carry a cursor",
+            )
         if self.has_more != (self.next_cursor is not None):
             raise ValueError("next_cursor must be present exactly when has_more is true")
         return self
