@@ -47,12 +47,12 @@ LIVE_POSTGRES_OPT_IN = "true"
 TEST_SCHEMA_PATTERN = re.compile(r"^smartcoat_test_qc_observation_[a-z0-9]+$")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PAYLOAD = {
-    "test_result_id": "QC-TR-2026-001",
-    "test_result_name": "Synthetic Coating Thickness Result",
+    "qc_record_id": "QC-TR-2026-001",
+    "qc_record_name": "Synthetic Coating Thickness Result",
     "title": "Synthetic coating thickness below lower limit",
     "finding": "Synthetic QC measurement was below the declared test-result limit.",
     "source_reference": "qc-record://synthetic/QC-TR-2026-001",
-    "observed_at": "2026-07-29T14:00:00+00:00",
+    "inspected_at": "2026-07-29T14:00:00+00:00",
     "actor_id": "synthetic-qc-inspector",
     "actor_role": "qc_inspector",
 }
@@ -224,15 +224,16 @@ def test_qc_observation_http_postgres_round_trip_and_read_only_get(
     view = created["observation"]
     assert view["lifecycle_state"] == "draft"
     assert view["revision"] == 1
+    assert view["knowledge_type"] == "finding"
     for field_name in (
-        "test_result_id",
-        "test_result_name",
+        "qc_record_id",
+        "qc_record_name",
         "title",
         "finding",
         "source_reference",
     ):
         assert view[field_name] == PAYLOAD[field_name]
-    assert view["observed_at"] == PAYLOAD["observed_at"].replace("+00:00", "Z")
+    assert view["inspected_at"] == PAYLOAD["inspected_at"].replace("+00:00", "Z")
     assert view["evidence_id"]
     assert created["audit_event_id"]
     assert created["audit_sequence"] > 0
@@ -271,7 +272,7 @@ def test_qc_observation_http_postgres_round_trip_and_read_only_get(
         assert len(contexts) == 1
         context = contexts[0]
         assert context.context_type == "test_result"
-        assert context.reference_id == PAYLOAD["test_result_id"]
+        assert context.reference_id == PAYLOAD["qc_record_id"]
         assert context.id_kind == "external"
         assert context.source_system == "smartcoat-qc"
         assert context.relationship_role == "quality_control_record"
@@ -324,6 +325,10 @@ def test_qc_observation_http_postgres_round_trip_and_read_only_get(
         headers=headers,
     )
     assert get_response.status_code == 200
+    assert get_response.json()["knowledge_type"] == "finding"
+    assert get_response.json()["qc_record_id"] == PAYLOAD["qc_record_id"]
+    assert get_response.json()["qc_record_name"] == PAYLOAD["qc_record_name"]
+    assert get_response.json()["inspected_at"] == PAYLOAD["inspected_at"].replace("+00:00", "Z")
     assert get_response.json() == view
     wrong_org = client.get(
         f"/api/v2/qc-observations/{object_id}",

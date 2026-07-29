@@ -19,18 +19,18 @@ CREATE_REASON = "Manual QC finding capture"
 class QCObservationCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    test_result_id: str = Field(min_length=1, max_length=512)
-    test_result_name: str = Field(min_length=1, max_length=256)
+    qc_record_id: str = Field(min_length=1, max_length=512)
+    qc_record_name: str = Field(min_length=1, max_length=256)
     title: str = Field(min_length=1, max_length=256)
     finding: str = Field(min_length=1, max_length=4096)
     source_reference: str = Field(min_length=1, max_length=2048)
-    observed_at: datetime
+    inspected_at: datetime
     actor_id: str = Field(min_length=1, max_length=512)
     actor_role: str = Field(min_length=1, max_length=128)
 
     @field_validator(
-        "test_result_id",
-        "test_result_name",
+        "qc_record_id",
+        "qc_record_name",
         "title",
         "finding",
         "source_reference",
@@ -47,11 +47,11 @@ class QCObservationCreateRequest(BaseModel):
             raise ValueError(f"{info.field_name} must not be blank")
         return normalized
 
-    @field_validator("observed_at")
+    @field_validator("inspected_at")
     @classmethod
-    def normalize_observed_at(cls, value: datetime) -> datetime:
+    def normalize_inspected_at(cls, value: datetime) -> datetime:
         if value.tzinfo is None or value.utcoffset() is None:
-            raise ValueError("observed_at must be timezone-aware")
+            raise ValueError("inspected_at must be timezone-aware")
         return value.astimezone(UTC)
 
 
@@ -74,13 +74,14 @@ class QCObservationView(BaseModel):
     organization_id: str
     revision: int
     lifecycle_state: str
+    knowledge_type: str
     title: str
     finding: str
-    test_result_id: str
-    test_result_name: str
+    qc_record_id: str
+    qc_record_name: str
     evidence_id: str
     source_reference: str
-    observed_at: datetime
+    inspected_at: datetime
     created_at: datetime
     updated_at: datetime
     provenance: QCObservationProvenanceView
@@ -156,10 +157,10 @@ def _build_create_command(
     try:
         test_result_reference = ContextReference(
             context_type=ContextType.TEST_RESULT,
-            reference_id=payload.test_result_id,
+            reference_id=payload.qc_record_id,
             id_kind=ContextIdKind.EXTERNAL,
             source_system=QC_SOURCE_SYSTEM,
-            display_name=payload.test_result_name,
+            display_name=payload.qc_record_name,
             version=None,
             relationship_role=QC_OBSERVATION_ROLE,
             source_reference=payload.source_reference,
@@ -176,8 +177,8 @@ def _build_create_command(
                 "source_reference": payload.source_reference,
                 "source_system": QC_SOURCE_SYSTEM,
                 "captured_by": payload.actor_id,
-                "captured_at": payload.observed_at,
-                "source_created_at": payload.observed_at,
+                "captured_at": payload.inspected_at,
+                "source_created_at": payload.inspected_at,
                 "integrity": None,
                 "media_type": None,
                 "confidentiality": ConfidentialityLevel.INTERNAL,
@@ -189,8 +190,8 @@ def _build_create_command(
             source_reference=payload.source_reference,
             created_by=payload.actor_id,
             creation_method=CreationMethod.MANUAL,
-            captured_at=payload.observed_at,
-            source_created_at=payload.observed_at,
+            captured_at=payload.inspected_at,
+            source_created_at=payload.inspected_at,
             transformation_history=(),
             derived_from_object_id=None,
             derived_from_revision=None,
@@ -267,13 +268,14 @@ def _to_view(composition: Any) -> QCObservationView:
         organization_id=composition.core.organization_id,
         revision=composition.core.revision,
         lifecycle_state=composition.core.lifecycle_state.value,
+        knowledge_type=state.knowledge_type.value,
         title=state.title,
         finding=state.content["finding"],
-        test_result_id=test_result_reference.reference_id,
-        test_result_name=test_result_reference.display_name,
+        qc_record_id=test_result_reference.reference_id,
+        qc_record_name=test_result_reference.display_name,
         evidence_id=evidence.evidence_id,
         source_reference=composition.provenance.source_reference,
-        observed_at=composition.provenance.source_created_at,
+        inspected_at=composition.provenance.source_created_at,
         created_at=composition.core.created_at,
         updated_at=composition.core.updated_at,
         provenance=QCObservationProvenanceView(
