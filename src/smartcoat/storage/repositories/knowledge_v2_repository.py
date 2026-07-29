@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import UUID, uuid4
 
-from sqlalchemy import CursorResult, delete, func, select, update
+from sqlalchemy import CursorResult, and_, delete, func, select, update
 from sqlalchemy.orm import Session
 
 from smartcoat.domain.base import LifecycleState
@@ -179,6 +179,68 @@ class KnowledgeObjectV2Repository:
             "aggregate_read_retry_exhausted",
             "the Knowledge Object v2 changed during every bounded aggregate read attempt",
         )
+
+    def list_object_ids_by_type_and_tag(
+        self,
+        *,
+        organization_id: str,
+        knowledge_type: str,
+        required_tag: str,
+        limit: int,
+        offset: int,
+    ) -> tuple[UUID, ...]:
+        organization_id = organization_id.strip()
+        knowledge_type = knowledge_type.strip()
+        required_tag = required_tag.strip()
+        if not organization_id:
+            raise KnowledgeObjectV2RepositoryError(
+                "invalid_organization_id",
+                "organization_id must not be blank",
+            )
+        if not knowledge_type:
+            raise KnowledgeObjectV2RepositoryError(
+                "invalid_knowledge_type",
+                "knowledge_type must not be blank",
+            )
+        if not required_tag:
+            raise KnowledgeObjectV2RepositoryError(
+                "invalid_required_tag",
+                "required_tag must not be blank",
+            )
+        if not 1 <= limit <= 101:
+            raise KnowledgeObjectV2RepositoryError(
+                "invalid_list_limit",
+                "list limit must be between 1 and 101",
+            )
+        if offset < 0:
+            raise KnowledgeObjectV2RepositoryError(
+                "invalid_list_offset",
+                "list offset must be zero or greater",
+            )
+
+        statement = (
+            select(KnowledgeObjectV2Record.object_id)
+            .join(
+                KnowledgeObjectV2TagRecord,
+                and_(
+                    KnowledgeObjectV2TagRecord.organization_id
+                    == KnowledgeObjectV2Record.organization_id,
+                    KnowledgeObjectV2TagRecord.object_id == KnowledgeObjectV2Record.object_id,
+                ),
+            )
+            .where(
+                KnowledgeObjectV2Record.organization_id == organization_id,
+                KnowledgeObjectV2Record.knowledge_type == knowledge_type,
+                KnowledgeObjectV2TagRecord.tag == required_tag,
+            )
+            .order_by(
+                KnowledgeObjectV2Record.created_at.desc(),
+                KnowledgeObjectV2Record.object_id.desc(),
+            )
+            .offset(offset)
+            .limit(limit)
+        )
+        return tuple(self._session.scalars(statement).all())
 
     def load_for_controlled_mutation(
         self,
