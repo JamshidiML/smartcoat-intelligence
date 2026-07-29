@@ -1,6 +1,13 @@
 from fastapi import FastAPI
 
-from smartcoat.api.routes import decisions, events, health, knowledge, lab_observations
+from smartcoat.api.routes import (
+    decisions,
+    events,
+    health,
+    knowledge,
+    lab_observation_ui,
+    lab_observations,
+)
 from smartcoat.core.config import get_settings
 
 settings = get_settings()
@@ -14,5 +21,6 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(knowledge.router)
 app.include_router(lab_observations.router)
+app.include_router(lab_observation_ui.router)
 app.include_router(decisions.router)
 app.include_router(events.router)
