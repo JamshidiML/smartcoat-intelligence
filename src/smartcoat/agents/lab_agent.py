@@ -9,7 +9,10 @@ class LabAgent(BaseAgent):
     def __init__(self) -> None:
         super().__init__(
             name="Lab Agent",
-            purpose="Capture laboratory experiments, hypotheses, results, failures, and lessons learned.",
+            purpose=(
+                "Capture laboratory experiments, hypotheses, results, failures, "
+                "and lessons learned."
+            ),
         )
 
     def run(self, user_input: str, context: dict[str, Any] | None = None) -> AgentResponse:

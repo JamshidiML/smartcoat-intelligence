@@ -22,9 +22,7 @@ def _parse_manifest(
     manifest: SourceManifest | Mapping[str, Any],
 ) -> tuple[SourceManifest | None, ManifestValidationResult | None]:
     payload = (
-        manifest.model_dump(mode="python")
-        if isinstance(manifest, SourceManifest)
-        else manifest
+        manifest.model_dump(mode="python") if isinstance(manifest, SourceManifest) else manifest
     )
     try:
         return SourceManifest.model_validate(payload), None
