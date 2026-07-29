@@ -388,7 +388,7 @@ def test_legacy_routes_remain_registered() -> None:
         "/api/v2/lab-observations",
         "/api/v2/lab-observations/{object_id}",
     }
-    assert set(lab_paths["/api/v2/lab-observations"]) == {"post"}
+    assert set(lab_paths["/api/v2/lab-observations"]) == {"get", "post"}
     assert set(lab_paths["/api/v2/lab-observations/{object_id}"]) == {"get"}
 
     result = subprocess.run(

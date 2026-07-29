@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 from sqlalchemy.orm import Session
 
@@ -92,6 +92,16 @@ class LabObservationCreateResponse(BaseModel):
     observation: LabObservationView
     audit_event_id: UUID
     audit_sequence: int
+
+
+class LabObservationListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    items: tuple[LabObservationView, ...]
+    limit: int
+    offset: int
+    returned_count: int
+    has_more: bool
 
 
 def get_lab_observation_audit_service() -> Any:
@@ -345,6 +355,67 @@ def create_lab_observation(
         raise HTTPException(
             status_code=409,
             detail="Lab observation could not be persisted",
+        ) from error
+
+
+@router.get("", status_code=200, response_model=LabObservationListResponse)
+def list_lab_observations(
+    organization_id: Annotated[
+        str,
+        Header(
+            alias="X-SmartCoat-Organization-ID",
+            min_length=1,
+            max_length=512,
+        ),
+    ],
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    *,
+    repository: Annotated[Any, Depends(get_lab_observation_repository)],
+) -> LabObservationListResponse:
+    organization_id = _normalize_organization_id(organization_id)
+    from smartcoat.storage.repositories.knowledge_v2_repository import (
+        KnowledgeObjectV2RepositoryError,
+    )
+
+    try:
+        object_ids = repository.list_object_ids_by_type_and_tag(
+            organization_id=organization_id,
+            knowledge_type="observation",
+            required_tag=LAB_OBSERVATION_TAG,
+            limit=limit + 1,
+            offset=offset,
+        )
+        has_more = len(object_ids) > limit
+        selected_ids = object_ids[:limit]
+        items = []
+        for object_id in selected_ids:
+            composition = repository.get(
+                object_id=object_id,
+                organization_id=organization_id,
+            )
+            if composition is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Lab observation list could not be loaded",
+                )
+            items.append(_to_view(composition))
+        return LabObservationListResponse(
+            items=tuple(items),
+            limit=limit,
+            offset=offset,
+            returned_count=len(items),
+            has_more=has_more,
+        )
+    except KnowledgeObjectV2RepositoryError as error:
+        raise HTTPException(
+            status_code=500,
+            detail="Lab observation list could not be loaded",
+        ) from error
+    except ValueError as error:
+        raise HTTPException(
+            status_code=500,
+            detail="Lab observation list could not be loaded",
         ) from error
 
 

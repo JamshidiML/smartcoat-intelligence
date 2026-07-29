@@ -5,13 +5,14 @@ import os
 import re
 from collections.abc import Generator
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine, func, select, text
+from sqlalchemy import Engine, create_engine, func, select, text, update
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
@@ -346,6 +347,144 @@ def test_lab_observation_http_postgres_round_trip(
         assert unchanged is not None
         assert unchanged.revision == 1
         assert unchanged.updated_at == original_updated_at
+
+
+def test_lab_observation_list_pagination_order_isolation_and_read_only(
+    live_client: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, factory = live_client
+    primary_headers = {"X-SmartCoat-Organization-ID": ORGANIZATION_ID}
+    other_organization_id = "another-synthetic-org"
+    other_headers = {"X-SmartCoat-Organization-ID": other_organization_id}
+    primary_ids: list[UUID] = []
+
+    for position in range(3):
+        payload = {
+            **PAYLOAD,
+            "project_id": f"LAB-LIST-{position + 1:03d}",
+            "project_name": f"Synthetic List Project {position + 1}",
+            "title": f"Synthetic List Observation {position + 1}",
+            "observation": f"Synthetic list observation value {position + 1}.",
+            "source_reference": (f"lab-notebook://synthetic/list/observation-{position + 1:03d}"),
+        }
+        response = client.post(
+            "/api/v2/lab-observations",
+            json=payload,
+            headers=primary_headers,
+        )
+        assert response.status_code == 201, response.text
+        primary_ids.append(UUID(response.json()["observation"]["object_id"]))
+
+    other_payload = {
+        **PAYLOAD,
+        "project_id": "LAB-LIST-OTHER-001",
+        "project_name": "Synthetic Other Organization Project",
+        "title": "Synthetic Other Organization Observation",
+        "observation": "Synthetic isolated organization observation.",
+        "source_reference": "lab-notebook://synthetic/other/observation-001",
+    }
+    other_response = client.post(
+        "/api/v2/lab-observations",
+        json=other_payload,
+        headers=other_headers,
+    )
+    assert other_response.status_code == 201, other_response.text
+    other_object_id = UUID(other_response.json()["observation"]["object_id"])
+
+    fixed_created_at = (
+        datetime(2026, 7, 28, 12, 0, tzinfo=UTC),
+        datetime(2026, 7, 28, 12, 1, tzinfo=UTC),
+        datetime(2026, 7, 28, 12, 2, tzinfo=UTC),
+    )
+    with factory() as session:
+        for object_id, created_at in zip(
+            primary_ids,
+            fixed_created_at,
+            strict=True,
+        ):
+            session.execute(
+                update(KnowledgeObjectV2Record)
+                .where(
+                    KnowledgeObjectV2Record.organization_id == ORGANIZATION_ID,
+                    KnowledgeObjectV2Record.object_id == object_id,
+                )
+                .values(created_at=created_at)
+            )
+        session.commit()
+
+        roots = session.scalars(
+            select(KnowledgeObjectV2Record).where(
+                KnowledgeObjectV2Record.organization_id == ORGANIZATION_ID,
+                KnowledgeObjectV2Record.object_id.in_(primary_ids),
+            )
+        ).all()
+        root_snapshots = {root.object_id: (root.revision, root.updated_at) for root in roots}
+        audit_count_before = session.scalar(
+            select(func.count())
+            .select_from(KnowledgeAuditEventRecord)
+            .where(KnowledgeAuditEventRecord.organization_id == ORGANIZATION_ID)
+        )
+
+    page_one = client.get(
+        "/api/v2/lab-observations?limit=2&offset=0",
+        headers=primary_headers,
+    )
+    assert page_one.status_code == 200
+    page_one_body = page_one.json()
+    page_one_ids = [UUID(item["object_id"]) for item in page_one_body["items"]]
+    assert page_one_ids == [primary_ids[2], primary_ids[1]]
+    assert page_one_body["limit"] == 2
+    assert page_one_body["offset"] == 0
+    assert page_one_body["returned_count"] == 2
+    assert page_one_body["has_more"] is True
+
+    page_two = client.get(
+        "/api/v2/lab-observations?limit=2&offset=2",
+        headers=primary_headers,
+    )
+    assert page_two.status_code == 200
+    page_two_body = page_two.json()
+    page_two_ids = [UUID(item["object_id"]) for item in page_two_body["items"]]
+    assert page_two_ids == [primary_ids[0]]
+    assert page_two_body["returned_count"] == 1
+    assert page_two_body["has_more"] is False
+    assert set(page_one_ids).isdisjoint(page_two_ids)
+    assert set(page_one_ids + page_two_ids) == set(primary_ids)
+
+    isolated_page = client.get(
+        "/api/v2/lab-observations",
+        headers=other_headers,
+    )
+    assert isolated_page.status_code == 200
+    isolated_ids = [UUID(item["object_id"]) for item in isolated_page.json()["items"]]
+    assert isolated_ids == [other_object_id]
+    assert set(primary_ids).isdisjoint(isolated_ids)
+
+    empty_page = client.get(
+        "/api/v2/lab-observations",
+        headers={"X-SmartCoat-Organization-ID": "empty-synthetic-org"},
+    )
+    assert empty_page.status_code == 200
+    assert empty_page.json()["items"] == []
+    assert empty_page.json()["has_more"] is False
+
+    with factory() as session:
+        audit_count_after = session.scalar(
+            select(func.count())
+            .select_from(KnowledgeAuditEventRecord)
+            .where(KnowledgeAuditEventRecord.organization_id == ORGANIZATION_ID)
+        )
+        roots_after = session.scalars(
+            select(KnowledgeObjectV2Record).where(
+                KnowledgeObjectV2Record.organization_id == ORGANIZATION_ID,
+                KnowledgeObjectV2Record.object_id.in_(primary_ids),
+            )
+        ).all()
+
+    assert audit_count_before == audit_count_after == 3
+    assert {
+        root.object_id: (root.revision, root.updated_at) for root in roots_after
+    } == root_snapshots
 
 
 def test_randomized_schema_cleanup_leaves_zero_residual_schemas(
