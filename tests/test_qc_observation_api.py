@@ -55,12 +55,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def _payload() -> dict[str, str]:
     return {
-        "test_result_id": "QC-TR-2026-001",
-        "test_result_name": "Synthetic Coating Thickness Result",
+        "qc_record_id": "QC-TR-2026-001",
+        "qc_record_name": "Synthetic Coating Thickness Result",
         "title": "Synthetic coating thickness below lower limit",
         "finding": ("Synthetic QC measurement was below the declared test-result limit."),
         "source_reference": "qc-record://synthetic/QC-TR-2026-001",
-        "observed_at": NOW.isoformat(),
+        "inspected_at": NOW.isoformat(),
         "actor_id": "synthetic-qc-inspector",
         "actor_role": "qc_inspector",
     }
@@ -234,7 +234,7 @@ def test_create_maps_valid_payload_and_returns_201() -> None:
     test_result = state.context.references[0]
     assert test_result.context_type is ContextType.TEST_RESULT
     assert test_result.id_kind is ContextIdKind.EXTERNAL
-    assert test_result.reference_id == _payload()["test_result_id"]
+    assert test_result.reference_id == _payload()["qc_record_id"]
     assert test_result.source_system == QC_SOURCE_SYSTEM
     assert test_result.relationship_role == QC_OBSERVATION_ROLE
     assert len(command.evidence) == 1
@@ -249,7 +249,11 @@ def test_create_maps_valid_payload_and_returns_201() -> None:
     body = response.json()
     assert body["observation"]["lifecycle_state"] == "draft"
     assert body["observation"]["revision"] == 1
+    assert body["observation"]["knowledge_type"] == "finding"
     assert body["observation"]["finding"] == _payload()["finding"]
+    assert body["observation"]["qc_record_id"] == _payload()["qc_record_id"]
+    assert body["observation"]["qc_record_name"] == _payload()["qc_record_name"]
+    assert body["observation"]["inspected_at"] == NOW.isoformat().replace("+00:00", "Z")
     assert body["audit_event_id"] == str(AUDIT_EVENT_ID)
     assert body["audit_sequence"] > 0
 
@@ -276,14 +280,14 @@ def test_create_rejects_invalid_payloads() -> None:
     app.dependency_overrides[get_qc_observation_audit_service] = lambda: service
     client = TestClient(app)
     invalid_cases: tuple[tuple[str, Any], ...] = (
-        ("test_result_id", "   "),
-        ("test_result_name", "   "),
+        ("qc_record_id", "   "),
+        ("qc_record_name", "   "),
         ("title", "   "),
         ("finding", "   "),
         ("source_reference", "   "),
         ("actor_id", "   "),
         ("actor_role", "   "),
-        ("observed_at", "2026-07-29T14:00:00"),
+        ("inspected_at", "2026-07-29T14:00:00"),
     )
 
     for field_name, invalid_value in invalid_cases:
@@ -308,9 +312,13 @@ def test_create_rejects_extra_and_server_owned_fields() -> None:
         "organization_id": "wrong-org",
         "revision": 1,
         "lifecycle_state": "approved",
+        "knowledge_type": "finding",
         "created_at": NOW.isoformat(),
         "updated_at": NOW.isoformat(),
         "confidentiality": "public",
+        "test_result_id": "legacy-result-id",
+        "test_result_name": "Legacy result name",
+        "observed_at": NOW.isoformat(),
     }
 
     for field_name, value in extra_fields.items():
@@ -320,6 +328,24 @@ def test_create_rejects_extra_and_server_owned_fields() -> None:
             headers={"X-SmartCoat-Organization-ID": "synthetic-qc-org"},
         )
         assert response.status_code == 422
+
+    old_contract_payload = _payload()
+    del old_contract_payload["qc_record_id"]
+    del old_contract_payload["qc_record_name"]
+    del old_contract_payload["inspected_at"]
+    old_contract_payload.update(
+        {
+            "test_result_id": "QC-TR-2026-001",
+            "test_result_name": "Synthetic Coating Thickness Result",
+            "observed_at": NOW.isoformat(),
+        }
+    )
+    old_contract = client.post(
+        "/api/v2/qc-observations",
+        json=old_contract_payload,
+        headers={"X-SmartCoat-Organization-ID": "synthetic-qc-org"},
+    )
+    assert old_contract.status_code == 422
 
     assert service.commands == []
 
@@ -337,8 +363,10 @@ def test_get_returns_existing_qc_observation_without_mutation() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["test_result_id"] == "QC-TR-2026-001"
-    assert body["test_result_name"] == "Synthetic Coating Thickness Result"
+    assert body["knowledge_type"] == "finding"
+    assert body["qc_record_id"] == "QC-TR-2026-001"
+    assert body["qc_record_name"] == "Synthetic Coating Thickness Result"
+    assert body["inspected_at"] == NOW.isoformat().replace("+00:00", "Z")
     assert body["finding"] == _payload()["finding"]
     assert body["evidence_id"] == "qc-observation:evidence-1"
     assert body["provenance"]["source_system"] == QC_SOURCE_SYSTEM
@@ -399,6 +427,24 @@ def test_qc_routes_and_legacy_contracts_remain_isolated() -> None:
     assert set(qc_paths["/api/v2/qc-observations/{object_id}"]) == {"get"}
     assert set(schema["paths"]["/api/v2/lab-observations"]) == {"get", "post"}
     assert set(schema["paths"]["/api/v2/lab-observations/{object_id}"]) == {"get"}
+    request_fields = set(
+        schema["components"]["schemas"]["QCObservationCreateRequest"]["properties"]
+    )
+    response_fields = set(schema["components"]["schemas"]["QCObservationView"]["properties"])
+    canonical_contract_fields = {
+        "qc_record_id",
+        "qc_record_name",
+        "inspected_at",
+    }
+    old_contract_fields = {
+        "test_result_id",
+        "test_result_name",
+        "observed_at",
+    }
+    assert canonical_contract_fields <= request_fields
+    assert canonical_contract_fields | {"knowledge_type"} <= response_fields
+    assert request_fields.isdisjoint(old_contract_fields)
+    assert response_fields.isdisjoint(old_contract_fields)
 
     result = subprocess.run(
         [
