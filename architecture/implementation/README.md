@@ -30,6 +30,18 @@ The implementation is intentionally narrow:
 
 ---
 
+# Proposed Target Architecture
+
+- [SmartCoat Enterprise Laboratory Intelligence Architecture](ENTERPRISE_AI_LABORATORY_INTELLIGENCE_PLATFORM.md)
+  defines the proposed incremental path from the governed Knowledge Capture Core
+  to human-reviewed voice and document capture, authorized retrieval, enterprise
+  deployment, and later evidence-gated intelligence capabilities.
+
+This proposal is not an implementation authorization. Its major technology,
+security, tenancy, governance, and product decisions require accepted ADRs.
+
+---
+
 # Implementation Rule
 
 Code must use canonical enterprise language.
