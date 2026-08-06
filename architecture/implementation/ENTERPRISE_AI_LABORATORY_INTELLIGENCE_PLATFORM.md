@@ -23,13 +23,13 @@ The first business outcome is intentionally narrower than the full vision: an en
 The architecture follows six non-negotiable rules:
 
 1. AI output is a candidate, never approved knowledge.
-2. Every material claim has evidence, provenance, uncertainty, and revision history.
+2. Every material claim has evidence, provenance, revision history, and an uncertainty declaration when applicable, or an explicit known/not-applicable semantic. Existing Knowledge Object v2 records with `uncertainty=None` are not invalidated.
 3. Tenant authorization is enforced before retrieval, generation, indexing, and export.
 4. Canonical records are separate from source files, derived projections, and model artifacts.
 5. Recommendations expose evidence and limitations; they do not silently control laboratory or production equipment.
 6. Each major capability advances through measurable gates, controlled pilot data, and an accepted Architecture Decision Record (ADR).
 
-The proposed delivery sequence is:
+The following Release 1.9 through 2.4 labels are provisional planning placeholders, not an authorized execution sequence:
 
 - Release 1.9: Human Review Interface and production identity foundation.
 - Release 2.0: AI-assisted voice, PDF, and Excel capture MVP.
@@ -38,11 +38,11 @@ The proposed delivery sequence is:
 - Release 2.3: governed recommendations, pattern discovery, and graph-assisted analysis.
 - Release 2.4+: predictive models, optimization, digital-twin experiments, and bounded laboratory automation.
 
-An initial usable pilot is a 9-12 month program under the assumptions in this document. A sellable enterprise product is more realistically an 18-24 month program. The indicative total fully loaded investment is EUR 1.2-2.5 million, excluding customer-specific ERP/LIMS integration, certified regulatory work, and specialized production hardware. These are planning ranges, not vendor quotations.
+Under the illustrative funded-team scenario, an initial usable pilot is a 9-12 month program and a sellable enterprise product is more realistically an 18-24 month program. Its indicative total fully loaded investment is EUR 1.2-2.5 million, excluding customer-specific ERP/LIMS integration, certified regulatory work, and specialized production hardware. These are planning ranges, not vendor quotations or a forecast for the five-hour-per-week founder track.
 
 ## 2. Status, Scope, and Non-Claims
 
-This document provides a target architecture and roadmap. It does not accept a technology decision, authorize real industrial data, or claim that the following exist today:
+This document provides a target architecture and roadmap. It does not accept a technology decision, itself grant real-data authorization, or claim that the following exist today:
 
 - production identity and access management;
 - legally validated retention or records-management policies;
@@ -53,7 +53,34 @@ This document provides a target architecture and roadmap. It does not accept a t
 - autonomous laboratory control;
 - GDPR compliance by architecture alone.
 
-Implementation of those capabilities requires accepted ADRs, threat modeling, data-protection review, tests, operational evidence, and human approval. Synthetic, anonymized, generalized, or metadata-only data remains the default until the governance gates authorize otherwise.
+Implementation of those capabilities requires accepted ADRs, threat modeling, data-protection review, tests, operational evidence, and human approval.
+
+### 2.1 Two-track execution model
+
+This proposal distinguishes the immediate founder-operated pilot from a separately funded enterprise-product program.
+
+**Track A - SmartCoat Founder Pilot**
+
+- one founder with approximately five hours per week;
+- one designated MacBook and local PostgreSQL;
+- canonical organization ID `smartcoat-startup`;
+- one narrowly bounded, explicitly authorized vertical slice at a time;
+- minimal infrastructure appropriate to the local threat model;
+- real and confidential pilot data only under the current explicit owner authorization; and
+- no automatic adoption of the full enterprise backlog, deployment topology, team, or release plan.
+
+**Track B - Funded Enterprise Product**
+
+- the initial 6-8 FTE-equivalent team described in Section 31;
+- the illustrative 9-12 month funded-team pilot estimate;
+- the illustrative 18-24 month commercialization estimate; and
+- the illustrative EUR 1.2-2.5 million planning range.
+
+Track B is not the immediate execution plan for Track A. Movement from one track to the other requires an explicit funding, scope, governance, and release decision.
+
+### 2.2 Real-data authorization boundary
+
+SmartCoat Startup currently has explicit owner authorization to process and store real and confidential founder-pilot data on the designated MacBook. That authorization exists outside this architecture document; this document does not grant, widen, or transfer it. Future customer tenants require tenant-specific legal, retention, provider-processing, security, data-residency, and governance decisions before real or confidential data is processed. Synthetic data remains the default for CI and automated tests, but it is not the only data permitted in the separately authorized founder pilot.
 
 ## 3. Current-State Assessment
 
@@ -247,7 +274,7 @@ Critical controls:
 
 - The source asset is retained before AI processing, subject to policy.
 - The model receives only content permitted for its provider, region, purpose, and classification.
-- Candidate storage is physically and logically distinct from canonical knowledge.
+- Candidate and Canonical records and contracts are logically separated in every deployment profile. Physical separation is conditional on the threat model, tenant topology, data residency, regulation, or scale; it is not mandatory for the local founder pilot.
 - Deterministic validation runs before and after model extraction.
 - Approval invokes the existing lifecycle and revision contracts, not a direct table update.
 - Projection failures do not roll back the canonical transaction; they are retried and observable.
@@ -294,7 +321,7 @@ Names are conceptual and require schema ADRs before implementation.
 All tenant content records should carry, where applicable:
 
 ```text
-id UUID/ULID
+id UUID
 organization_id (canonical content partition)
 site_id (nullable only when cross-site is explicitly allowed)
 classification
@@ -309,6 +336,8 @@ retention_class and legal_hold state
 ```
 
 The authenticated policy context supplies organization and actor. Production APIs must reject attempts to override them through body, query, or untrusted headers. `organization_id` remains the canonical domain term and content-partition key. A commercial tenant maps one-to-one to an organization initially; any future tenant with multiple organizations or shared cross-organization workspace requires an ADR and explicit policy model rather than a second ambiguous content key.
+
+UUID remains the accepted canonical identifier for public and persisted contracts. ULID is only a future option. Introducing ULID requires an explicit ADR, migration plan, compatibility proof, and tests. UUID and ULID must not be mixed ambiguously in one public contract.
 
 ### 8.5 Measurements and process parameters
 
@@ -676,20 +705,22 @@ Quality profiles are versioned by record type, tenant, site, and process. Dashbo
 ### 19.2 Representative resources
 
 ```text
-/v1/capture-sessions
-/v1/source-assets
-/v1/ingestion-jobs
-/v1/extraction-candidates
-/v1/review-tasks
-/v1/knowledge-objects
-/v1/projects /trials /samples /formulations /process-runs /test-results
-/v1/search
-/v1/answers
-/v1/recommendations
-/v1/workflows
-/v1/connectors
-/v1/admin/tenants /policies /entitlements
+/api/v2/capture-sessions
+/api/v2/source-assets
+/api/v2/ingestion-jobs
+/api/v2/extraction-candidates
+/api/v2/review-tasks
+/api/v2/knowledge-objects
+/api/v2/projects /trials /samples /formulations /process-runs /test-results
+/api/v2/search
+/api/v2/answers
+/api/v2/recommendations
+/api/v2/workflows
+/api/v2/connectors
+/api/v2/admin/tenants /policies /entitlements
 ```
+
+Existing `/api/v2/*` contracts remain authoritative. This architecture introduces neither a parallel `/v1` namespace nor a version downgrade. A future major API version requires an accepted ADR, compatibility policy, migration path, and regression evidence.
 
 Routes remain thin. Application services orchestrate authorization, domain commands, repositories, audit, and outbox. Repositories return domain objects, not database rows. Model adapters never import persistence models.
 
@@ -820,7 +851,7 @@ The [confidentiality classification](../../docs/governance/CONFIDENTIALITY_AND_A
 
 ### 23.2 Tenant isolation
 
-- Tenant context is mandatory in application, job, event, cache, search, graph, object, log, and metrics paths.
+- Tenant context is mandatory in authorization, audit, application and job processing, secure logs/traces, search, graph, object access, and controlled business aggregation.
 - PostgreSQL RLS policies deny access when tenant context is absent; application roles do not own protected tables and cannot bypass RLS.
 - Separate service roles for API, worker, migration, backup, and support.
 - Object keys and encryption context include tenant; signed links are short lived.
@@ -965,7 +996,7 @@ These are design targets to validate, not current guarantees.
 
 ### 26.4 Observability
 
-Instrument API, worker, database, queue, connector, model, and browser paths with OpenTelemetry-compatible traces, metrics, and structured logs. Record correlation and tenant-safe identifiers, never unrestricted source content.
+Instrument API, worker, database, queue, connector, model, and browser paths with OpenTelemetry-compatible traces, metrics, and structured logs. Secure logs and traces, plus governed business aggregation, carry the tenant context needed for authorization, audit, and investigation. Raw tenant IDs are not required as ordinary metrics labels. Metrics must avoid uncontrolled high-cardinality or tenant-identifying labels and must never contain unrestricted source content.
 
 Four dashboards remain separate:
 
@@ -1059,6 +1090,8 @@ Rollback means stop new processing, retain accepted canonical revisions, disable
 
 ## 29. Incremental Roadmap and Gates
 
+Release 1.9 through 2.4 are provisional planning placeholders. PR #49 and Release 1.8 remain open and Draft. No Release 1.9 implementation begins before an explicit Release 1.8 closeout decision. This architecture PR authorizes neither T10 nor any downstream implementation.
+
 | Release | Scope | Exit evidence |
 | --- | --- | --- |
 | 1.9 Human Review Interface | identity foundation, capture sessions, candidate store, source viewer, field review, quality rules | usability test, lifecycle/revision compatibility, G1-G8 gates, isolation threat model |
@@ -1123,7 +1156,7 @@ No roadmap date overrides a failed safety, governance, quality, or human-decisio
 
 ### 31.1 Planning assumptions
 
-Assumes one technical-textile design partner, controlled data access, timely domain reviewers, reuse of the current stack, no production machine actuation, and limited initial ERP/LIMS scope.
+The estimates in Sections 31 and 32 describe Track B, an illustrative funded-enterprise scenario. They assume an initial 6-8 FTE-equivalent team, one technical-textile design partner, controlled data access, timely domain reviewers, reuse of the current stack, no production machine actuation, and limited initial ERP/LIMS scope.
 
 | Stage | Duration | Principal result |
 | --- | --- | --- |
@@ -1134,7 +1167,7 @@ Assumes one technical-textile design partner, controlled data access, timely dom
 | Release 2.2 | 4-7 months | enterprise/commercial hardening and deployment profiles |
 | Release 2.3-2.4 | 6-12 months, evidence-led | governed recommendations and advanced modeling |
 
-Some work overlaps after interfaces stabilize. The usable pilot target is approximately 9-12 months; enterprise commercialization is approximately 18-24 months.
+Some work overlaps after interfaces stabilize. In this funded-team scenario, the usable pilot target is approximately 9-12 months and enterprise commercialization is approximately 18-24 months. These durations are not a forecast for the five-hour-per-week founder track.
 
 ### 31.2 Team shape
 
@@ -1152,6 +1185,8 @@ Initial 6-8 FTE-equivalent team:
 Commercial hardening grows toward 10-14 FTE by adding platform/SRE, integration, security, ML, UX research, QA, technical writing, and customer implementation capacity. Domain-review time is a scheduled dependency, not free availability.
 
 ## 32. Cost Estimate
+
+These illustrative Track B ranges use fully loaded 2026 EUR labor assumptions for the team and durations in Section 31 plus ordinary cloud, tooling, security, and delivery overhead. They are scenario estimates, not approved budgets, vendor quotations, or a forecast for Track A.
 
 Indicative fully loaded program ranges in 2026 EUR:
 
@@ -1182,7 +1217,7 @@ audio minutes x speech rate
 + storage, egress, evaluation, and observability
 ```
 
-Model/provider prices change. The platform records per-tenant/task usage, applies budgets, and reports cost per approved record and per successful reuse. Biggest uncertainty: historical data condition, integration scope, enterprise identity/security requirements, and reviewer availability.
+Model/provider prices change. The platform records per-tenant/task usage, applies budgets, and reports cost per approved record and per successful reuse. Principal sensitivity drivers are historical-data condition and volume, integration scope, security and residency requirements, model usage, on-premises support, reviewer availability, labor rates, and delivery concurrency. Exclusions include customer-specific ERP/LIMS projects beyond the bounded assumption, certified regulatory validation, specialized production hardware, production-machine integration, customer change management, taxes, financing, and commercial sales costs.
 
 ## 33. Risk Register
 
@@ -1207,7 +1242,9 @@ Model/provider prices change. The platform records per-tenant/task usage, applie
 
 ## 34. Architecture Decision Backlog
 
-No implementation wave should infer these choices from this proposal. Create and accept ADRs in dependency order:
+The following 16 items are a decision inventory, not authorization to create 16 ADRs. No implementation wave should infer choices from this proposal.
+
+ADRs are created just in time. Only ADRs needed for the next explicitly authorized slice may be created, and each ADR must be tied to concrete implementation acceptance tests. Documentation volume is not a product outcome. This PR authorizes no ADR creation.
 
 1. identity provider integration, tenant context, RBAC/ABAC, and support access;
 2. tenancy isolation topology and PostgreSQL RLS operating model;
@@ -1348,6 +1385,6 @@ Stop or correct a capability when it increases unreviewed risk, correction burde
 
 ## 39. Final Recommendation
 
-Approve this document for independent architecture review, then convert the decision backlog into ADRs before product implementation. Start with Release 1.9 identity-aware human review and source custody. Do not begin autonomous assistants, predictive optimization, a dedicated graph database, or broad historical ingestion until governed capture and measurable reuse pass their gates.
+Approve this document for independent architecture review, then use its decision inventory just in time for the next explicitly authorized slice. Do not start Release 1.9, T10, or downstream implementation without an explicit Release 1.8 closeout and implementation authorization. Do not begin autonomous assistants, predictive optimization, a dedicated graph database, or broad historical ingestion until governed capture and measurable reuse pass their gates.
 
 The architecture is viable because it builds on SmartCoat's strongest existing asset: a bounded, evidence-aware Knowledge Object lifecycle. Commercial value will come from making that lifecycle effortless enough for daily laboratory work and trustworthy enough for enterprise decisions.
