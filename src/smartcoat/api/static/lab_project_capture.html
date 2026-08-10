@@ -216,6 +216,38 @@
       gap: 12px;
     }
 
+    .readiness-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .readiness-item {
+      padding: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface-muted);
+    }
+
+    .readiness-item strong,
+    .readiness-item span {
+      display: block;
+    }
+
+    .readiness-item span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      overflow-wrap: anywhere;
+    }
+
+    .readiness-item[data-ready='true'] strong {
+      color: var(--success);
+    }
+
+    .readiness-item[data-ready='false'] strong {
+      color: var(--danger);
+    }
+
     .workspace-layout {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(280px, 350px);
@@ -721,6 +753,10 @@
       .workspace-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      .readiness-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 720px) {
@@ -771,6 +807,7 @@
       }
 
       .workspace-grid,
+      .readiness-grid,
       .quality-column,
       .capture-panel,
       .record-card__body,
@@ -863,6 +900,17 @@
             <option value='auto'>Detect automatically</option>
           </select>
         </div>
+      </div>
+    </section>
+
+    <section id='local-ai-readiness' class='workspace-section' aria-labelledby='readiness-title'>
+      <div class='section-header'>
+        <h2 id='readiness-title'>Local AI readiness</h2>
+        <button id='check-local-ai' type='button'>Check again</button>
+      </div>
+      <div class='section-body'>
+        <div id='readiness-grid' class='readiness-grid'></div>
+        <p id='readiness-message' class='message' aria-live='polite'>Checking local services.</p>
       </div>
     </section>
 
@@ -962,6 +1010,34 @@
               Files are hashed in the browser and sent only when selected.
             </p>
             <div id='evidence-list' class='evidence-list'></div>
+            <div class='button-row'>
+              <button id='analyze-excel' type='button' disabled>Analyze Excel</button>
+            </div>
+            <div id='excel-import-report' hidden>
+              <h3>Workbook analysis</h3>
+              <p id='excel-import-summary' class='message'></p>
+              <div class='table-wrap'>
+                <table id='excel-import-preview'>
+                  <thead>
+                    <tr>
+                      <th scope='col'>Source</th>
+                      <th scope='col'>Project</th>
+                      <th scope='col'>Customer</th>
+                      <th scope='col'>Outcome</th>
+                      <th scope='col'>Completeness</th>
+                      <th scope='col'>Missing</th>
+                      <th scope='col'>Warnings</th>
+                      <th scope='col'>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id='excel-import-preview-body'></tbody>
+                </table>
+              </div>
+              <h3>Unmapped columns</h3>
+              <ul id='excel-unmapped-columns' class='compact-list'></ul>
+              <h3>Row errors</h3>
+              <ul id='excel-row-errors' class='compact-list'></ul>
+            </div>
           </div>
         </section>
 
@@ -1065,9 +1141,11 @@
     "use strict";
 
     const endpoints = Object.freeze({
+      preflight: "/api/v2/lab-capture/preflight",
       processAudio: "/api/v2/lab-capture/process-audio",
       extractText: "/api/v2/lab-capture/extract-text",
       assets: "/api/v2/lab-capture/assets",
+      importExcel: "/api/v2/lab-capture/import-excel",
       captures: "/api/v2/lab-project-captures"
     });
 
@@ -1132,6 +1210,7 @@
         itemLabel: "Material",
         fields: [
           ["material_id", "Material ID", "text", false],
+          ["source_material_id", "Source material ID", "text", true],
           ["material_name", "Material name", "text", true],
           ["supplier", "Supplier", "text", true],
           ["commercial_grade", "Commercial grade", "text", true],
@@ -1154,6 +1233,7 @@
         itemLabel: "Approach",
         fields: [
           ["approach_id", "Approach ID", "text", false],
+          ["source_approach_id", "Source approach ID", "text", true],
           ["title", "Title", "text", true],
           ["description", "Description", "textarea", true],
           ["technical_rationale", "Technical rationale", "textarea", true],
@@ -1237,6 +1317,7 @@
         itemLabel: "Sample",
         fields: [
           ["sample_id", "Sample ID", "text", false],
+          ["source_sample_id", "Source sample ID", "text", true],
           ["approach_id", "Approach ID", "text", false],
           ["sample_description", "Sample description", "textarea", true],
           ["physical_archive_status", "Archive status", "select", true, [
@@ -1298,7 +1379,10 @@
     let selectedMimeType = "";
     let candidate = null;
     let candidateSaved = false;
+    let originalVoiceTranscript = null;
     let followUpAnswers = new Map();
+    let localAIReady = false;
+    let selectedExcelFile = null;
 
     function getElement(id) {
       return document.getElementById(id);
@@ -1335,6 +1419,55 @@
 
     function safeError(error, fallback) {
       return error instanceof Error ? error.message : fallback;
+    }
+
+    function renderReadiness(payload) {
+      const checks = [
+        ["MLX Whisper", payload.mlx_whisper_import],
+        ["Whisper model", payload.whisper_model],
+        ["Ollama", payload.ollama_reachability],
+        ["Ollama model", payload.ollama_model],
+        ["Asset directory", payload.asset_directory]
+      ];
+      const grid = getElement("readiness-grid");
+      grid.replaceChildren();
+      checks.forEach(function (entry) {
+        const item = document.createElement("div");
+        item.className = "readiness-item";
+        item.dataset.ready = String(entry[1].ready === true);
+        const title = document.createElement("strong");
+        title.textContent = entry[0] + ": " + (entry[1].ready ? "Ready" : "Not ready");
+        const detail = document.createElement("span");
+        detail.textContent = entry[1].detail;
+        item.append(title, detail);
+        grid.append(item);
+      });
+      localAIReady = payload.ready === true;
+      setMessage(
+        "readiness-message",
+        localAIReady
+          ? "Local voice transcription and extraction are ready."
+          : "Voice processing remains disabled until every local dependency is ready.",
+        localAIReady ? "success" : "error"
+      );
+      updateRecorderControls(Boolean(mediaRecorder && mediaRecorder.state === "recording"));
+    }
+
+    async function checkLocalAI() {
+      const button = getElement("check-local-ai");
+      button.disabled = true;
+      setMessage("readiness-message", "Checking local services.", "busy");
+      try {
+        const response = await fetch(endpoints.preflight, {headers: {Accept: "application/json"}});
+        renderReadiness(await responsePayload(response, "Local AI preflight"));
+      } catch (error) {
+        localAIReady = false;
+        getElement("readiness-grid").replaceChildren();
+        setMessage("readiness-message", safeError(error, "Local readiness check failed."), "error");
+        updateRecorderControls(Boolean(mediaRecorder && mediaRecorder.state === "recording"));
+      } finally {
+        button.disabled = false;
+      }
     }
 
     async function responsePayload(response, action) {
@@ -1394,7 +1527,7 @@
       getElement("start-recording").disabled = isRecording;
       getElement("stop-recording").disabled = !isRecording;
       getElement("discard-recording").disabled = isRecording || !audioBlob;
-      getElement("process-audio").disabled = isRecording || !audioBlob;
+      getElement("process-audio").disabled = isRecording || !audioBlob || !localAIReady;
       getElement("record-indicator").dataset.recording = String(isRecording);
       getElement("capture-state").textContent = isRecording
         ? "Recording in progress"
@@ -1530,6 +1663,12 @@
         ? candidate.evidence
         : [];
       const extractedCandidate = normalizeCandidate(payload);
+      if (extractedCandidate.source_kind === "voice") {
+        originalVoiceTranscript = originalVoiceTranscript || extractedCandidate.transcript;
+        extractedCandidate.transcript = originalVoiceTranscript;
+      } else {
+        originalVoiceTranscript = null;
+      }
       retainedEvidence.forEach(function (descriptor) {
         const isDuplicate = extractedCandidate.evidence.some(function (item) {
           return item.sha256 === descriptor.sha256;
@@ -1542,6 +1681,7 @@
       candidateSaved = false;
       getElement("human-confirmed").checked = false;
       const transcript = candidate.transcript;
+      getElement("transcript").readOnly = candidate.source_kind === "voice";
       if (typeof transcript === "string") {
         getElement("transcript").value = transcript;
       }
@@ -1568,11 +1708,12 @@
           : audioBlob.type.includes("ogg")
             ? "ogg"
             : "webm";
+        const audioFilename = "project-intake." + extension;
         const response = await fetch(endpoints.processAudio, {
           method: "POST",
           headers: {
             "Content-Type": audioBlob.type || "application/octet-stream",
-            "X-SmartCoat-Filename": "project-intake." + extension,
+            "X-SmartCoat-Filename": audioFilename,
             "X-SmartCoat-Organization-ID": organizationId(),
             "X-SmartCoat-Actor-ID": actorId(),
             "X-SmartCoat-Source-Language": getElement("source-language").value
@@ -1580,12 +1721,27 @@
           body: audioBlob
         });
         acceptCandidate(await responsePayload(response, "Audio processing"));
-        setMessage("recorder-message", "Local transcription and extraction completed.", "success");
+        const originalTranscript = candidate.transcript;
+        if (typeof originalTranscript !== "string" || !originalTranscript.trim()) {
+          throw new Error("Voice processing returned no source transcript for evidence.");
+        }
+        appendEvidenceDescriptor(await uploadEvidenceBlob(audioBlob, audioFilename));
+        appendEvidenceDescriptor(await uploadEvidenceBlob(
+          new Blob([originalTranscript], {type: "text/plain"}),
+          "capture-transcript.txt"
+        ));
+        renderEvidence();
+        updateSaveGate();
+        setMessage(
+          "recorder-message",
+          "Local extraction completed and original audio/transcript evidence was registered.",
+          "success"
+        );
       } catch (error) {
         setProgress(0);
         setMessage("recorder-message", safeError(error, "Audio processing failed."), "error");
       } finally {
-        button.disabled = !audioBlob;
+        button.disabled = !audioBlob || !localAIReady;
       }
     }
 
@@ -1599,26 +1755,23 @@
       return answers;
     }
 
-    function extractionText(transcript, useAnswers) {
-      if (!useAnswers) {
-        return transcript;
-      }
+    function supplementalContext() {
       const answers = answerPayload();
       if (!answers.length) {
-        return transcript;
+        return null;
       }
-      const answerLines = ["", "", "Follow-up answers supplied by the human reviewer:"];
+      const answerLines = ["Follow-up answers supplied by the human reviewer:"];
       answers.forEach(function (item) {
         answerLines.push("Question: " + item.question);
         answerLines.push("Answer: " + item.answer);
       });
-      const combined = transcript + answerLines.join("\n");
-      if (combined.length > 4096) {
+      const supplement = answerLines.join("\n");
+      if (supplement.length > 4096) {
         throw new Error(
-          "Transcript plus follow-up answers exceeds 4096 characters. Shorten the text before re-extraction."
+          "Follow-up answers exceed 4096 characters. Shorten them before re-extraction."
         );
       }
-      return combined;
+      return supplement;
     }
 
     function currentProjectHints() {
@@ -1642,7 +1795,10 @@
     }
 
     async function extractText(useAnswers) {
-      const transcript = getElement("transcript").value.trim();
+      const enteredTranscript = getElement("transcript").value.trim();
+      const transcript = candidate && candidate.source_kind === "voice"
+        ? originalVoiceTranscript
+        : enteredTranscript;
       if (!transcript) {
         setMessage("extraction-message", "Enter or record a transcript before extraction.", "error");
         return;
@@ -1666,7 +1822,11 @@
       );
       try {
         const payload = {
-          transcript: extractionText(transcript, useAnswers),
+          transcript: transcript,
+          source_kind: candidate && ["voice", "text"].includes(candidate.source_kind)
+            ? candidate.source_kind
+            : "text",
+          supplemental_context: useAnswers ? supplementalContext() : null,
           project_hints: currentProjectHints(),
           actor_metadata: {
             actor_id: actor,
@@ -1868,18 +2028,49 @@
       return candidate[schema.key];
     }
 
+    function nextCorrelationId(prefix, records, key) {
+      const numbers = records.map(function (item) {
+        const match = typeof item[key] === "string"
+          ? item[key].match(new RegExp("^" + prefix + "-(\\d{3})$"))
+          : null;
+        return match ? Number(match[1]) : 0;
+      });
+      const next = Math.max(0, ...numbers) + 1;
+      return prefix + "-" + String(next).padStart(3, "0");
+    }
+
+    function structuralIdDefault(schema, key) {
+      if (key === "material_id" && schema.key === "materials") {
+        return nextCorrelationId("C-M", candidate.materials, "material_id");
+      }
+      if (key === "approach_id") {
+        if (schema.key === "approaches") {
+          return nextCorrelationId("C-A", candidate.approaches, "approach_id");
+        }
+        return candidate.approaches.length ? candidate.approaches[0].approach_id : "C-A-001";
+      }
+      if (key === "sample_id") {
+        if (schema.key === "samples") {
+          return nextCorrelationId("C-S", candidate.samples, "sample_id");
+        }
+        return candidate.samples.length ? candidate.samples[0].sample_id : "C-S-001";
+      }
+      return null;
+    }
+
     function addNewRecord(schema) {
       const record = {};
       schema.fields.forEach(function (field) {
         const key = field[0];
         const type = field[2];
         const options = field[4] || [];
-        if (type === "lines") {
+        const structuralId = structuralIdDefault(schema, key);
+        if (structuralId !== null) {
+          record[key] = structuralId;
+        } else if (type === "lines") {
           record[key] = [];
         } else if (!field[3] && type === "select" && options.length > 0) {
           record[key] = options[0];
-        } else if (!field[3] && key.endsWith("_id")) {
-          record[key] = schema.itemLabel.toLowerCase() + "-" + (candidate[schema.key].length + 1);
         } else {
           record[key] = null;
         }
@@ -2097,46 +2288,52 @@
       });
     }
 
-    function evidenceType(file) {
-      if (file.type === "application/pdf") {
+    function evidenceType(blob, filename) {
+      if (blob.type === "text/plain") {
+        return "transcript";
+      }
+      if (blob.type.startsWith("audio/")) {
+        return "audio";
+      }
+      if (blob.type === "application/pdf") {
         return "pdf";
       }
-      if (file.type.startsWith("image/")) {
+      if (blob.type.startsWith("image/")) {
         return "image";
       }
       if (
-        file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-        file.name.toLowerCase().endsWith(".xlsx")
+        blob.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+        filename.toLowerCase().endsWith(".xlsx")
       ) {
         return "excel";
       }
       return "other";
     }
 
-    async function sha256(file) {
-      const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+    async function sha256(blob) {
+      const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
       return Array.from(new Uint8Array(digest)).map(function (byte) {
         return byte.toString(16).padStart(2, "0");
       }).join("");
     }
 
-    async function uploadEvidence(file) {
-      const browserHash = await sha256(file);
+    async function uploadEvidenceBlob(blob, filename) {
+      const browserHash = await sha256(blob);
       const response = await fetch(endpoints.assets, {
         method: "POST",
         headers: {
-          "Content-Type": file.type || "application/octet-stream",
-          "X-SmartCoat-Filename": file.name,
+          "Content-Type": blob.type || "application/octet-stream",
+          "X-SmartCoat-Filename": filename,
           "X-SmartCoat-Organization-ID": organizationId()
         },
-        body: file
+        body: blob
       });
       const payload = await responsePayload(response, "Evidence upload");
       const descriptor = {
         evidence_id: payload.evidence_id,
-        evidence_type: payload.evidence_type || evidenceType(file),
-        filename: payload.filename || payload.original_filename || file.name,
-        media_type: payload.media_type || file.type || "application/octet-stream",
+        evidence_type: payload.evidence_type || evidenceType(blob, filename),
+        filename: payload.filename || payload.original_filename || filename,
+        media_type: payload.media_type || blob.type || "application/octet-stream",
         source_reference: payload.source_reference,
         sha256: payload.sha256 || browserHash,
         captured_at: payload.captured_at || new Date().toISOString(),
@@ -2146,6 +2343,24 @@
         throw new Error("Evidence hash returned by the server does not match the browser hash.");
       }
       return descriptor;
+    }
+
+    async function uploadEvidence(file) {
+      return uploadEvidenceBlob(file, file.name);
+    }
+
+    function appendEvidenceDescriptor(descriptor) {
+      if (!candidate) {
+        candidate = emptyCandidate();
+        originalVoiceTranscript = null;
+      }
+      const duplicate = candidate.evidence.some(function (item) {
+        return item.sha256 === descriptor.sha256;
+      });
+      if (!duplicate) {
+        candidate.evidence.push(descriptor);
+        invalidateConfirmation();
+      }
     }
 
     async function handleEvidenceFiles(event) {
@@ -2158,17 +2373,15 @@
       const failures = [];
       for (const file of files) {
         try {
+          if (
+            file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+            file.name.toLowerCase().endsWith(".xlsx")
+          ) {
+            selectedExcelFile = file;
+            getElement("analyze-excel").disabled = false;
+          }
           const descriptor = await uploadEvidence(file);
-          if (!candidate) {
-            candidate = emptyCandidate();
-          }
-          const duplicate = candidate.evidence.some(function (item) {
-            return item.sha256 === descriptor.sha256;
-          });
-          if (!duplicate) {
-            candidate.evidence.push(descriptor);
-            invalidateConfirmation();
-          }
+          appendEvidenceDescriptor(descriptor);
           uploaded += 1;
           renderEvidence();
         } catch (error) {
@@ -2186,6 +2399,103 @@
         setMessage("evidence-message", uploaded + " file(s) registered with SHA-256.", "success");
       }
       updateSaveGate();
+    }
+
+    function importCell(value) {
+      return tableCell(value === null || value === undefined ? "" : value);
+    }
+
+    function reviewImportedCandidate(imported) {
+      acceptCandidate({candidate: imported.candidate});
+      setMessage(
+        "evidence-message",
+        "Loaded unconfirmed Candidate from " + imported.sheet_name + " row " + imported.row_number +
+          " with " + imported.cell_provenance.length + " linked source cells.",
+        "success"
+      );
+    }
+
+    function renderWorkbookImportReport(report) {
+      getElement("excel-import-report").hidden = false;
+      getElement("excel-import-summary").textContent =
+        report.original_filename + " | SHA-256 " + report.sha256 + " | sheets: " +
+        report.sheet_names.join(", ") + " | candidates: " + report.candidates.length +
+        " | warnings: " + report.warnings.length + " | row errors: " +
+        report.row_errors.length + " | unmapped columns: " + report.unmapped_columns.length;
+
+      const body = getElement("excel-import-preview-body");
+      body.replaceChildren();
+      report.candidates.forEach(function (imported) {
+        const item = imported.candidate;
+        const outcomes = item.approaches.map(function (approach) {
+          return approach.outcome;
+        }).join(", ");
+        const row = document.createElement("tr");
+        row.append(
+          importCell(imported.sheet_name + " row " + imported.row_number),
+          importCell(item.project.project_name || item.project.project_id),
+          importCell(item.project.customer_company),
+          importCell(outcomes || "No approach"),
+          importCell(item.completeness_score + "%"),
+          importCell(item.critical_missing_fields.length),
+          importCell(item.extraction_warnings.length)
+        );
+        const action = document.createElement("td");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "button-small";
+        button.textContent = "Review Candidate";
+        button.addEventListener("click", function () {
+          reviewImportedCandidate(imported);
+        });
+        action.append(button);
+        row.append(action);
+        body.append(row);
+      });
+
+      replaceList(
+        "excel-unmapped-columns",
+        report.unmapped_columns.map(function (item) {
+          return item.sheet_name + "!" + item.cell_reference + " " + item.header +
+            " (" + item.reason + ")";
+        }),
+        "No unmapped columns."
+      );
+      replaceList(
+        "excel-row-errors",
+        report.row_errors.map(function (item) {
+          return item.sheet_name + " row " + item.row_number + ": " + item.message;
+        }),
+        "No row errors."
+      );
+    }
+
+    async function analyzeExcel() {
+      if (!selectedExcelFile) {
+        setMessage("evidence-message", "Select an XLSX workbook first.", "error");
+        return;
+      }
+      const button = getElement("analyze-excel");
+      button.disabled = true;
+      setMessage("evidence-message", "Analyzing workbook without canonical writes.", "busy");
+      try {
+        const response = await fetch(endpoints.importExcel, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "X-SmartCoat-Filename": selectedExcelFile.name,
+            "X-SmartCoat-Organization-ID": organizationId()
+          },
+          body: selectedExcelFile
+        });
+        const report = await responsePayload(response, "Excel analysis");
+        renderWorkbookImportReport(report);
+        setMessage("evidence-message", "Workbook analysis completed. Select one Candidate for review.", "success");
+      } catch (error) {
+        setMessage("evidence-message", safeError(error, "Excel analysis failed."), "error");
+      } finally {
+        button.disabled = false;
+      }
     }
 
     function renderEvidence() {
@@ -2245,6 +2555,8 @@
         estimated_cost_status: null,
         production_trial_required: null,
         unresolved_questions: [],
+        formulation_source_text: null,
+        source_cell_references: [],
         field_states: {},
         completeness_score: 0,
         critical_missing_fields: [],
@@ -2260,17 +2572,25 @@
       const confirmed = getElement("human-confirmed").checked;
       const hasCandidate = Boolean(candidate);
       const hasActor = Boolean(getElement("actor-id").value.trim());
+      const evidenceTypes = hasCandidate
+        ? new Set(candidate.evidence.map(function (item) { return item.evidence_type; }))
+        : new Set();
+      const voiceEvidenceReady = !hasCandidate || candidate.source_kind !== "voice" || (
+        evidenceTypes.has("audio") && evidenceTypes.has("transcript")
+      );
       getElement("save-candidate").disabled = !(
-        confirmed && hasCandidate && hasActor && !candidateSaved
+        confirmed && hasCandidate && hasActor && voiceEvidenceReady && !candidateSaved
       );
       if (candidateSaved) {
         setMessage("save-message", "Draft saved. Edit the candidate before creating another draft.", "success");
+      } else if (!hasCandidate) {
+        setMessage("save-message", "Extract or enter a candidate before saving.", "error");
+      } else if (!voiceEvidenceReady) {
+        setMessage("save-message", "Voice captures require registered audio and transcript evidence.", "error");
       } else if (!confirmed) {
         setMessage("save-message", "Human confirmation and an actor ID are required.", "");
       } else if (!hasActor) {
         setMessage("save-message", "Enter the confirming actor ID.", "error");
-      } else if (!hasCandidate) {
-        setMessage("save-message", "Extract or enter a candidate before saving.", "error");
       } else {
         setMessage("save-message", "Ready to create a governed draft.", "success");
         setProgress(3);
@@ -2298,7 +2618,9 @@
       getElement("save-result").hidden = true;
       setMessage("save-message", "Creating a governed draft.", "busy");
       try {
-        candidate.transcript = getElement("transcript").value.trim() || candidate.transcript;
+        candidate.transcript = candidate.source_kind === "voice"
+          ? originalVoiceTranscript
+          : getElement("transcript").value.trim() || candidate.transcript;
         candidate.human_confirmed = true;
         candidate.human_confirmed_by = actorId();
         candidate.human_confirmed_at = new Date().toISOString();
@@ -2404,6 +2726,7 @@
     getElement("stop-recording").addEventListener("click", stopRecording);
     getElement("discard-recording").addEventListener("click", discardRecording);
     getElement("process-audio").addEventListener("click", processAudio);
+    getElement("check-local-ai").addEventListener("click", checkLocalAI);
     getElement("extract-text").addEventListener("click", function () {
       extractText(false);
     });
@@ -2411,6 +2734,7 @@
       extractText(true);
     });
     getElement("evidence-files").addEventListener("change", handleEvidenceFiles);
+    getElement("analyze-excel").addEventListener("click", analyzeExcel);
     getElement("human-confirmed").addEventListener("change", updateSaveGate);
     getElement("organization-id").addEventListener("input", invalidateConfirmation);
     getElement("actor-id").addEventListener("input", invalidateConfirmation);
@@ -2429,6 +2753,7 @@
     });
     document.addEventListener("DOMContentLoaded", function () {
       initializeRecorderSupport();
+      checkLocalAI();
       loadRecentCaptures();
     });
   </script>

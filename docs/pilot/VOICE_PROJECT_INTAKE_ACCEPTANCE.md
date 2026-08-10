@@ -22,6 +22,15 @@ The Candidate is not canonical knowledge. Transcription, extraction, and import
 must not write a Knowledge Object. Only the explicit human-confirm endpoint may
 create a Knowledge Object v2 record, and that record begins in `draft`.
 
+## Candidate Correlation IDs
+
+`C-M-001`, `C-A-001`, and `C-S-001` are deterministic Candidate-local correlation
+IDs. They connect materials, approaches, parameters, tests, samples, feedback, and
+evidence during review; they are not source-system identifiers or asserted domain
+facts. Optional `source_material_id`, `source_approach_id`, and `source_sample_id`
+values are populated only when the source actually provides them. Generated
+correlation IDs must never be presented as source evidence.
+
 ## Local Prerequisites
 
 - Python 3.12 and the project development dependencies
@@ -78,7 +87,7 @@ The reviewed Candidate must contain or flag:
 The deterministic completeness result must include at least:
 
 1. What was the exact coating weight?
-2. Why did approach A-01 fail?
+2. Why did approach C-A-001 fail?
 3. Which test method and acceptance criteria were used?
 4. When was sample S-02 sent?
 5. Where is sample S-02 physically archived?
@@ -96,10 +105,12 @@ The deterministic completeness result must include at least:
 6. Correct values and explicitly mark unknown, not measured, or not applicable fields.
 7. Optionally upload a synthetic XLSX, PDF, or image evidence file.
 8. Re-extract after adding answers if needed.
-9. Verify the Candidate remains unconfirmed until the confirmation control is selected.
-10. Confirm and submit to `/api/v2/lab-project-captures`.
-11. Verify the returned object lifecycle is `draft`.
-12. Verify the object in list/detail and inspect evidence, provenance, and audit behavior.
+9. Verify voice re-extraction preserves the original transcript and `source_kind=voice`.
+10. Verify original audio and transcript evidence are registered locally.
+11. Verify the Candidate remains unconfirmed until the confirmation control is selected.
+12. Confirm and submit to `/api/v2/lab-project-captures`.
+13. Verify the returned object lifecycle is `draft`.
+14. Verify the object in list/detail and inspect evidence, provenance, and audit behavior.
 
 ## Acceptance Gates
 

@@ -78,11 +78,15 @@ class ExtractTextRequest(BaseModel):
     project_hints: ProjectHints | None = None
     actor_metadata: ActorMetadata
     source_language: str | None = Field(default=None, min_length=2, max_length=35)
+    source_kind: CaptureSourceKind = CaptureSourceKind.TEXT
+    supplemental_context: str | None = Field(default=None, min_length=1, max_length=4096)
 
     @model_validator(mode="after")
     def require_one_text_source(self) -> ExtractTextRequest:
         if (self.transcript is None) == (self.free_text is None):
             raise ValueError("Provide exactly one of transcript or free_text")
+        if self.source_kind not in {CaptureSourceKind.VOICE, CaptureSourceKind.TEXT}:
+            raise ValueError("source_kind must be voice or text for re-extraction")
         return self
 
     @property
@@ -275,16 +279,23 @@ def local_ai_preflight() -> LocalAIPreflightResponse:
 @router.post("/extract-text", response_model=CandidateExtractionResponse)
 def extract_text(
     payload: ExtractTextRequest,
+    organization_id: Annotated[
+        str,
+        Header(alias="X-SmartCoat-Organization-ID", min_length=1, max_length=512),
+    ],
     provider: Annotated[StructuredExtractionProvider, Depends(get_structured_extraction_provider)],
 ) -> CandidateExtractionResponse:
+    if organization_id.strip() != PILOT_ORGANIZATION_ID:
+        raise HTTPException(status_code=403, detail="Pilot organization is not authorized")
     candidate = _extract_candidate(
         provider,
         ExtractionRequest(
             transcript=payload.source_text,
-            source_kind=CaptureSourceKind.TEXT,
+            source_kind=payload.source_kind,
             source_language=payload.source_language,
             project_hints=payload.project_hints,
             actor_metadata=payload.actor_metadata,
+            supplemental_context=payload.supplemental_context,
         ),
     )
     return _candidate_response(candidate)

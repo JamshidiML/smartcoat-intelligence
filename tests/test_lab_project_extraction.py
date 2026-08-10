@@ -23,6 +23,7 @@ from smartcoat.services.lab_project_extraction import (
     StructuredExtractionConfigurationError,
     StructuredExtractionOutputError,
     StructuredExtractionTimeoutError,
+    assign_candidate_correlation_ids,
     validate_loopback_base_url,
 )
 
@@ -141,6 +142,66 @@ def test_ollama_uses_schema_deterministic_options_and_validates_candidate(
     assert candidate.human_confirmed is False
     assert candidate.human_confirmed_by is None
     assert candidate.recommended_questions
+    assert "Never invent domain facts or source\nidentifiers" in SYSTEM_INSTRUCTIONS
+    assert "C-M/C-A/C-S" in SYSTEM_INSTRUCTIONS
+
+
+def test_candidate_correlation_ids_are_positional_and_source_ids_are_not_inferred() -> None:
+    normalized = assign_candidate_correlation_ids(
+        {
+            "materials": [{"material_id": "model-material", "material_name": "Synthetic"}],
+            "approaches": [
+                {
+                    "approach_id": "model-approach",
+                    "source_approach_id": "SRC-A-7",
+                    "outcome": "planned",
+                }
+            ],
+            "process_parameters": [
+                {
+                    "approach_id": "model-approach",
+                    "process_stage": "curing",
+                    "parameter_name": "temperature",
+                    "measurement_state": "unknown",
+                }
+            ],
+            "samples": [
+                {
+                    "sample_id": "model-sample",
+                    "approach_id": "model-approach",
+                    "physical_archive_status": "unknown",
+                }
+            ],
+            "tests": [],
+            "customer_feedback": [],
+            "evidence": [],
+        }
+    )
+
+    assert normalized["materials"][0]["material_id"] == "C-M-001"
+    assert "source_material_id" not in normalized["materials"][0]
+    assert normalized["approaches"][0]["approach_id"] == "C-A-001"
+    assert normalized["approaches"][0]["source_approach_id"] == "SRC-A-7"
+    assert normalized["process_parameters"][0]["approach_id"] == "C-A-001"
+    assert normalized["samples"][0]["sample_id"] == "C-S-001"
+    assert normalized["samples"][0]["approach_id"] == "C-A-001"
+
+
+def test_prompt_separates_immutable_transcript_from_review_supplement() -> None:
+    provider = OllamaStructuredExtractionProvider("http://localhost:11434", "local-model")
+    request = _request().model_copy(
+        update={
+            "source_kind": CaptureSourceKind.VOICE,
+            "supplemental_context": "Synthetic reviewer answer.",
+        }
+    )
+
+    prompt = provider._build_prompt(request)
+
+    assert "source_transcript" in prompt
+    assert "human_review_supplement" in prompt
+    assert "Synthetic reviewer answer." in prompt
+    assert "immutable source text" in prompt
 
 
 @pytest.mark.parametrize(

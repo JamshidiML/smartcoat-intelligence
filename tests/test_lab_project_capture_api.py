@@ -72,7 +72,7 @@ def _payload(*, confirmed: bool = True) -> dict[str, Any]:
         },
         "approaches": [
             {
-                "approach_id": "A-SYN-01",
+                "approach_id": "C-A-001",
                 "title": "Synthetic baseline",
                 "outcome": "successful",
                 "price_optimization_status": "assessed",
@@ -82,7 +82,7 @@ def _payload(*, confirmed: bool = True) -> dict[str, Any]:
         ],
         "tests": [
             {
-                "approach_id": "A-SYN-01",
+                "approach_id": "C-A-001",
                 "test_name": "Synthetic thermal test",
                 "method": "Generalized internal method",
                 "acceptance_criteria": "Meets the synthetic threshold.",
@@ -100,7 +100,7 @@ def _payload(*, confirmed: bool = True) -> dict[str, Any]:
                 "sha256": "a" * 64,
                 "captured_at": OBSERVED_AT.isoformat(),
                 "description": "Synthetic transcript evidence.",
-                "approach_id": "A-SYN-01",
+                "approach_id": "C-A-001",
             }
         ],
         "current_next_action": "Schedule a synthetic review.",
@@ -231,7 +231,7 @@ def test_confirmed_candidate_creates_governed_draft(api: FastAPI) -> None:
     assert evidence.integrity.algorithm is IntegrityAlgorithm.SHA256
     assert evidence.integrity.value == "a" * 64
     assert evidence.context_reference is not None
-    assert evidence.context_reference.attributes["approach_id"] == "A-SYN-01"
+    assert evidence.context_reference.attributes["approach_id"] == "C-A-001"
 
     provenance = command.provenance
     assert provenance.completeness is ProvenanceCompleteness.COMPLETE
@@ -284,6 +284,54 @@ def test_unconfirmed_candidate_and_missing_confirmation_metadata_are_rejected(
     assert unconfirmed.status_code == 422
     assert unconfirmed.json() == {"detail": "A human-confirmed candidate is required"}
     assert incomplete.status_code == 422
+    assert service.commands == []
+
+
+@pytest.mark.parametrize(
+    ("missing_type", "detail_fragment"),
+    [("audio", "audio evidence"), ("transcript", "transcript evidence")],
+)
+def test_voice_candidate_requires_audio_and_transcript_evidence(
+    api: FastAPI,
+    missing_type: str,
+    detail_fragment: str,
+) -> None:
+    service = FakeAuditService()
+    api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
+    payload = _payload()
+    payload["source_kind"] = "voice"
+    payload["evidence"] = [
+        {
+            "evidence_id": "EV-VOICE-AUDIO",
+            "evidence_type": "audio",
+            "filename": "synthetic.webm",
+            "media_type": "audio/webm",
+            "source_reference": "smartcoat-asset://synthetic/audio",
+            "sha256": "b" * 64,
+            "captured_at": OBSERVED_AT.isoformat(),
+        },
+        {
+            "evidence_id": "EV-VOICE-TRANSCRIPT",
+            "evidence_type": "transcript",
+            "filename": "capture-transcript.txt",
+            "media_type": "text/plain",
+            "source_reference": "smartcoat-asset://synthetic/transcript",
+            "sha256": "c" * 64,
+            "captured_at": OBSERVED_AT.isoformat(),
+        },
+    ]
+    payload["evidence"] = [
+        item for item in payload["evidence"] if item["evidence_type"] != missing_type
+    ]
+
+    response = TestClient(api).post(
+        "/api/v2/lab-project-captures",
+        json=payload,
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert response.status_code == 422
+    assert detail_fragment in response.json()["detail"]
     assert service.commands == []
 
 

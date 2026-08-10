@@ -108,6 +108,30 @@ def test_pilot_m4a_media_type_is_registered_as_audio(tmp_path: Path) -> None:
     assert descriptor.media_type == "audio/m4a"
 
 
+def test_utf8_transcript_is_registered_and_invalid_text_is_rejected(tmp_path: Path) -> None:
+    registry = _registry(tmp_path / "assets")
+    content = "Synthetic voice transcript with 210 °C.".encode()
+
+    descriptor = registry.register_stream(
+        io.BytesIO(content),
+        organization_id="synthetic-lab",
+        original_filename="capture-transcript.txt",
+        media_type="text/plain",
+    )
+
+    assert descriptor.evidence_type is EvidenceType.TRANSCRIPT
+    assert descriptor.media_type == "text/plain"
+    for invalid in (b"invalid-utf8-\xff", b"embedded\x00nul"):
+        with pytest.raises(EvidenceRegistryError) as captured:
+            registry.register_stream(
+                io.BytesIO(invalid),
+                organization_id="synthetic-lab",
+                original_filename="invalid.txt",
+                media_type="text/plain",
+            )
+        assert captured.value.code == "media_signature_mismatch"
+
+
 def test_unsafe_filename_is_metadata_only_and_cannot_escape(tmp_path: Path) -> None:
     root = tmp_path / "assets"
     descriptor = _registry(root).register_stream(
@@ -147,8 +171,8 @@ def test_oversized_empty_unsupported_and_signature_mismatch_are_rejected(tmp_pat
         registry.register_stream(
             io.BytesIO(b"text"),
             organization_id="synthetic-lab",
-            original_filename="notes.txt",
-            media_type="text/plain",
+            original_filename="notes.json",
+            media_type="application/json",
         )
     assert unsupported.value.code == "unsupported_media_type"
 

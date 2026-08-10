@@ -92,12 +92,17 @@ def _audio_headers(
     }
 
 
+def _text_headers(organization_id: str = "smartcoat-startup") -> dict[str, str]:
+    return {"X-SmartCoat-Organization-ID": organization_id}
+
+
 def test_successful_text_extraction_returns_unconfirmed_candidate() -> None:
     provider = DeterministicFakeExtractionProvider(_candidate())
     client = _client(provider)
 
     response = client.post(
         "/api/v2/lab-capture/extract-text",
+        headers=_text_headers(),
         json={
             "free_text": "Synthetic local transcript.",
             "project_hints": {"project_id": "P-SYN-001"},
@@ -128,10 +133,12 @@ def test_text_extraction_requires_exactly_one_text_source() -> None:
 
     missing = client.post(
         "/api/v2/lab-capture/extract-text",
+        headers=_text_headers(),
         json={"actor_metadata": actor},
     )
     duplicate = client.post(
         "/api/v2/lab-capture/extract-text",
+        headers=_text_headers(),
         json={
             "transcript": "Synthetic transcript.",
             "free_text": "Synthetic free text.",
@@ -232,6 +239,7 @@ def test_extraction_provider_failures_map_to_safe_api_errors(
 
     response = client.post(
         "/api/v2/lab-capture/extract-text",
+        headers=_text_headers(),
         json={
             "transcript": "Synthetic transcript.",
             "actor_metadata": {
@@ -243,6 +251,51 @@ def test_extraction_provider_failures_map_to_safe_api_errors(
 
     assert response.status_code == expected_status
     assert "synthetic" not in response.text
+
+
+def test_voice_reextraction_preserves_source_kind_and_original_transcript() -> None:
+    provider = DeterministicFakeExtractionProvider(_candidate())
+    client = _client(provider)
+    original = "Immutable synthetic voice transcript."
+    supplement = "Question: What was missing?\nAnswer: Synthetic review answer."
+
+    response = client.post(
+        "/api/v2/lab-capture/extract-text",
+        headers=_text_headers(),
+        json={
+            "transcript": original,
+            "source_kind": "voice",
+            "supplemental_context": supplement,
+            "actor_metadata": {
+                "actor_id": "synthetic-engineer",
+                "actor_role": "lab_engineer",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["candidate"]["source_kind"] == "voice"
+    assert response.json()["candidate"]["transcript"] == original
+    assert provider.calls[0].supplemental_context == supplement
+    assert supplement not in response.json()["candidate"]["transcript"]
+
+
+def test_text_extraction_rejects_wrong_pilot_organization() -> None:
+    provider = DeterministicFakeExtractionProvider(_candidate())
+    response = _client(provider).post(
+        "/api/v2/lab-capture/extract-text",
+        headers=_text_headers("other-organization"),
+        json={
+            "transcript": "Synthetic transcript.",
+            "actor_metadata": {
+                "actor_id": "synthetic-engineer",
+                "actor_role": "lab_engineer",
+            },
+        },
+    )
+
+    assert response.status_code == 403
+    assert provider.calls == []
 
 
 def test_unavailable_transcription_maps_to_503(

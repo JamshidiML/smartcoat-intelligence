@@ -135,7 +135,8 @@ def test_english_headers_map_to_unconfirmed_candidate_with_cell_provenance() -> 
     assert candidate.process_parameters[0].numeric_value == 210
     assert candidate.process_parameters[0].unit == "degC"
     assert candidate.tests[0].outcome is LabTestOutcome.PASSED
-    assert candidate.samples[0].sample_id == "S-02"
+    assert candidate.samples[0].sample_id == "C-S-001"
+    assert candidate.samples[0].source_sample_id == "S-02"
     assert candidate.evidence[0].source_reference == first.source_reference
     assert candidate.completeness_score < 100
     assert candidate.recommended_questions
@@ -252,6 +253,24 @@ def test_unknown_only_sheet_is_reported_without_candidate() -> None:
     assert report.candidates == ()
     assert report.row_errors == ()
     assert [item.code for item in report.warnings] == ["no_recognized_headers"]
+
+
+def test_generic_formulation_is_preserved_without_inventing_materials() -> None:
+    def build(workbook: Workbook) -> None:
+        sheet = workbook.create_sheet("Recipe")
+        sheet.append(["Project Name", "Formulation", "Approach"])
+        sheet.append(["Synthetic recipe review", "Mg(OH)2 40% + CaCO3 60%", "Trial one"])
+
+    report = _import(_workbook_bytes(build))
+    candidate = report.candidates[0].candidate
+
+    assert candidate.materials == ()
+    assert candidate.formulation_source_text == "Mg(OH)2 40% + CaCO3 60%"
+    assert candidate.source_cell_references
+    assert "formulation_requires_structured_review" in {warning.code for warning in report.warnings}
+    assert any(
+        "no material or quantity was inferred" in item for item in candidate.extraction_warnings
+    )
 
 
 def test_invalid_xlsx_is_rejected() -> None:

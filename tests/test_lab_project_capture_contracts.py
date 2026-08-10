@@ -63,7 +63,7 @@ def _candidate(**overrides: object) -> LabProjectCaptureCandidate:
         },
         "approaches": [
             {
-                "approach_id": "A-01",
+                "approach_id": "C-A-001",
                 "title": "Synthetic baseline",
                 "outcome": "successful",
                 "production_feasibility_status": "assessed",
@@ -73,7 +73,7 @@ def _candidate(**overrides: object) -> LabProjectCaptureCandidate:
         ],
         "tests": [
             {
-                "approach_id": "A-01",
+                "approach_id": "C-A-001",
                 "test_name": "Synthetic flame test",
                 "method": "Generalized internal method",
                 "acceptance_criteria": "No sustained flame in the synthetic fixture.",
@@ -163,7 +163,7 @@ def test_canonical_enum_values(enum_type: type, expected: set[str]) -> None:
         (MaterialRecord, {"material_id": " "}),
         (
             ExperimentalApproach,
-            {"approach_id": "A-01", "title": "\t", "outcome": "planned"},
+            {"approach_id": "C-A-001", "title": "\t", "outcome": "planned"},
         ),
     ],
 )
@@ -174,7 +174,7 @@ def test_blank_strings_are_rejected(model: type, payload: dict[str, object]) -> 
 
 def test_numeric_process_parameter_validation() -> None:
     parameter = ProcessParameter(
-        approach_id="A-01",
+        approach_id="C-A-001",
         process_stage="curing",
         parameter_name="temperature",
         numeric_value=210,
@@ -186,7 +186,7 @@ def test_numeric_process_parameter_validation() -> None:
 
     with pytest.raises(ValidationError, match="require a unit"):
         ProcessParameter(
-            approach_id="A-01",
+            approach_id="C-A-001",
             process_stage="curing",
             parameter_name="temperature",
             numeric_value=210,
@@ -194,7 +194,7 @@ def test_numeric_process_parameter_validation() -> None:
         )
     with pytest.raises(ValidationError, match="must not carry a value"):
         ProcessParameter(
-            approach_id="A-01",
+            approach_id="C-A-001",
             process_stage="curing",
             parameter_name="temperature",
             numeric_value=210,
@@ -227,7 +227,7 @@ def test_failed_approach_completeness_rules_and_question_order_are_deterministic
     candidate = _candidate(
         approaches=[
             {
-                "approach_id": "A-03",
+                "approach_id": "C-A-003",
                 "outcome": "failed",
                 "production_feasibility_status": "not_assessed",
                 "price_optimization_status": "not_assessed",
@@ -240,13 +240,13 @@ def test_failed_approach_completeness_rules_and_question_order_are_deterministic
     second = evaluate_candidate_completeness(candidate)
 
     assert first == second
-    assert "approaches.A-03.failure_reason" in first.critical_missing_fields
-    assert "approaches.A-03.lesson_learned" in first.critical_missing_fields
-    assert "approaches.A-03.photograph" in first.critical_missing_fields
+    assert "approaches.C-A-003.failure_reason" in first.critical_missing_fields
+    assert "approaches.C-A-003.lesson_learned" in first.critical_missing_fields
+    assert "approaches.C-A-003.photograph" in first.critical_missing_fields
     assert first.recommended_questions[:3] == (
-        "Why did approach A-03 fail?",
-        "What lesson was learned from approach A-03?",
-        "Attach a photograph for approach A-03, or explain why none exists.",
+        "Why did approach C-A-003 fail?",
+        "What lesson was learned from approach C-A-003?",
+        "Attach a photograph for approach C-A-003, or explain why none exists.",
     )
 
 
@@ -254,32 +254,33 @@ def test_sent_sample_follow_up_and_archive_rules() -> None:
     candidate = _candidate(
         samples=[
             {
-                "sample_id": "S-04",
-                "approach_id": "A-01",
+                "sample_id": "C-S-004",
+                "source_sample_id": "S-04",
+                "approach_id": "C-A-001",
                 "recipient": "Example Customer",
             }
         ]
     )
     result = evaluate_candidate_completeness(candidate)
 
-    assert "samples.S-04.physical_archive_status" in result.critical_missing_fields
-    assert "samples.S-04.sent_at" in result.critical_missing_fields
-    assert "samples.S-04.follow_up_status" in result.critical_missing_fields
-    assert "samples.S-04.follow_up_due_at" in result.critical_missing_fields
+    assert "samples.C-S-004.physical_archive_status" in result.critical_missing_fields
+    assert "samples.C-S-004.sent_at" in result.critical_missing_fields
+    assert "samples.C-S-004.follow_up_status" in result.critical_missing_fields
+    assert "samples.C-S-004.follow_up_due_at" in result.critical_missing_fields
     assert "customer_feedback" in result.critical_missing_fields
 
 
 def test_physical_archive_contract_requires_location_or_reason() -> None:
     with pytest.raises(ValidationError, match="archive_location"):
         SampleRecord(
-            sample_id="S-01",
-            approach_id="A-01",
+            sample_id="C-S-001",
+            approach_id="C-A-001",
             physical_archive_status=PhysicalArchiveStatus.ARCHIVED,
         )
     with pytest.raises(ValidationError, match="archive_reason_if_missing"):
         SampleRecord(
-            sample_id="S-01",
-            approach_id="A-01",
+            sample_id="C-S-001",
+            approach_id="C-A-001",
             physical_archive_status=PhysicalArchiveStatus.LOST,
         )
 
@@ -291,13 +292,13 @@ def test_demo_missing_information_questions() -> None:
         ),
         approaches=[
             {
-                "approach_id": "A-01",
+                "approach_id": "C-A-001",
                 "outcome": "failed",
                 "production_feasibility_status": "not_assessed",
                 "price_optimization_status": "not_assessed",
             },
             {
-                "approach_id": "A-02",
+                "approach_id": "C-A-002",
                 "outcome": "successful",
                 "production_feasibility_status": "not_assessed",
                 "price_optimization_status": "not_assessed",
@@ -305,13 +306,13 @@ def test_demo_missing_information_questions() -> None:
         ],
         process_parameters=[
             {
-                "approach_id": "A-01",
+                "approach_id": "C-A-001",
                 "process_stage": "coating",
                 "parameter_name": "coating weight",
                 "measurement_state": "not_measured",
             },
             {
-                "approach_id": "A-02",
+                "approach_id": "C-A-002",
                 "process_stage": "curing",
                 "parameter_name": "curing temperature",
                 "numeric_value": 210,
@@ -321,8 +322,8 @@ def test_demo_missing_information_questions() -> None:
         ],
         tests=[
             {
-                "approach_id": "A-02",
-                "sample_id": "S-02",
+                "approach_id": "C-A-002",
+                "sample_id": "C-S-001",
                 "test_name": "Laboratory flame test",
                 "text_result": "Passed",
                 "outcome": "passed",
@@ -330,8 +331,9 @@ def test_demo_missing_information_questions() -> None:
         ],
         samples=[
             {
-                "sample_id": "S-02",
-                "approach_id": "A-02",
+                "sample_id": "C-S-001",
+                "source_sample_id": "S-02",
+                "approach_id": "C-A-002",
                 "recipient": "Example Customer",
                 "follow_up_status": "pending",
             }
@@ -341,7 +343,7 @@ def test_demo_missing_information_questions() -> None:
 
     expected = {
         "What was the exact coating weight?",
-        "Why did approach A-01 fail?",
+        "Why did approach C-A-001 fail?",
         "Which test method and acceptance criteria were used?",
         "When was sample S-02 sent?",
         "Where is sample S-02 physically archived?",
@@ -372,7 +374,7 @@ def test_bounded_knowledge_object_content_rejects_oversized_candidate() -> None:
     oversized = _candidate(
         materials=[
             {
-                "material_id": f"M-{index:02d}",
+                "material_id": f"C-M-{index + 1:03d}",
                 "material_name": f"Synthetic material {index}",
                 "safety_notes": "x" * 2000,
             }
@@ -403,6 +405,28 @@ def test_no_hallucinated_defaults_and_extra_fields_forbidden() -> None:
                 "invented_field": "not allowed",
             }
         )
+
+
+def test_candidate_correlation_ids_are_structural_and_source_ids_are_optional() -> None:
+    candidate = _candidate(
+        materials=[{"material_id": "C-M-001", "material_name": "Synthetic material"}],
+        approaches=[
+            {
+                "approach_id": "C-A-001",
+                "outcome": "planned",
+                "production_feasibility_status": "assessed",
+                "price_optimization_status": "assessed",
+                "reuse_potential": "Synthetic reuse context.",
+            }
+        ],
+        tests=[],
+    )
+
+    assert candidate.materials[0].material_id == "C-M-001"
+    assert candidate.materials[0].source_material_id is None
+    assert candidate.approaches[0].source_approach_id is None
+    with pytest.raises(ValidationError, match="C-M"):
+        MaterialRecord(material_id="SOURCE-MATERIAL-7")
 
 
 def test_human_confirmation_metadata_is_consistent() -> None:

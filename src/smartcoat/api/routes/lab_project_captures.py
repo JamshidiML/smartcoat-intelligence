@@ -240,6 +240,21 @@ def _build_create_command(
             status_code=422,
             detail="A human-confirmed candidate is required",
         )
+    if candidate.source_kind is CaptureSourceKind.VOICE:
+        evidence_types = {descriptor.evidence_type for descriptor in candidate.evidence}
+        missing = [
+            label
+            for evidence_type, label in (
+                (CaptureEvidenceType.AUDIO, "audio"),
+                (CaptureEvidenceType.TRANSCRIPT, "transcript"),
+            )
+            if evidence_type not in evidence_types
+        ]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail="Voice captures require registered " + " and ".join(missing) + " evidence",
+            )
     assert candidate.human_confirmed_by is not None
     assert candidate.human_confirmed_at is not None
 

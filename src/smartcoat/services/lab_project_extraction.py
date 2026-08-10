@@ -23,12 +23,14 @@ from smartcoat.domain.lab_project_capture import (
 )
 
 SYSTEM_INSTRUCTIONS = """You extract an unapproved SmartCoat lab-project intake Candidate.
-Return only JSON matching the supplied schema. Never invent a value. Use explicit
-missing, unknown, not_measured, not_applicable, or conflicting states. Preserve
-technical units, approach IDs, and sample IDs. Keep measured facts separate from
-interpretations. Include source excerpts or transcript anchors when possible. Add
-focused questions for material missing information. Never set human_confirmed to
-true and never add human confirmation metadata."""
+Return only JSON matching the supplied schema. Never invent domain facts or source
+identifiers. Candidate-local correlation IDs may be assigned using the deterministic
+C-M/C-A/C-S convention solely to connect Candidate sections. If the source provides an
+identifier, preserve it separately as the source identifier. Use explicit missing,
+unknown, not_measured, not_applicable, or conflicting states. Preserve technical units.
+Keep measured facts separate from interpretations. Include source excerpts or transcript
+anchors when possible. Add focused questions for material missing information. Never set
+human_confirmed to true and never add human confirmation metadata."""
 
 MAX_OLLAMA_RESPONSE_BYTES = 2 * 1024 * 1024
 
@@ -96,6 +98,7 @@ class ExtractionRequest(BaseModel):
     source_language: str | None = Field(default=None, min_length=2, max_length=35)
     project_hints: ProjectHints | None = None
     actor_metadata: ActorMetadata | None = None
+    supplemental_context: str | None = Field(default=None, min_length=1, max_length=4096)
     capture_session_id: UUID = Field(default_factory=uuid4)
 
 
@@ -103,6 +106,93 @@ class StructuredExtractionProvider(Protocol):
     """Contract for transcript-to-Candidate providers used by the pilot."""
 
     def extract(self, request: ExtractionRequest) -> LabProjectCaptureCandidate: ...
+
+
+def assign_candidate_correlation_ids(payload: dict[str, Any]) -> dict[str, Any]:
+    """Assign positional Candidate-only IDs and remap cross-section references."""
+
+    normalized = dict(payload)
+
+    materials: list[dict[str, Any]] = []
+    for index, raw_item in enumerate(payload.get("materials") or (), start=1):
+        if not isinstance(raw_item, Mapping):
+            materials.append(raw_item)
+            continue
+        item = dict(raw_item)
+        item["material_id"] = f"C-M-{index:03d}"
+        materials.append(item)
+    normalized["materials"] = materials
+
+    approach_id_map: dict[str, str] = {}
+    approaches: list[dict[str, Any]] = []
+    for index, raw_item in enumerate(payload.get("approaches") or (), start=1):
+        if not isinstance(raw_item, Mapping):
+            approaches.append(raw_item)
+            continue
+        item = dict(raw_item)
+        old_id = item.get("approach_id")
+        new_id = f"C-A-{index:03d}"
+        if isinstance(old_id, str):
+            if old_id in approach_id_map:
+                raise StructuredExtractionOutputError(
+                    "AI output contained duplicate approach correlation IDs"
+                )
+            approach_id_map[old_id] = new_id
+        item["approach_id"] = new_id
+        approaches.append(item)
+    normalized["approaches"] = approaches
+
+    sample_id_map: dict[str, str] = {}
+    samples: list[dict[str, Any]] = []
+    for index, raw_item in enumerate(payload.get("samples") or (), start=1):
+        if not isinstance(raw_item, Mapping):
+            samples.append(raw_item)
+            continue
+        item = dict(raw_item)
+        old_id = item.get("sample_id")
+        new_id = f"C-S-{index:03d}"
+        if isinstance(old_id, str):
+            if old_id in sample_id_map:
+                raise StructuredExtractionOutputError(
+                    "AI output contained duplicate sample correlation IDs"
+                )
+            sample_id_map[old_id] = new_id
+        item["sample_id"] = new_id
+        samples.append(item)
+
+    def remap_records(
+        records: Any,
+        *,
+        remap_approach: bool = False,
+        remap_sample: bool = False,
+    ) -> list[Any]:
+        remapped: list[Any] = []
+        for raw_item in records or ():
+            if not isinstance(raw_item, Mapping):
+                remapped.append(raw_item)
+                continue
+            item = dict(raw_item)
+            if remap_approach and isinstance(item.get("approach_id"), str):
+                item["approach_id"] = approach_id_map.get(item["approach_id"], item["approach_id"])
+            if remap_sample and isinstance(item.get("sample_id"), str):
+                item["sample_id"] = sample_id_map.get(item["sample_id"], item["sample_id"])
+            remapped.append(item)
+        return remapped
+
+    normalized["process_parameters"] = remap_records(
+        payload.get("process_parameters"), remap_approach=True
+    )
+    normalized["tests"] = remap_records(
+        payload.get("tests"), remap_approach=True, remap_sample=True
+    )
+    normalized["samples"] = remap_records(samples, remap_approach=True)
+    normalized["customer_feedback"] = remap_records(
+        payload.get("customer_feedback"), remap_sample=True
+    )
+    normalized["evidence"] = remap_records(
+        payload.get("evidence"), remap_approach=True, remap_sample=True
+    )
+    return normalized
 
 
 def validate_loopback_base_url(base_url: str) -> str:
@@ -182,6 +272,7 @@ class OllamaStructuredExtractionProvider:
             raise StructuredExtractionOutputError("AI output included human confirmation metadata")
 
         completed_at = datetime.now(UTC)
+        candidate_payload = assign_candidate_correlation_ids(candidate_payload)
         candidate_payload.update(
             {
                 "capture_session_id": str(request.capture_session_id),
@@ -243,11 +334,14 @@ class OllamaStructuredExtractionProvider:
             "actor_metadata": (
                 request.actor_metadata.model_dump(mode="json") if request.actor_metadata else None
             ),
-            "transcript": request.transcript,
+            "source_transcript": request.transcript,
+            "human_review_supplement": request.supplemental_context,
         }
         return (
-            "Extract one LabProjectCaptureCandidate from this JSON context. Actor metadata is "
-            "context only and must never be treated as human confirmation.\n"
+            "Extract one LabProjectCaptureCandidate from this JSON context. SOURCE TRANSCRIPT is "
+            "immutable source text. HUMAN REVIEW SUPPLEMENT is reviewer context and must not be "
+            "copied into Candidate.transcript. Actor metadata is context only and must never be "
+            "treated as human confirmation.\n"
             + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
         )
 
@@ -360,5 +454,6 @@ __all__ = [
     "StructuredExtractionProviderUnavailableError",
     "StructuredExtractionTimeoutError",
     "SYSTEM_INSTRUCTIONS",
+    "assign_candidate_correlation_ids",
     "validate_loopback_base_url",
 ]

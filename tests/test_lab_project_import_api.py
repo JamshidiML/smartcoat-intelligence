@@ -127,7 +127,9 @@ def test_excel_import_returns_dry_run_candidates_and_no_canonical_write(client: 
     assert candidate["source_kind"] == "excel"
     assert candidate["human_confirmed"] is False
     assert candidate["project"]["project_id"] == "P-SYN-API-01"
+    assert candidate["approaches"][0]["approach_id"] == "C-A-001"
     assert candidate["process_parameters"][0]["numeric_value"] == 210
+    assert candidate["source_cell_references"]
     assert body["candidates"][0]["cell_provenance"][0]["cell_reference"] == "A2"
     assert body["candidates"][0]["unmapped_values"][0]["display_value"] == "preserve me"
     assert body["unmapped_columns"][0]["header"] == "Unknown Column"
@@ -138,10 +140,18 @@ def test_endpoints_require_headers_and_validate_media(client: TestClient) -> Non
     missing = client.post("/api/v2/lab-capture/assets", content=PDF_CONTENT)
     assert missing.status_code == 422
 
-    unsupported = client.post(
+    transcript = client.post(
         "/api/v2/lab-capture/assets",
         content=b"synthetic text",
         headers=_headers(filename="notes.txt", media_type="text/plain"),
+    )
+    assert transcript.status_code == 201
+    assert transcript.json()["evidence_type"] == "transcript"
+
+    unsupported = client.post(
+        "/api/v2/lab-capture/assets",
+        content=b"synthetic data",
+        headers=_headers(filename="notes.bin", media_type="application/octet-stream"),
     )
     assert unsupported.status_code == 415
 

@@ -52,6 +52,10 @@ def test_page_contains_workspace_voice_review_and_save_controls() -> None:
         "actor-id",
         "actor-role",
         "source-language",
+        "local-ai-readiness",
+        "check-local-ai",
+        "readiness-grid",
+        "readiness-message",
         "capture-section",
         "start-recording",
         "stop-recording",
@@ -70,6 +74,12 @@ def test_page_contains_workspace_voice_review_and_save_controls() -> None:
         "recommended-questions",
         "evidence-files",
         "evidence-list",
+        "analyze-excel",
+        "excel-import-report",
+        "excel-import-preview",
+        "excel-import-preview-body",
+        "excel-unmapped-columns",
+        "excel-row-errors",
         "human-confirmed",
         "save-candidate",
         "created-object-id",
@@ -137,7 +147,10 @@ def test_page_uses_media_recorder_capability_detection_and_review() -> None:
     assert "playback.src = audioUrl" in PAGE_TEXT
     assert "discardRecording" in PAGE_TEXT
     assert 'mediaRecorder.state === "recording"' in PAGE_TEXT
-    assert 'getElement("process-audio").disabled = isRecording || !audioBlob' in PAGE_TEXT
+    assert (
+        'getElement("process-audio").disabled = isRecording || !audioBlob || !localAIReady'
+        in PAGE_TEXT
+    )
     assert "NotAllowedError" in PAGE_TEXT
     assert "This browser does not support microphone recording." in PAGE_TEXT
 
@@ -145,9 +158,20 @@ def test_page_uses_media_recorder_capability_detection_and_review() -> None:
 def test_page_integrates_extract_reextract_save_and_recent_capture_endpoints() -> None:
     assert 'extractText: "/api/v2/lab-capture/extract-text"' in PAGE_TEXT
     assert 'processAudio: "/api/v2/lab-capture/process-audio"' in PAGE_TEXT
+    assert 'preflight: "/api/v2/lab-capture/preflight"' in PAGE_TEXT
+    assert 'importExcel: "/api/v2/lab-capture/import-excel"' in PAGE_TEXT
     assert 'captures: "/api/v2/lab-project-captures"' in PAGE_TEXT
-    assert "transcript: extractionText(transcript, useAnswers)" in PAGE_TEXT
-    assert "Follow-up answers supplied by the human reviewer:" in PAGE_TEXT
+    assert "transcript: transcript" in PAGE_TEXT
+    assert "supplemental_context: useAnswers ? supplementalContext() : null" in PAGE_TEXT
+    assert 'const answerLines = ["Follow-up answers supplied by the human reviewer:"]' in PAGE_TEXT
+    assert "transcript: extractionText(transcript, useAnswers)" not in PAGE_TEXT
+    assert "let originalVoiceTranscript = null" in PAGE_TEXT
+    assert (
+        "originalVoiceTranscript = originalVoiceTranscript || extractedCandidate.transcript"
+        in PAGE_TEXT
+    )
+    assert 'getElement("transcript").readOnly = candidate.source_kind === "voice"' in PAGE_TEXT
+    assert 'candidate.source_kind === "voice"\n        ? originalVoiceTranscript' in PAGE_TEXT
     assert "project_hints: currentProjectHints()" in PAGE_TEXT
     assert "organization_id: organization" not in PAGE_TEXT
     assert "candidate.human_confirmed = true" in PAGE_TEXT
@@ -167,7 +191,13 @@ def test_human_confirmation_gates_canonical_save() -> None:
     assert 'getElement("save-candidate").disabled = !(' in PAGE_TEXT
     assert 'if (!candidate || !getElement("human-confirmed").checked)' in PAGE_TEXT
     assert "Human confirmation and an actor ID are required." in PAGE_TEXT
-    assert "confirmed && hasCandidate && hasActor && !candidateSaved" in PAGE_TEXT
+    assert (
+        "confirmed && hasCandidate && hasActor && voiceEvidenceReady && !candidateSaved"
+        in PAGE_TEXT
+    )
+    assert 'candidate.source_kind !== "voice"' in PAGE_TEXT
+    assert 'evidenceTypes.has("audio") && evidenceTypes.has("transcript")' in PAGE_TEXT
+    assert "Voice captures require registered audio and transcript evidence." in PAGE_TEXT
 
 
 def test_page_has_evidence_upload_and_integrity_hooks() -> None:
@@ -178,6 +208,44 @@ def test_page_has_evidence_upload_and_integrity_hooks() -> None:
     assert "source_reference" in PAGE_TEXT
     assert "descriptor.sha256 !== browserHash" in PAGE_TEXT
     assert "Files are hashed in the browser" in PAGE_TEXT
+    assert "uploadEvidenceBlob(audioBlob, audioFilename)" in PAGE_TEXT
+    assert 'new Blob([originalTranscript], {type: "text/plain"})' in PAGE_TEXT
+    assert '"capture-transcript.txt"' in PAGE_TEXT
+    assert "original audio/transcript evidence was registered" in PAGE_TEXT
+
+
+def test_page_exposes_local_ai_readiness_without_cloud_fallback() -> None:
+    assert "async function checkLocalAI()" in PAGE_TEXT
+    assert "await fetch(endpoints.preflight" in PAGE_TEXT
+    assert "localAIReady = payload.ready === true" in PAGE_TEXT
+    assert '["MLX Whisper", payload.mlx_whisper_import]' in PAGE_TEXT
+    assert '["Ollama", payload.ollama_reachability]' in PAGE_TEXT
+    assert "detail.textContent = entry[1].detail" in PAGE_TEXT
+    assert "localAIReady = false" in PAGE_TEXT
+
+
+def test_page_analyzes_excel_and_requires_explicit_candidate_selection() -> None:
+    assert "async function analyzeExcel()" in PAGE_TEXT
+    assert "await fetch(endpoints.importExcel" in PAGE_TEXT
+    assert '"X-SmartCoat-Filename": selectedExcelFile.name' in PAGE_TEXT
+    assert "renderWorkbookImportReport(report)" in PAGE_TEXT
+    assert 'button.textContent = "Review Candidate"' in PAGE_TEXT
+    assert "reviewImportedCandidate(imported)" in PAGE_TEXT
+    assert "acceptCandidate({candidate: imported.candidate})" in PAGE_TEXT
+    assert '"excel-unmapped-columns"' in PAGE_TEXT
+    assert '"excel-row-errors"' in PAGE_TEXT
+    assert "source_cell_references" in PAGE_TEXT
+    assert "formulation_source_text" in PAGE_TEXT
+
+
+def test_page_uses_candidate_local_structural_ids() -> None:
+    assert 'return prefix + "-" + String(next).padStart(3, "0")' in PAGE_TEXT
+    assert 'nextCorrelationId("C-M", candidate.materials, "material_id")' in PAGE_TEXT
+    assert 'nextCorrelationId("C-A", candidate.approaches, "approach_id")' in PAGE_TEXT
+    assert 'nextCorrelationId("C-S", candidate.samples, "sample_id")' in PAGE_TEXT
+    assert "source_material_id" in PAGE_TEXT
+    assert "source_approach_id" in PAGE_TEXT
+    assert "source_sample_id" in PAGE_TEXT
 
 
 def test_missing_fields_and_questions_are_rendered_with_safe_dom_apis() -> None:

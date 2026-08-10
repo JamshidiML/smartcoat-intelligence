@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import codecs
 import hashlib
 import os
 import re
@@ -24,6 +25,7 @@ SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 EVIDENCE_NAMESPACE = uuid5(NAMESPACE_URL, "urn:smartcoat:local-evidence:v1")
 
 MEDIA_TYPES: dict[str, EvidenceType] = {
+    "text/plain": EvidenceType.TRANSCRIPT,
     "application/pdf": EvidenceType.PDF,
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": EvidenceType.EXCEL,
     "image/png": EvidenceType.IMAGE,
@@ -334,7 +336,19 @@ class LocalEvidenceRegistry:
         with path.open("rb") as stream:
             prefix = stream.read(16)
         valid = False
-        if media_type == "application/pdf":
+        if media_type == "text/plain":
+            decoder = codecs.getincrementaldecoder("utf-8")("strict")
+            try:
+                with path.open("rb") as stream:
+                    while chunk := stream.read(CHUNK_SIZE):
+                        if b"\x00" in chunk:
+                            raise UnicodeDecodeError("utf-8", chunk, 0, 1, "embedded NUL")
+                        decoder.decode(chunk)
+                    decoder.decode(b"", final=True)
+                valid = True
+            except UnicodeDecodeError:
+                valid = False
+        elif media_type == "application/pdf":
             valid = prefix.startswith(b"%PDF-")
         elif media_type == "image/png":
             valid = prefix.startswith(b"\x89PNG\r\n\x1a\n")

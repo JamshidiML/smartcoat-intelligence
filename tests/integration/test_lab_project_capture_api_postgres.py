@@ -77,7 +77,7 @@ def _payload(*, suffix: str = "001") -> dict[str, Any]:
         },
         "approaches": [
             {
-                "approach_id": "A-PG-01",
+                "approach_id": "C-A-001",
                 "outcome": "successful",
                 "price_optimization_status": "assessed",
                 "production_feasibility_status": "assessed",
@@ -86,7 +86,7 @@ def _payload(*, suffix: str = "001") -> dict[str, Any]:
         ],
         "tests": [
             {
-                "approach_id": "A-PG-01",
+                "approach_id": "C-A-001",
                 "test_name": "Synthetic persistence test",
                 "method": "PostgreSQL round trip",
                 "acceptance_criteria": "Canonical rows and audit event persist atomically.",
@@ -113,6 +113,39 @@ def _payload(*, suffix: str = "001") -> dict[str, Any]:
         "human_confirmed_by": "synthetic-postgres-reviewer",
         "human_confirmed_at": "2026-08-06T09:00:00Z",
     }
+
+
+def _voice_payload() -> dict[str, Any]:
+    payload = _payload(suffix="VOICE")
+    payload.update(
+        {
+            "source_kind": "voice",
+            "transcript": "Immutable synthetic PostgreSQL voice transcript.",
+            "evidence": [
+                {
+                    "evidence_id": "EV-PG-VOICE-AUDIO",
+                    "evidence_type": "audio",
+                    "filename": "synthetic-voice.webm",
+                    "media_type": "audio/webm",
+                    "source_reference": "asset://synthetic/EV-PG-VOICE-AUDIO",
+                    "sha256": "c" * 64,
+                    "captured_at": "2026-08-06T08:00:00Z",
+                    "description": "Synthetic audio evidence.",
+                },
+                {
+                    "evidence_id": "EV-PG-VOICE-TRANSCRIPT",
+                    "evidence_type": "transcript",
+                    "filename": "capture-transcript.txt",
+                    "media_type": "text/plain",
+                    "source_reference": "asset://synthetic/EV-PG-VOICE-TRANSCRIPT",
+                    "sha256": "d" * 64,
+                    "captured_at": "2026-08-06T08:01:00Z",
+                    "description": "Synthetic transcript evidence.",
+                },
+            ],
+        }
+    )
+    return payload
 
 
 def _require_live_postgres(database_url: str | None, opt_in: str | None) -> str:
@@ -360,6 +393,56 @@ def test_postgres_round_trip_evidence_provenance_audit_and_reads(
     assert detail_response.status_code == 200
     assert detail_response.json() == capture
     assert wrong_org.status_code == 404
+
+
+def test_postgres_voice_capture_persists_audio_transcript_provenance_and_audit(
+    migrated_store: sessionmaker[Session],
+) -> None:
+    application = _application(migrated_store)
+    response = TestClient(application).post(
+        "/api/v2/lab-project-captures",
+        json=_voice_payload(),
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert response.status_code == 201, response.text
+    object_id = UUID(response.json()["capture"]["object_id"])
+    with migrated_store() as session:
+        evidence_rows = session.scalars(
+            select(KnowledgeObjectV2EvidenceRecord).where(
+                KnowledgeObjectV2EvidenceRecord.organization_id == ORGANIZATION_ID,
+                KnowledgeObjectV2EvidenceRecord.object_id == object_id,
+            )
+        ).all()
+        provenance_row = session.scalar(
+            select(KnowledgeObjectV2ProvenanceRecord).where(
+                KnowledgeObjectV2ProvenanceRecord.organization_id == ORGANIZATION_ID,
+                KnowledgeObjectV2ProvenanceRecord.object_id == object_id,
+            )
+        )
+        audit_count = session.scalar(
+            select(func.count())
+            .select_from(KnowledgeAuditEventRecord)
+            .where(
+                KnowledgeAuditEventRecord.organization_id == ORGANIZATION_ID,
+                KnowledgeAuditEventRecord.object_id == object_id,
+            )
+        )
+
+    assert len(evidence_rows) == 2
+    evidence_types = {
+        EvidenceReference.model_validate_json(row.canonical_metadata_json).evidence_type
+        for row in evidence_rows
+    }
+    assert evidence_types == {EvidenceType.OBSERVATION, EvidenceType.DOCUMENT}
+    assert provenance_row is not None
+    provenance = ProvenanceV2.model_validate_json(provenance_row.canonical_provenance_json)
+    assert provenance.creation_method is CreationMethod.IMPORTED
+    assert [item.transformation_type for item in provenance.transformation_history] == [
+        "local_structured_extraction",
+        "human_confirmation",
+    ]
+    assert audit_count == 1
 
 
 class FailingAuditParticipant(KnowledgeAuditParticipant):

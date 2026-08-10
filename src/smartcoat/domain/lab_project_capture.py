@@ -8,7 +8,7 @@ canonical Knowledge Object v2 record.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated, Any, cast
+from typing import TYPE_CHECKING, Annotated, Any, cast
 from uuid import UUID
 
 from pydantic import (
@@ -22,14 +22,23 @@ from pydantic import (
 )
 
 from smartcoat.domain.knowledge_objects import KnowledgeObjectType
-from smartcoat.domain.knowledge_objects_v2 import (
-    ConfidentialityLevel,
-    JsonValue,
-    KnowledgeObjectV2MutableState,
-    OwnerReference,
-)
+
+if TYPE_CHECKING:
+    from smartcoat.domain.knowledge_objects_v2 import JsonValue
 
 Identifier = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=256)]
+CandidateMaterialId = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, pattern=r"^C-M-[0-9]{3}$"),
+]
+CandidateApproachId = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, pattern=r"^C-A-[0-9]{3}$"),
+]
+CandidateSampleId = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, pattern=r"^C-S-[0-9]{3}$"),
+]
 ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=512)]
 LongText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4096)]
 LanguageCode = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=35)]
@@ -183,7 +192,9 @@ class BaseSubstrate(StrictCaptureModel):
 
 
 class MaterialRecord(StrictCaptureModel):
-    material_id: Identifier
+    # Correlation IDs connect Candidate sections; they are not source-system facts.
+    material_id: CandidateMaterialId
+    source_material_id: Identifier | None = None
     material_name: ShortText | None = None
     supplier: ShortText | None = None
     commercial_grade: ShortText | None = None
@@ -217,7 +228,9 @@ class MaterialRecord(StrictCaptureModel):
 
 
 class ExperimentalApproach(StrictCaptureModel):
-    approach_id: Identifier
+    # Correlation IDs connect Candidate sections; they are not source-system facts.
+    approach_id: CandidateApproachId
+    source_approach_id: Identifier | None = None
     title: ShortText | None = None
     description: LongText | None = None
     technical_rationale: LongText | None = None
@@ -239,7 +252,7 @@ class ExperimentalApproach(StrictCaptureModel):
 
 
 class ProcessParameter(StrictCaptureModel):
-    approach_id: Identifier
+    approach_id: CandidateApproachId
     process_stage: ShortText
     equipment_name: ShortText | None = None
     parameter_name: ShortText
@@ -272,8 +285,8 @@ class ProcessParameter(StrictCaptureModel):
 
 
 class TestRecord(StrictCaptureModel):
-    approach_id: Identifier
-    sample_id: Identifier | None = None
+    approach_id: CandidateApproachId
+    sample_id: CandidateSampleId | None = None
     test_name: ShortText
     method: ShortText | None = None
     standard: ShortText | None = None
@@ -299,8 +312,10 @@ class TestRecord(StrictCaptureModel):
 
 
 class SampleRecord(StrictCaptureModel):
-    sample_id: Identifier
-    approach_id: Identifier
+    # Correlation IDs connect Candidate sections; they are not source-system facts.
+    sample_id: CandidateSampleId
+    source_sample_id: Identifier | None = None
+    approach_id: CandidateApproachId
     sample_description: LongText | None = None
     physical_archive_status: PhysicalArchiveStatus | None = None
     archive_location: ShortText | None = None
@@ -330,7 +345,7 @@ class SampleRecord(StrictCaptureModel):
 
 
 class CustomerFeedbackRecord(StrictCaptureModel):
-    sample_id: Identifier
+    sample_id: CandidateSampleId
     received_at: AwareDatetime
     received_from: ShortText
     feedback_summary: LongText
@@ -348,8 +363,8 @@ class EvidenceDescriptor(StrictCaptureModel):
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     captured_at: AwareDatetime
     description: LongText | None = None
-    approach_id: Identifier | None = None
-    sample_id: Identifier | None = None
+    approach_id: CandidateApproachId | None = None
+    sample_id: CandidateSampleId | None = None
 
     @field_validator("sha256", mode="before")
     @classmethod
@@ -407,6 +422,8 @@ class LabProjectCaptureCandidate(StrictCaptureModel):
     unresolved_questions: tuple[LongText, ...] = Field(
         default_factory=tuple, max_length=MAX_QUESTIONS
     )
+    formulation_source_text: LongText | None = None
+    source_cell_references: tuple[LongText, ...] = Field(default_factory=tuple, max_length=256)
 
     field_states: dict[str, FieldState] = Field(default_factory=dict, max_length=256)
     completeness_score: int = Field(default=0, ge=0, le=100)
@@ -546,13 +563,14 @@ def evaluate_candidate_completeness(
 
     for approach in candidate.approaches:
         prefix = f"approaches.{approach.approach_id}"
+        approach_label = approach.source_approach_id or approach.approach_id
         if approach.outcome is ApproachOutcome.FAILED:
             if approach.failure_reason is None:
-                add(f"{prefix}.failure_reason", f"Why did approach {approach.approach_id} fail?")
+                add(f"{prefix}.failure_reason", f"Why did approach {approach_label} fail?")
             if approach.lesson_learned is None:
                 add(
                     f"{prefix}.lesson_learned",
-                    f"What lesson was learned from approach {approach.approach_id}?",
+                    f"What lesson was learned from approach {approach_label}?",
                 )
             if (
                 approach.approach_id not in image_approach_ids
@@ -561,7 +579,7 @@ def evaluate_candidate_completeness(
                 add(
                     f"{prefix}.photograph",
                     "Attach a photograph for approach "
-                    f"{approach.approach_id}, or explain why none exists.",
+                    f"{approach_label}, or explain why none exists.",
                 )
 
         approach_tests = tests_by_approach.get(approach.approach_id, [])
@@ -570,7 +588,7 @@ def evaluate_candidate_completeness(
             add(
                 f"{prefix}.tests",
                 "Which test method and acceptance criteria were used for approach "
-                f"{approach.approach_id}?",
+                f"{approach_label}?",
             )
 
         if approach.production_feasibility_status in {None, AssessmentStatus.NOT_ASSESSED}:
@@ -621,10 +639,11 @@ def evaluate_candidate_completeness(
     sent_samples: list[SampleRecord] = []
     for sample in candidate.samples:
         prefix = f"samples.{sample.sample_id}"
+        sample_label = sample.source_sample_id or sample.sample_id
         if sample.physical_archive_status in {None, PhysicalArchiveStatus.UNKNOWN}:
             add(
                 prefix + ".physical_archive_status",
-                f"Where is sample {sample.sample_id} physically archived?",
+                f"Where is sample {sample_label} physically archived?",
             )
         is_sent = any(
             (
@@ -638,17 +657,17 @@ def evaluate_candidate_completeness(
             continue
         sent_samples.append(sample)
         if sample.sent_at is None:
-            add(prefix + ".sent_at", f"When was sample {sample.sample_id} sent?")
+            add(prefix + ".sent_at", f"When was sample {sample_label} sent?")
         if sample.follow_up_status is None:
             add(
                 prefix + ".follow_up_status",
-                f"Was the customer contacted after shipment of sample {sample.sample_id}?",
+                f"Was the customer contacted after shipment of sample {sample_label}?",
             )
         if sample.follow_up_status not in {FollowUpStatus.NOT_REQUIRED, FollowUpStatus.CLOSED}:
             if sample.follow_up_due_at is None:
                 add(
                     prefix + ".follow_up_due_at",
-                    f"When is follow-up for sample {sample.sample_id} due?",
+                    f"When is follow-up for sample {sample_label} due?",
                 )
 
     feedback_sample_ids = {item.sample_id for item in candidate.customer_feedback}
@@ -682,6 +701,8 @@ def apply_candidate_completeness(
 
 
 def _dump_records(records: tuple[StrictCaptureModel, ...]) -> JsonValue:
+    from smartcoat.domain.knowledge_objects_v2 import JsonValue
+
     dumped = [record.model_dump(mode="json", exclude_none=True) for record in records]
     return cast(JsonValue, dumped)
 
@@ -690,6 +711,13 @@ def to_knowledge_object_content(
     candidate: LabProjectCaptureCandidate,
 ) -> dict[str, JsonValue]:
     """Map a candidate to shallow content and validate Knowledge Object v2 bounds."""
+
+    from smartcoat.domain.knowledge_objects_v2 import (
+        ConfidentialityLevel,
+        JsonValue,
+        KnowledgeObjectV2MutableState,
+        OwnerReference,
+    )
 
     evaluated = apply_candidate_completeness(candidate)
     project = evaluated.project.model_dump(mode="json", exclude_none=True)
@@ -720,6 +748,8 @@ def to_knowledge_object_content(
         "critical_missing_fields": list(evaluated.critical_missing_fields),
         "recommended_questions": list(evaluated.recommended_questions),
         "extraction_warnings": list(evaluated.extraction_warnings),
+        "formulation_source_text": evaluated.formulation_source_text,
+        "source_cell_references": list(evaluated.source_cell_references),
         "field_states": evaluated.field_states,
         "human_confirmed": evaluated.human_confirmed,
         "human_confirmed_by": evaluated.human_confirmed_by,

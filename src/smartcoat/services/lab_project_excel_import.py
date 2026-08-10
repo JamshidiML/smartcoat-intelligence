@@ -351,7 +351,7 @@ class LabProjectExcelImporter:
         row_errors: list[RowImportError] = []
         warnings: list[ImportWarning] = []
 
-        for sheet_index, worksheet in enumerate(workbook.worksheets, start=1):
+        for worksheet in workbook.worksheets:
             if (
                 worksheet.max_row > MAX_ROWS_PER_SHEET
                 or worksheet.max_column > MAX_COLUMNS_PER_SHEET
@@ -406,7 +406,6 @@ class LabProjectExcelImporter:
                 try:
                     imported, row_warnings = self._build_candidate(
                         worksheet,
-                        sheet_index=sheet_index,
                         header_row=header_row,
                         row_number=row_number,
                         mapped=mapped,
@@ -547,7 +546,6 @@ class LabProjectExcelImporter:
         self,
         worksheet: Worksheet,
         *,
-        sheet_index: int,
         header_row: int,
         row_number: int,
         mapped: dict[CanonicalColumn, int],
@@ -623,27 +621,29 @@ class LabProjectExcelImporter:
         substrate = {"substrate_name": substrate_name} if substrate_name is not None else None
 
         row_key = f"{evidence.sha256}:{worksheet.title}:{row_number}"
-        approach_id = f"A-{sheet_index:02d}-{row_number:05d}"
+        approach_id = "C-A-001"
         material_text = text_value(CanonicalColumn.MATERIAL_NAME, "materials.0.material_name")
-        formulation_text = text_value(CanonicalColumn.FORMULATION, "materials.0.material_name")
+        formulation_text = text_value(CanonicalColumn.FORMULATION, "formulation_source_text")
         materials: list[dict[str, object]] = []
-        selected_material = material_text or formulation_text
-        if selected_material is not None:
+        if material_text is not None:
             materials.append(
                 {
-                    "material_id": f"M-{sheet_index:02d}-{row_number:05d}",
-                    "material_name": selected_material,
+                    "material_id": "C-M-001",
+                    "material_name": material_text,
                 }
             )
-            if formulation_text is not None and material_text is None:
-                row_warnings.append(
-                    self._warning(
-                        worksheet,
-                        row_number,
-                        "formulation_preserved_as_material_text",
-                        "Formulation/recipe text was preserved as a reviewable material entry",
-                    )
+        if formulation_text is not None:
+            row_warnings.append(
+                self._warning(
+                    worksheet,
+                    row_number,
+                    "formulation_requires_structured_review",
+                    (
+                        "Formulation/recipe source text requires structured human review; "
+                        "no material or quantity was inferred"
+                    ),
                 )
+            )
 
         approach_title = text_value(
             CanonicalColumn.APPROACH_TITLE, f"approaches.{approach_id}.title"
@@ -748,10 +748,11 @@ class LabProjectExcelImporter:
             )
 
         samples: list[dict[str, object]] = []
-        sample_id = text_value(CanonicalColumn.SAMPLE_ID, "samples.0.sample_id")
-        if sample_id is not None:
+        source_sample_id = text_value(CanonicalColumn.SAMPLE_ID, "samples.0.source_sample_id")
+        if source_sample_id is not None:
             sample: dict[str, object] = {
-                "sample_id": sample_id,
+                "sample_id": "C-S-001",
+                "source_sample_id": source_sample_id,
                 "approach_id": approach_id,
                 "physical_archive_status": "unknown",
             }
@@ -825,6 +826,11 @@ class LabProjectExcelImporter:
                 "samples": samples,
                 "evidence": (evidence.as_candidate_evidence(),),
                 "field_states": field_states,
+                "formulation_source_text": formulation_text,
+                "source_cell_references": tuple(
+                    f"{item.workbook_source_reference}#{item.sheet_name}!{item.cell_reference}"
+                    for item in provenance
+                ),
                 "extraction_warnings": candidate_warnings,
                 "human_confirmed": False,
             }
