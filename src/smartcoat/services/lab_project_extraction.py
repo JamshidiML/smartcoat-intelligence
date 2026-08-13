@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import math
+import re
 from collections.abc import Mapping
+from copy import deepcopy
 from datetime import UTC, datetime
 from http.client import HTTPMessage
 from ipaddress import ip_address
@@ -30,9 +33,19 @@ identifier, preserve it separately as the source identifier. Use explicit missin
 unknown, not_measured, not_applicable, or conflicting states. Preserve technical units.
 Keep measured facts separate from interpretations. Include source excerpts or transcript
 anchors when possible. Add focused questions for material missing information. Never set
-human_confirmed to true and never add human confirmation metadata."""
+human_confirmed to true and never add human confirmation metadata.
+
+PROCESS PARAMETER RULES:
+1. For a known exact numeric value, set numeric_value and unit; omit text_value.
+2. For a known qualitative value, set text_value; omit numeric_value.
+3. If a parameter was not measured, use not_measured and omit both values.
+4. If a mentioned parameter value is unavailable, use unknown and omit both values.
+5. Never invent a unit.
+6. For genuinely conflicting source statements, use conflicting, preserve supplied values,
+   and explain the conflict in source_note when possible."""
 
 MAX_OLLAMA_RESPONSE_BYTES = 2 * 1024 * 1024
+DEFAULT_OLLAMA_TIMEOUT_SECONDS = 180.0
 
 
 class _NoRedirectHandler(HTTPRedirectHandler):
@@ -106,6 +119,127 @@ class StructuredExtractionProvider(Protocol):
     """Contract for transcript-to-Candidate providers used by the pilot."""
 
     def extract(self, request: ExtractionRequest) -> LabProjectCaptureCandidate: ...
+
+
+def build_ollama_grammar_schema() -> dict[str, Any]:
+    """Return a maxLength-free copy for Ollama's structured-output grammar."""
+
+    schema = deepcopy(LabProjectCaptureCandidate.model_json_schema())
+
+    def remove_max_length(value: Any) -> None:
+        if isinstance(value, dict):
+            value.pop("maxLength", None)
+            for child in value.values():
+                remove_max_length(child)
+        elif isinstance(value, list):
+            for child in value:
+                remove_max_length(child)
+
+    # This adapts only the Ollama/llama.cpp grammar; canonical Pydantic validation
+    # remains authoritative after generation.
+    remove_max_length(schema)
+    return schema
+
+
+def normalize_ai_process_parameters(payload: dict[str, Any]) -> dict[str, Any]:
+    """Conservatively normalize unapproved AI process-parameter payloads."""
+
+    normalized = deepcopy(payload)
+    raw_parameters = normalized.get("process_parameters")
+    if not isinstance(raw_parameters, list):
+        return normalized
+
+    existing_warnings = normalized.get("extraction_warnings", [])
+    if not isinstance(existing_warnings, list) or not all(
+        isinstance(warning, str) for warning in existing_warnings
+    ):
+        return normalized
+
+    normalization_warnings: list[str] = []
+    for index, raw_parameter in enumerate(raw_parameters, start=1):
+        if not isinstance(raw_parameter, Mapping):
+            continue
+        parameter = dict(raw_parameter)
+        raw_parameters[index - 1] = parameter
+
+        approach_id = parameter.get("approach_id")
+        process_stage = parameter.get("process_stage")
+        parameter_name = parameter.get("parameter_name")
+        if (
+            not isinstance(approach_id, str)
+            or re.fullmatch(r"C-A-[0-9]{3}", approach_id) is None
+            or not isinstance(process_stage, str)
+            or not process_stage.strip()
+            or len(process_stage.strip()) > 512
+            or not isinstance(parameter_name, str)
+            or not parameter_name.strip()
+            or len(parameter_name.strip()) > 512
+        ):
+            continue
+
+        numeric_value = parameter.get("numeric_value")
+        text_value = parameter.get("text_value")
+        unit = parameter.get("unit")
+        source_note = parameter.get("source_note")
+        has_numeric = numeric_value is not None
+        has_text = text_value is not None
+        has_source_note = source_note is not None
+        if has_numeric and (
+            isinstance(numeric_value, bool)
+            or not isinstance(numeric_value, int | float)
+            or not math.isfinite(numeric_value)
+        ):
+            continue
+        if has_text and (
+            not isinstance(text_value, str)
+            or not text_value.strip()
+            or len(text_value.strip()) > 512
+        ):
+            continue
+        if unit is not None and (
+            not isinstance(unit, str) or not unit.strip() or len(unit.strip()) > 512
+        ):
+            continue
+        if has_source_note and (
+            not isinstance(source_note, str)
+            or not source_note.strip()
+            or len(source_note.strip()) > 4096
+        ):
+            continue
+
+        state = parameter.get("measurement_state")
+        warning_prefix: str | None = None
+        if state == "known":
+            if has_numeric and has_text:
+                parameter["measurement_state"] = "conflicting"
+                warning_prefix = "process_parameter_normalized_conflicting_values:"
+            elif not has_numeric and not has_text:
+                parameter["measurement_state"] = "unknown"
+                warning_prefix = "process_parameter_normalized_missing_value:"
+            elif has_numeric and unit is None:
+                parameter["measurement_state"] = "conflicting"
+                warning_prefix = "process_parameter_normalized_missing_unit:"
+        elif state in {"unknown", "not_measured", "not_applicable"}:
+            if has_numeric or has_text:
+                parameter["measurement_state"] = "conflicting"
+                warning_prefix = "process_parameter_normalized_state_value_conflict:"
+        elif state == "conflicting" and not (has_numeric or has_text or has_source_note):
+            parameter["measurement_state"] = "unknown"
+            warning_prefix = "process_parameter_normalized_empty_conflict:"
+
+        if warning_prefix is not None:
+            normalization_warnings.append(
+                f"{warning_prefix} approach_id={approach_id} "
+                f"parameter_name={parameter_name.strip()}"
+            )
+
+    if normalization_warnings:
+        deduplicated: list[str] = []
+        for warning in [*existing_warnings, *normalization_warnings]:
+            if warning not in deduplicated:
+                deduplicated.append(warning)
+        normalized["extraction_warnings"] = deduplicated
+    return normalized
 
 
 def assign_candidate_correlation_ids(payload: dict[str, Any]) -> dict[str, Any]:
@@ -232,7 +366,13 @@ class OllamaStructuredExtractionProvider:
 
     provider_name = "ollama"
 
-    def __init__(self, base_url: str, model: str, *, timeout_seconds: float = 60.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        model: str,
+        *,
+        timeout_seconds: float = DEFAULT_OLLAMA_TIMEOUT_SECONDS,
+    ) -> None:
         self.base_url = validate_loopback_base_url(base_url)
         normalized_model = model.strip()
         if not normalized_model:
@@ -248,8 +388,10 @@ class OllamaStructuredExtractionProvider:
             "model": self.model,
             "system": SYSTEM_INSTRUCTIONS,
             "prompt": self._build_prompt(request),
-            "format": LabProjectCaptureCandidate.model_json_schema(),
+            "format": build_ollama_grammar_schema(),
             "stream": False,
+            "think": False,
+            "keep_alive": "30m",
             "options": {"temperature": 0},
         }
         response = self._request_json("/api/generate", payload)
@@ -273,6 +415,7 @@ class OllamaStructuredExtractionProvider:
 
         completed_at = datetime.now(UTC)
         candidate_payload = assign_candidate_correlation_ids(candidate_payload)
+        candidate_payload = normalize_ai_process_parameters(candidate_payload)
         candidate_payload.update(
             {
                 "capture_session_id": str(request.capture_session_id),
@@ -442,6 +585,7 @@ class DeterministicFakeExtractionProvider:
 
 __all__ = [
     "ActorMetadata",
+    "DEFAULT_OLLAMA_TIMEOUT_SECONDS",
     "DeterministicFakeExtractionProvider",
     "ExtractionRequest",
     "MAX_OLLAMA_RESPONSE_BYTES",
@@ -455,5 +599,7 @@ __all__ = [
     "StructuredExtractionTimeoutError",
     "SYSTEM_INSTRUCTIONS",
     "assign_candidate_correlation_ids",
+    "build_ollama_grammar_schema",
+    "normalize_ai_process_parameters",
     "validate_loopback_base_url",
 ]
