@@ -31,6 +31,10 @@ from smartcoat.services.lab_project_extraction import (
     normalize_ai_process_parameters,
     validate_loopback_base_url,
 )
+from smartcoat.services.lab_project_grounding import (
+    ExperimentalClaimProposalBatch,
+    ProjectMaterialClaimProposalBatch,
+)
 
 
 class FakeHTTPResponse:
@@ -170,13 +174,17 @@ def test_ollama_grammar_schema_removes_only_max_length_without_mutation() -> Non
 def test_ollama_uses_schema_deterministic_options_and_validates_candidate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    captured: dict[str, Any] = {}
+    captured: list[dict[str, Any]] = []
 
     def fake_urlopen(request: Any, *, timeout: float) -> FakeHTTPResponse:
-        captured["url"] = request.full_url
-        captured["body"] = json.loads(request.data)
-        captured["timeout"] = timeout
-        return FakeHTTPResponse({"response": json.dumps({"project": {}})})
+        captured.append(
+            {
+                "url": request.full_url,
+                "body": json.loads(request.data),
+                "timeout": timeout,
+            }
+        )
+        return FakeHTTPResponse({"response": json.dumps({"claims": []})})
 
     monkeypatch.setattr(lab_project_extraction, "_open_local_request", fake_urlopen)
     provider = OllamaStructuredExtractionProvider(
@@ -187,23 +195,33 @@ def test_ollama_uses_schema_deterministic_options_and_validates_candidate(
 
     candidate = provider.extract(_request())
 
-    assert captured["url"] == "http://127.0.0.1:11434/api/generate"
-    assert captured["timeout"] == 3
-    assert captured["body"]["stream"] is False
-    assert captured["body"]["think"] is False
-    assert captured["body"]["keep_alive"] == "30m"
-    assert captured["body"]["options"] == {"temperature": 0}
-    assert captured["body"]["system"] == SYSTEM_INSTRUCTIONS
-    assert captured["body"]["format"] == build_ollama_grammar_schema()
-    assert captured["body"]["format"] != LabProjectCaptureCandidate.model_json_schema()
+    assert len(captured) == 2
+    assert all(item["url"] == "http://127.0.0.1:11434/api/generate" for item in captured)
+    assert all(item["timeout"] == 3 for item in captured)
+    assert all(item["body"]["stream"] is False for item in captured)
+    assert all(item["body"]["think"] is False for item in captured)
+    assert all(item["body"]["keep_alive"] == "30m" for item in captured)
+    assert all(
+        item["body"]["options"] == {"temperature": 0, "num_predict": 128} for item in captured
+    )
+    assert all(SYSTEM_INSTRUCTIONS in item["body"]["system"] for item in captured)
+    assert any(
+        item["body"]["format"] == build_ollama_grammar_schema(ProjectMaterialClaimProposalBatch)
+        for item in captured
+    )
+    assert any(
+        item["body"]["format"] == build_ollama_grammar_schema(ExperimentalClaimProposalBatch)
+        for item in captured
+    )
+    assert all(item["body"]["format"] != build_ollama_grammar_schema() for item in captured)
     assert candidate.transcript == _request().transcript
     assert candidate.source_kind is CaptureSourceKind.TEXT
-    assert candidate.extraction_model == "ollama:local-test-model"
+    assert candidate.extraction_model == "ollama:local-test-model:grounded-v1"
     assert candidate.human_confirmed is False
     assert candidate.human_confirmed_by is None
     assert candidate.recommended_questions
-    assert "Never invent domain facts or source\nidentifiers" in SYSTEM_INSTRUCTIONS
-    assert "C-M/C-A/C-S" in SYSTEM_INSTRUCTIONS
+    assert "Do not create a Candidate" in SYSTEM_INSTRUCTIONS
+    assert "Do not generate C-M, C-A, or C-S identifiers" in SYSTEM_INSTRUCTIONS
 
 
 def test_ollama_provider_default_timeout_is_pilot_safe() -> None:
@@ -324,15 +342,15 @@ def test_malformed_process_parameter_state_is_not_normalized_and_is_rejected(
         ]
         == malformed
     )
-    raw_candidate = json.dumps({"project": {}, "process_parameters": [malformed]})
+    raw_claims = json.dumps({"claims": ["material|Synthetic material|0|unexpected"]})
     monkeypatch.setattr(
         lab_project_extraction,
         "_open_local_request",
-        lambda request, timeout: FakeHTTPResponse({"response": raw_candidate}),
+        lambda request, timeout: FakeHTTPResponse({"response": raw_claims}),
     )
     provider = OllamaStructuredExtractionProvider("http://localhost:11434", "local-model")
 
-    with pytest.raises(StructuredExtractionOutputError, match="schema-invalid"):
+    with pytest.raises(StructuredExtractionOutputError, match="schema-invalid Pass A"):
         provider.extract(_request())
 
 
@@ -348,110 +366,96 @@ def test_process_parameter_semantics_move_to_readiness_boundary() -> None:
     assert report.issues[1].code == "process_parameter_known_without_value"
 
 
-def test_provider_applies_process_parameter_normalization_before_validation(
+def test_provider_verifies_claims_before_deterministic_assembly(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    raw_candidate = json.dumps(
-        {
-            "project": {},
-            "approaches": [{"approach_id": "model-approach", "outcome": "failed"}],
-            "process_parameters": [
-                {
-                    "approach_id": "model-approach",
-                    "process_stage": "curing",
-                    "parameter_name": "temperature",
-                    "numeric_value": 210,
-                    "text_value": "210 degrees Celsius",
-                    "unit": "degC",
-                    "measurement_state": "known",
-                }
-            ],
-        }
-    )
+    transcript = "The curing temperature was 210 degrees Celsius."
+    pass_b_response = {
+        "response": json.dumps({"claims": ["process_parameter|curing temperature|0"]})
+    }
+
+    def grounded_response(request: Any, timeout: float) -> FakeHTTPResponse:
+        del timeout
+        body = json.loads(request.data)
+        payload = {"response": json.dumps({"claims": []})}
+        if "PASS B" in body["system"]:
+            payload = pass_b_response
+        return FakeHTTPResponse(payload)
+
     monkeypatch.setattr(
         lab_project_extraction,
         "_open_local_request",
-        lambda request, timeout: FakeHTTPResponse({"response": raw_candidate}),
+        grounded_response,
     )
-    provider = OllamaStructuredExtractionProvider("http://localhost:11434", "local-model")
+    provider = OllamaStructuredExtractionProvider("http://localhost:11434", "qwen3:4b")
 
-    candidate = provider.extract(_request())
+    result = provider.extract_grounded(_request().model_copy(update={"transcript": transcript}))
 
-    assert candidate.process_parameters[0].measurement_state.value == "conflicting"
-    assert candidate.process_parameters[0].numeric_value == 210
-    assert candidate.process_parameters[0].text_value == "210 degrees Celsius"
-    assert candidate.extraction_warnings[0].startswith(
-        "process_parameter_normalized_conflicting_values:"
-    )
+    assert result.verified_claim_count == 1
+    assert result.unsupported_claim_count == 0
+    assert result.candidate.process_parameters[0].numeric_value == 210
+    assert result.candidate.process_parameters[0].unit == "degrees Celsius"
+    assert result.candidate.process_parameters[0].approach_id == "C-A-000"
+    assert result.candidate.human_confirmed is False
 
 
-def test_qwen3_4b_orphan_process_references_return_reviewable_candidate(
+def test_provider_derives_target_and_relationship_subject_from_source(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    raw_candidate = json.dumps(
-        {
-            "project": {"request_summary": "Synthetic flame-protection request."},
-            "approaches": [
-                {"approach_id": f"C-A-{index:03d}", "outcome": "inconclusive"}
-                for index in range(1, 4)
-            ],
-            "process_parameters": [
-                {
-                    "approach_id": "C-A-004",
-                    "process_stage": "curing",
-                    "parameter_name": "curing temperature",
-                    "measurement_state": "unknown",
-                }
-            ],
-        }
+    transcript = (
+        "We need a one-sided coating for glass fabric for high-temperature flame protection. "
+        "The first approach failed after the Bunsen test."
     )
+
+    def grounded_response(request: Any, timeout: float) -> FakeHTTPResponse:
+        del timeout
+        body = json.loads(request.data)
+        claims = ["target_application|project|0"]
+        if "PASS B" in body["system"]:
+            claims = ["approach_outcome|failed|1"]
+        return FakeHTTPResponse({"response": json.dumps({"claims": claims})})
+
+    monkeypatch.setattr(lab_project_extraction, "_open_local_request", grounded_response)
+
+    result = OllamaStructuredExtractionProvider(
+        "http://localhost:11434", "qwen3:4b"
+    ).extract_grounded(_request().model_copy(update={"transcript": transcript}))
+
+    assert result.unsupported_claim_count == 0
+    assert result.candidate.project.target_application == "high-temperature flame protection"
+    assert result.candidate.approaches[0].title == "first approach"
+    assert result.candidate.approaches[0].outcome.value == "failed"
+
+
+def test_provider_preserves_source_negative_feasibility_without_assessed_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    transcript = "Production feasibility has not yet been evaluated."
+    pass_b_response = {"response": json.dumps({"claims": ["production_feasibility|project|0"]})}
+
+    def unsupported_response(request: Any, timeout: float) -> FakeHTTPResponse:
+        del timeout
+        body = json.loads(request.data)
+        payload = {"response": json.dumps({"claims": []})}
+        if "PASS B" in body["system"]:
+            payload = pass_b_response
+        return FakeHTTPResponse(payload)
+
     monkeypatch.setattr(
         lab_project_extraction,
         "_open_local_request",
-        lambda request, timeout: FakeHTTPResponse({"response": raw_candidate}),
+        unsupported_response,
     )
 
-    candidate = OllamaStructuredExtractionProvider("http://localhost:11434", "qwen3:4b").extract(
-        _request()
-    )
-    readiness = evaluate_candidate_readiness(candidate)
+    result = OllamaStructuredExtractionProvider(
+        "http://localhost:11434", "qwen3:4b"
+    ).extract_grounded(_request().model_copy(update={"transcript": transcript}))
 
-    assert candidate.process_parameters[0].approach_id == "C-A-004"
-    assert readiness.confirmation_ready is False
-    assert readiness.issues[0].code == "process_parameter_unknown_approach"
-
-
-def test_qwen3_1_7b_amount_without_unit_returns_reviewable_candidate(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    raw_candidate = json.dumps(
-        {
-            "project": {"request_summary": "Synthetic flame-protection request."},
-            "materials": [
-                {"material_id": f"raw-{index}", "amount": amount}
-                for index, amount in enumerate((5, 10, 15), start=1)
-            ],
-        }
-    )
-    monkeypatch.setattr(
-        lab_project_extraction,
-        "_open_local_request",
-        lambda request, timeout: FakeHTTPResponse({"response": raw_candidate}),
-    )
-
-    candidate = OllamaStructuredExtractionProvider("http://localhost:11434", "qwen3:1.7b").extract(
-        _request()
-    )
-    readiness = evaluate_candidate_readiness(candidate)
-
-    assert [material.amount for material in candidate.materials] == [5, 10, 15]
-    assert [material.unit for material in candidate.materials] == [None, None, None]
-    assert readiness.confirmation_ready is False
-    assert [issue.code for issue in readiness.issues] == [
-        "material_amount_missing_unit",
-        "material_amount_missing_unit",
-        "material_amount_missing_unit",
-    ]
+    assert result.verified_claim_count == 1
+    assert result.unsupported_claim_count == 0
+    assert result.candidate.approaches == ()
+    assert result.candidate.human_confirmed is False
+    assert result.candidate.extraction_warnings[0].startswith("unresolved_approach_relationship:")
 
 
 def test_candidate_correlation_ids_are_positional_and_source_ids_are_not_inferred() -> None:
@@ -495,7 +499,7 @@ def test_candidate_correlation_ids_are_positional_and_source_ids_are_not_inferre
     assert normalized["samples"][0]["approach_id"] == "C-A-001"
 
 
-def test_prompt_separates_immutable_transcript_from_review_supplement() -> None:
+def test_prompt_uses_immutable_transcript_and_excludes_review_supplement_as_evidence() -> None:
     provider = OllamaStructuredExtractionProvider("http://localhost:11434", "local-model")
     request = _request().model_copy(
         update={
@@ -504,55 +508,54 @@ def test_prompt_separates_immutable_transcript_from_review_supplement() -> None:
         }
     )
 
-    prompt = provider._build_prompt(request)
+    prompt = provider._build_prompt(request, pass_name="Pass A")
 
     assert "source_transcript" in prompt
-    assert "human_review_supplement" in prompt
-    assert "Synthetic reviewer answer." in prompt
-    assert "immutable source text" in prompt
+    assert "source_segments" in prompt
+    assert '"0":"Synthetic project request with incomplete test details."' in prompt
+    assert "Synthetic reviewer answer." not in prompt
+    assert '"pass":"Pass A"' in prompt
+    assert "immutable evidence source" in prompt
 
 
 @pytest.mark.parametrize(
-    ("raw_candidate", "message"),
+    "raw_claims",
     [
-        ("not-json", "invalid Candidate JSON"),
-        (json.dumps({"project": {"invented": "value"}}), "schema-invalid"),
-        (json.dumps({"project": {}, "human_confirmed": True}), "human confirmation"),
-        (
-            json.dumps({"project": {}, "human_confirmed_by": "synthetic-reviewer"}),
-            "human confirmation",
-        ),
-        (
-            json.dumps({"project": {}, "human_confirmed_at": "2026-08-10T10:00:00Z"}),
-            "human confirmation",
-        ),
+        "not-json",
+        json.dumps({"project": {"invented": "value"}}),
+        json.dumps({"claims": [], "human_confirmed": True}),
     ],
 )
-def test_invalid_or_unsafe_ollama_candidate_is_rejected(
+def test_invalid_or_candidate_shaped_ollama_claim_output_is_rejected(
     monkeypatch: pytest.MonkeyPatch,
-    raw_candidate: str,
-    message: str,
+    raw_claims: str,
 ) -> None:
     monkeypatch.setattr(
         lab_project_extraction,
         "_open_local_request",
-        lambda request, timeout: FakeHTTPResponse({"response": raw_candidate}),
+        lambda request, timeout: FakeHTTPResponse({"response": raw_claims}),
     )
     provider = OllamaStructuredExtractionProvider("http://localhost:11434", "local-model")
 
-    with pytest.raises(StructuredExtractionOutputError, match=message):
+    with pytest.raises(StructuredExtractionOutputError, match="schema-invalid Pass A"):
         provider.extract(_request())
 
 
-def test_full_candidate_validation_rejects_overlength_ollama_output(
+def test_canonical_claim_validation_rejects_overlength_ollama_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    assert _schema_values_for_key(build_ollama_grammar_schema(), "maxLength") == []
-    raw_candidate = json.dumps({"project": {"request_summary": "x" * 4097}})
+    assert (
+        _schema_values_for_key(
+            build_ollama_grammar_schema(ProjectMaterialClaimProposalBatch),
+            "maxLength",
+        )
+        == []
+    )
+    raw_claims = json.dumps({"claims": [f"project_request|{'x' * 513}|0"]})
     monkeypatch.setattr(
         lab_project_extraction,
         "_open_local_request",
-        lambda request, timeout: FakeHTTPResponse({"response": raw_candidate}),
+        lambda request, timeout: FakeHTTPResponse({"response": raw_claims}),
     )
     provider = OllamaStructuredExtractionProvider("http://localhost:11434", "local-model")
 

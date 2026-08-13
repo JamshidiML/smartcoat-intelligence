@@ -29,6 +29,10 @@ from smartcoat.services.lab_project_extraction import (
     StructuredExtractionProviderUnavailableError,
     StructuredExtractionTimeoutError,
 )
+from smartcoat.services.lab_project_grounding import (
+    GroundedClaimVerification,
+    GroundedExtractionResult,
+)
 from smartcoat.services.voice_transcription import (
     MlxWhisperTranscriptionProvider,
     TranscriptionError,
@@ -107,6 +111,10 @@ class CandidateExtractionResponse(BaseModel):
     extraction_warnings: tuple[str, ...]
     confirmation_ready: bool
     readiness_issues: tuple[CandidateReadinessIssue, ...]
+    verified_claim_count: int = Field(ge=0)
+    unsupported_claim_count: int = Field(ge=0)
+    ambiguous_claim_count: int = Field(ge=0)
+    unsupported_claims: tuple[GroundedClaimVerification, ...]
     transcription: TranscriptionResult | None = None
 
 
@@ -212,10 +220,11 @@ def build_preflight_response(settings: Settings | None = None) -> LocalAIPreflig
 
 
 def _candidate_response(
-    candidate: LabProjectCaptureCandidate,
+    extraction: GroundedExtractionResult,
     *,
     transcription: TranscriptionResult | None = None,
 ) -> CandidateExtractionResponse:
+    candidate = extraction.candidate
     if candidate.human_confirmed:
         raise HTTPException(status_code=502, detail="AI Candidate must remain unconfirmed")
     evaluated = apply_candidate_completeness(candidate)
@@ -228,6 +237,10 @@ def _candidate_response(
         extraction_warnings=evaluated.extraction_warnings,
         confirmation_ready=readiness.confirmation_ready,
         readiness_issues=readiness.issues,
+        verified_claim_count=extraction.verified_claim_count,
+        unsupported_claim_count=extraction.unsupported_claim_count,
+        ambiguous_claim_count=extraction.ambiguous_claim_count,
+        unsupported_claims=extraction.unsupported_claims,
         transcription=transcription,
     )
 
@@ -235,9 +248,9 @@ def _candidate_response(
 def _extract_candidate(
     provider: StructuredExtractionProvider,
     extraction_request: ExtractionRequest,
-) -> LabProjectCaptureCandidate:
+) -> GroundedExtractionResult:
     try:
-        return provider.extract(extraction_request)
+        return provider.extract_grounded(extraction_request)
     except StructuredExtractionTimeoutError as error:
         raise HTTPException(
             status_code=504, detail="Local extraction provider timed out"
@@ -305,7 +318,7 @@ def extract_text(
 ) -> CandidateExtractionResponse:
     if organization_id.strip() != PILOT_ORGANIZATION_ID:
         raise HTTPException(status_code=403, detail="Pilot organization is not authorized")
-    candidate = _extract_candidate(
+    extraction = _extract_candidate(
         provider,
         ExtractionRequest(
             transcript=payload.source_text,
@@ -316,7 +329,7 @@ def extract_text(
             supplemental_context=payload.supplemental_context,
         ),
     )
-    return _candidate_response(candidate)
+    return _candidate_response(extraction)
 
 
 @router.post("/evaluate-candidate", response_model=CandidateEvaluationResponse)
@@ -383,7 +396,7 @@ async def process_audio(
     except TranscriptionError as error:
         raise HTTPException(status_code=502, detail="Local transcription failed") from error
 
-    candidate = await run_in_threadpool(
+    extraction = await run_in_threadpool(
         _extract_candidate,
         extraction_provider,
         ExtractionRequest(
@@ -392,7 +405,7 @@ async def process_audio(
             source_language=transcription.detected_language,
         ),
     )
-    return _candidate_response(candidate, transcription=transcription)
+    return _candidate_response(extraction, transcription=transcription)
 
 
 __all__ = [

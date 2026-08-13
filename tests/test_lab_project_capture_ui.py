@@ -74,6 +74,8 @@ def test_page_contains_workspace_voice_review_and_save_controls() -> None:
         "candidate-readiness-issues",
         "candidate-readiness-message",
         "evaluate-candidate",
+        "grounded-claim-summary",
+        "unsupported-claims",
         "critical-missing-fields",
         "recommended-questions",
         "evidence-files",
@@ -219,6 +221,19 @@ def test_page_renders_and_rechecks_candidate_readiness_safely() -> None:
     assert "Candidate changed. Re-check readiness before confirmation." in PAGE_TEXT
     assert "if (!readinessEvaluated)" in PAGE_TEXT
     assert "void evaluateCandidate()" in PAGE_TEXT
+
+
+def test_page_keeps_unsupported_ai_claims_separate_from_candidate_facts() -> None:
+    assert "AI claims requiring review" in PAGE_TEXT
+    assert "function renderGroundedClaimReview()" in PAGE_TEXT
+    assert "groundedClaimReview.unsupportedCount" in PAGE_TEXT
+    assert "groundedClaimReview.ambiguousCount" in PAGE_TEXT
+    assert 'item.className = "claim-review-item"' in PAGE_TEXT
+    assert 'title.textContent = "Unsupported AI suggestion: "' in PAGE_TEXT
+    assert 'reason.textContent = "Reason: "' in PAGE_TEXT
+    assert "No matching source evidence was found." in PAGE_TEXT
+    assert "The claim type does not match the selected evidence." in PAGE_TEXT
+    assert "groundedClaimReview = retainedGroundedClaimReview" in PAGE_TEXT
 
 
 def test_page_has_evidence_upload_and_integrity_hooks() -> None:

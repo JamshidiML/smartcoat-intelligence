@@ -546,6 +546,24 @@
       color: var(--muted);
     }
 
+    .claim-review-item {
+      display: grid;
+      gap: 4px;
+      padding: 9px 10px;
+      border-left: 3px solid var(--amber);
+      background: var(--amber-bg);
+      overflow-wrap: anywhere;
+    }
+
+    .claim-review-item strong,
+    .claim-review-item span {
+      font-size: 0.82rem;
+    }
+
+    .claim-review-item span {
+      color: var(--muted);
+    }
+
     .question-list {
       display: grid;
       gap: 10px;
@@ -1140,6 +1158,13 @@
               <p id='candidate-readiness-message' class='message' aria-live='polite'></p>
             </div>
             <div class='quality-block'>
+              <h3>AI claims requiring review</h3>
+              <p id='grounded-claim-summary' class='message'>No AI claim review items.</p>
+              <ul id='unsupported-claims' class='readiness-issue-list'>
+                <li class='empty-note'>No unsupported AI claims.</li>
+              </ul>
+            </div>
+            <div class='quality-block'>
               <h3>Critical missing fields</h3>
               <ul id='missing-fields' class='compact-list'>
                 <li>Extract a candidate to calculate completeness.</li>
@@ -1443,6 +1468,12 @@
     let confirmationReady = false;
     let readinessEvaluated = false;
     let readinessIssues = [];
+    let groundedClaimReview = {
+      verifiedCount: 0,
+      unsupportedCount: 0,
+      ambiguousCount: 0,
+      claims: []
+    };
 
     function getElement(id) {
       return document.getElementById(id);
@@ -1722,6 +1753,14 @@
       readinessIssues = payload && Array.isArray(payload.readiness_issues)
         ? payload.readiness_issues
         : [];
+      groundedClaimReview = {
+        verifiedCount: Number(payload && payload.verified_claim_count) || 0,
+        unsupportedCount: Number(payload && payload.unsupported_claim_count) || 0,
+        ambiguousCount: Number(payload && payload.ambiguous_claim_count) || 0,
+        claims: payload && Array.isArray(payload.unsupported_claims)
+          ? payload.unsupported_claims
+          : []
+      };
       return value;
     }
 
@@ -2361,6 +2400,7 @@
       const button = getElement("evaluate-candidate");
       button.disabled = true;
       setMessage("candidate-readiness-message", "Checking Candidate readiness.", "busy");
+      const retainedGroundedClaimReview = groundedClaimReview;
       try {
         const response = await fetch(endpoints.evaluateCandidate, {
           method: "POST",
@@ -2373,6 +2413,7 @@
         });
         const payload = await responsePayload(response, "Candidate readiness check");
         candidate = normalizeCandidate(payload);
+        groundedClaimReview = retainedGroundedClaimReview;
         renderCandidate();
         setMessage(
           "candidate-readiness-message",
@@ -2394,6 +2435,54 @@
         button.disabled = !candidate;
         updateSaveGate();
       }
+    }
+
+    function renderGroundedClaimReview() {
+      const summary = getElement("grounded-claim-summary");
+      const list = getElement("unsupported-claims");
+      list.replaceChildren();
+      summary.textContent = groundedClaimReview.verifiedCount + " verified, " +
+        groundedClaimReview.unsupportedCount + " unsupported, " +
+        groundedClaimReview.ambiguousCount + " ambiguous.";
+      if (!groundedClaimReview.claims.length) {
+        const empty = document.createElement("li");
+        empty.className = "empty-note";
+        empty.textContent = "No unsupported AI claims.";
+        list.append(empty);
+        return;
+      }
+      groundedClaimReview.claims.forEach(function (verification) {
+        const claim = verification && verification.claim ? verification.claim : {};
+        const item = document.createElement("li");
+        item.className = "claim-review-item";
+        const title = document.createElement("strong");
+        title.textContent = "Unsupported AI suggestion: " +
+          String(claim.text_value || claim.numeric_value || claim.claim_type || "Unknown claim");
+        const reason = document.createElement("span");
+        const reasonMessages = {
+          invalid_source_range: "The proposed source range is invalid.",
+          source_quote_mismatch: "No matching source evidence was found.",
+          unsupported_claim_type: "The claim type does not match the selected evidence.",
+          unsupported_subject_label: "The subject is not supported by the selected evidence.",
+          unsupported_text_value: "The proposed value is absent from the selected evidence.",
+          unsupported_numeric_value: "The number is absent from the selected evidence.",
+          unsupported_unit: "The unit is absent from the selected evidence.",
+          unsupported_state: "The proposed state conflicts with the selected evidence.",
+          unsupported_timestamp: "The date or timestamp is absent from the selected evidence.",
+          unsupported_customer_feedback: "Customer feedback is not supported by the evidence.",
+          unsupported_production_feasibility:
+            "Production feasibility is not supported by the evidence.",
+          conflicting_claim: "The source-grounded claim is explicitly conflicting.",
+          conflicting_supported_claims: "Supported source claims conflict with each other."
+        };
+        reason.textContent = "Reason: " + String(
+          reasonMessages[verification.reason_code] || "No matching source evidence was found."
+        );
+        const quote = document.createElement("span");
+        quote.textContent = "Proposed evidence: " + String(claim.source_quote || "None");
+        item.append(title, reason, quote);
+        list.append(item);
+      });
     }
 
     function renderCandidate() {
@@ -2418,6 +2507,7 @@
       );
       renderQuestions(candidate.recommended_questions);
       renderCandidateReadiness();
+      renderGroundedClaimReview();
       renderEvidence();
       updateAttentionStates();
       updateSaveGate();

@@ -9,10 +9,22 @@ Organization: `smartcoat-startup`
 This three-day pilot demonstrates one bounded, human-reviewed path:
 
 ```text
-voice, text, or Excel plus evidence
--> local transcription/import
--> local structured extraction Candidate
--> deterministic completeness questions
+voice or text plus evidence
+-> local voice transcription or immutable text capture
+-> two bounded local grounded-claim passes
+-> deterministic quote/offset verification and Candidate assembly
+-> Candidate completeness and readiness
+-> human correction and confirmation
+-> governed Knowledge Object v2 draft
+-> evidence/provenance-backed list and detail review
+```
+
+Excel remains a separate deterministic path:
+
+```text
+Excel plus evidence
+-> cell-provenance dry-run import
+-> Candidate completeness and readiness
 -> human correction and confirmation
 -> governed Knowledge Object v2 draft
 -> evidence/provenance-backed list and detail review
@@ -30,6 +42,26 @@ evidence during review; they are not source-system identifiers or asserted domai
 facts. Optional `source_material_id`, `source_approach_id`, and `source_sample_id`
 values are populated only when the source actually provides them. Generated
 correlation IDs must never be presented as source evidence.
+
+## Evidence-Grounded Local Extraction
+
+The local LLM does not construct `LabProjectCaptureCandidate` directly. Pass A is
+limited to project, substrate, and material context. Pass B is limited to
+experimental history, process/test facts, samples, shipment, feedback, and
+assessment states. Both passes see the same line-ending-normalized immutable
+transcript and neither pass receives the other's output.
+
+Each model suggestion identifies a claim type, a stable source subject when one
+exists, and a bounded transcript segment. Deterministic Python code expands that
+proposal into the full `GroundedClaim`, including an exact quote and offsets. The
+verifier accepts only claims whose range, quote, type, subject, value, number, unit,
+and state agree with the source. Unsupported or ambiguous suggestions remain in the
+API/UI review list and cannot populate Candidate facts. Candidate correlation IDs
+and relationships are assigned only during deterministic assembly.
+
+Line-ending normalization is deliberately limited to CRLF and bare CR becoming LF.
+No whitespace, punctuation, spelling, or semantic normalization changes source
+evidence before quote/offset verification.
 
 ## Local Prerequisites
 

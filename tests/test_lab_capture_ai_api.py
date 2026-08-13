@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -23,11 +24,21 @@ from smartcoat.domain.lab_project_capture import (
     MaterialRecord,
     ProjectIdentity,
 )
+from smartcoat.services import lab_project_extraction
 from smartcoat.services.lab_project_extraction import (
     DeterministicFakeExtractionProvider,
+    OllamaStructuredExtractionProvider,
     StructuredExtractionOutputError,
     StructuredExtractionProviderUnavailableError,
     StructuredExtractionTimeoutError,
+)
+from smartcoat.services.lab_project_grounding import (
+    GroundedClaim,
+    GroundedClaimReasonCode,
+    GroundedClaimState,
+    GroundedClaimStatus,
+    GroundedClaimType,
+    GroundedClaimVerification,
 )
 from smartcoat.services.voice_transcription import (
     DeterministicFakeTranscriptionProvider,
@@ -124,9 +135,57 @@ def test_successful_text_extraction_returns_unconfirmed_candidate() -> None:
     assert body["follow_up_questions"]
     assert body["confirmation_ready"] is True
     assert body["readiness_issues"] == []
+    assert body["verified_claim_count"] == 0
+    assert body["unsupported_claim_count"] == 0
+    assert body["ambiguous_claim_count"] == 0
+    assert body["unsupported_claims"] == []
     assert body["transcription"] is None
     assert provider.calls[0].actor_metadata is not None
     assert provider.calls[0].actor_metadata.actor_id == "synthetic-engineer"
+
+
+def test_unsupported_ai_claim_is_visible_but_does_not_enter_candidate() -> None:
+    transcript = "The sample was sent to the customer. Customer feedback has not yet been received."
+    unsupported = GroundedClaimVerification(
+        claim=GroundedClaim(
+            claim_id="feedback-001",
+            claim_type=GroundedClaimType.CUSTOMER_FEEDBACK,
+            subject_label="sample",
+            field_name="received_at",
+            text_value="2026-08-01",
+            state=GroundedClaimState.KNOWN,
+            source_quote="Customer feedback received 2026-08-01.",
+            source_start=37,
+            source_end=79,
+            model_confidence=0.9,
+        ),
+        status=GroundedClaimStatus.UNSUPPORTED,
+        reason_code=GroundedClaimReasonCode.SOURCE_QUOTE_MISMATCH,
+    )
+    candidate = _candidate().model_copy(update={"transcript": transcript})
+    provider = DeterministicFakeExtractionProvider(
+        candidate,
+        claim_verifications=(unsupported,),
+    )
+
+    response = _client(provider).post(
+        "/api/v2/lab-capture/extract-text",
+        headers=_text_headers(),
+        json={
+            "transcript": transcript,
+            "actor_metadata": {
+                "actor_id": "synthetic-engineer",
+                "actor_role": "lab_engineer",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["unsupported_claim_count"] == 1
+    assert body["unsupported_claims"][0]["reason_code"] == "source_quote_mismatch"
+    assert body["candidate"]["customer_feedback"] == []
+    assert "2026-08-01" not in response.json()["candidate"]["transcript"]
 
 
 def test_text_extraction_requires_exactly_one_text_source() -> None:
@@ -333,6 +392,72 @@ def test_reviewable_ai_candidate_returns_200_with_blocking_issues() -> None:
     assert body["candidate"]["materials"][0]["unit"] is None
     assert body["confirmation_ready"] is False
     assert body["readiness_issues"][0]["code"] == "material_amount_missing_unit"
+
+
+def test_omitted_source_fact_keeps_endpoint_200_without_deterministic_fabrication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    transcript = (
+        "We used magnesium hydroxide and calcium carbonate, cured at 210 degrees Celsius, "
+        "and sent sample S-02 to the customer."
+    )
+    pass_a_payload = {"response": json.dumps({"claims": ["material|magnesium hydroxide|0"]})}
+    pass_b_payload = {
+        "response": json.dumps(
+            {
+                "claims": [
+                    "process_parameter|unresolved|0",
+                    "shipment|S-02|0",
+                ]
+            }
+        )
+    }
+
+    class Response:
+        def __init__(self, payload: dict[str, str]) -> None:
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            del args
+
+        def read(self, maximum_bytes: int = -1) -> bytes:
+            del maximum_bytes
+            return json.dumps(self.payload).encode()
+
+    def grounded_response(request: object, timeout: float) -> Response:
+        del timeout
+        body = json.loads(request.data)  # type: ignore[attr-defined]
+        return Response(pass_b_payload if "PASS B" in body["system"] else pass_a_payload)
+
+    monkeypatch.setattr(
+        lab_project_extraction,
+        "_open_local_request",
+        grounded_response,
+    )
+    provider = OllamaStructuredExtractionProvider("http://localhost:11434", "qwen3:4b")
+
+    response = _client(provider).post(  # type: ignore[arg-type]
+        "/api/v2/lab-capture/extract-text",
+        headers=_text_headers(),
+        json={
+            "transcript": transcript,
+            "actor_metadata": {
+                "actor_id": "synthetic-engineer",
+                "actor_role": "lab_engineer",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    candidate = response.json()["candidate"]
+    assert [item["material_name"] for item in candidate["materials"]] == ["magnesium hydroxide"]
+    assert all(item["material_name"] != "calcium carbonate" for item in candidate["materials"])
+    assert candidate["process_parameters"][0]["numeric_value"] == 210
+    assert candidate["samples"][0]["source_sample_id"] == "S-02"
+    assert candidate["human_confirmed"] is False
 
 
 def test_evaluate_candidate_is_deterministic_and_never_calls_ai() -> None:
