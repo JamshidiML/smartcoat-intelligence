@@ -15,6 +15,7 @@ from smartcoat.domain.lab_project_capture import (
     EvidenceDescriptor,
     LabProjectCaptureCandidate,
     apply_candidate_completeness,
+    evaluate_candidate_readiness,
     to_knowledge_object_content,
 )
 from smartcoat.domain.lab_project_capture import (
@@ -455,6 +456,28 @@ def create_lab_project_capture(
     service: Annotated[Any, Depends(get_lab_project_capture_audit_service)],
 ) -> LabProjectCaptureCreateResponse:
     organization_id = _normalize_organization_id(organization_id)
+    if not candidate.human_confirmed:
+        raise HTTPException(
+            status_code=422,
+            detail="A human-confirmed candidate is required",
+        )
+    readiness = evaluate_candidate_readiness(candidate)
+    if not readiness.confirmation_ready:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "candidate_not_ready",
+                "message": "Candidate has blocking readiness issues",
+                "issues": [
+                    issue.model_dump(
+                        mode="json",
+                        include={"code", "path", "message", "question"},
+                    )
+                    for issue in readiness.issues
+                    if issue.severity.value == "blocking"
+                ],
+            },
+        )
     command = _build_create_command(candidate, organization_id)
     from smartcoat.services.knowledge_audit_service import KnowledgeAuditServiceError
     from smartcoat.storage.repositories.knowledge_v2_repository import (

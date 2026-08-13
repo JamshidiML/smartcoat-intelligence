@@ -287,6 +287,77 @@ def test_unconfirmed_candidate_and_missing_confirmation_metadata_are_rejected(
     assert service.commands == []
 
 
+def test_blocking_readiness_issue_rejects_before_audit_then_saves_after_edit(
+    api: FastAPI,
+) -> None:
+    service = FakeAuditService()
+    api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
+    payload = _payload()
+    payload["materials"] = [
+        {
+            "material_id": "C-M-001",
+            "material_name": "Synthetic magnesium hydroxide",
+            "amount": 5,
+        }
+    ]
+    client = TestClient(api)
+
+    blocked = client.post(
+        "/api/v2/lab-project-captures",
+        json=payload,
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert blocked.status_code == 422
+    assert blocked.json()["detail"] == {
+        "code": "candidate_not_ready",
+        "message": "Candidate has blocking readiness issues",
+        "issues": [
+            {
+                "code": "material_amount_missing_unit",
+                "path": "materials.0.unit",
+                "message": "Material Synthetic magnesium hydroxide has an amount but no unit.",
+                "question": "What unit belongs to the Synthetic magnesium hydroxide amount?",
+            }
+        ],
+    }
+    assert service.commands == []
+
+    payload["materials"][0]["unit"] = "g"
+    saved = client.post(
+        "/api/v2/lab-project-captures",
+        json=payload,
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert saved.status_code == 201, saved.text
+    assert len(service.commands) == 1
+
+
+def test_orphan_process_references_are_reviewable_but_not_canonical(api: FastAPI) -> None:
+    service = FakeAuditService()
+    api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
+    payload = _payload()
+    payload["process_parameters"] = [
+        {
+            "approach_id": "C-A-004",
+            "process_stage": "curing",
+            "parameter_name": "curing temperature",
+            "measurement_state": "unknown",
+        }
+    ]
+
+    response = TestClient(api).post(
+        "/api/v2/lab-project-captures",
+        json=payload,
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["issues"][0]["code"] == ("process_parameter_unknown_approach")
+    assert service.commands == []
+
+
 @pytest.mark.parametrize(
     ("missing_type", "detail_fragment"),
     [("audio", "audio evidence"), ("transcript", "transcript evidence")],

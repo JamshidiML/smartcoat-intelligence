@@ -12,8 +12,11 @@ from starlette.concurrency import run_in_threadpool
 
 from smartcoat.core.config import Settings, get_settings
 from smartcoat.domain.lab_project_capture import (
+    CandidateReadinessIssue,
     CaptureSourceKind,
     LabProjectCaptureCandidate,
+    apply_candidate_completeness,
+    evaluate_candidate_readiness,
 )
 from smartcoat.services.lab_project_extraction import (
     ActorMetadata,
@@ -102,7 +105,18 @@ class CandidateExtractionResponse(BaseModel):
     missing_fields: tuple[str, ...]
     follow_up_questions: tuple[str, ...]
     extraction_warnings: tuple[str, ...]
+    confirmation_ready: bool
+    readiness_issues: tuple[CandidateReadinessIssue, ...]
     transcription: TranscriptionResult | None = None
+
+
+class CandidateEvaluationResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    candidate: LabProjectCaptureCandidate
+    confirmation_ready: bool
+    readiness_issues: tuple[CandidateReadinessIssue, ...]
+    recommended_questions: tuple[str, ...]
 
 
 def get_transcription_provider() -> TranscriptionProvider:
@@ -204,12 +218,16 @@ def _candidate_response(
 ) -> CandidateExtractionResponse:
     if candidate.human_confirmed:
         raise HTTPException(status_code=502, detail="AI Candidate must remain unconfirmed")
+    evaluated = apply_candidate_completeness(candidate)
+    readiness = evaluate_candidate_readiness(evaluated)
     return CandidateExtractionResponse(
-        candidate=candidate,
-        completeness_score=candidate.completeness_score,
-        missing_fields=candidate.critical_missing_fields,
-        follow_up_questions=candidate.recommended_questions,
-        extraction_warnings=candidate.extraction_warnings,
+        candidate=evaluated,
+        completeness_score=evaluated.completeness_score,
+        missing_fields=evaluated.critical_missing_fields,
+        follow_up_questions=evaluated.recommended_questions,
+        extraction_warnings=evaluated.extraction_warnings,
+        confirmation_ready=readiness.confirmation_ready,
+        readiness_issues=readiness.issues,
         transcription=transcription,
     )
 
@@ -301,6 +319,26 @@ def extract_text(
     return _candidate_response(candidate)
 
 
+@router.post("/evaluate-candidate", response_model=CandidateEvaluationResponse)
+def evaluate_candidate(
+    candidate: LabProjectCaptureCandidate,
+    organization_id: Annotated[
+        str,
+        Header(alias="X-SmartCoat-Organization-ID", min_length=1, max_length=512),
+    ],
+) -> CandidateEvaluationResponse:
+    if organization_id.strip() != PILOT_ORGANIZATION_ID:
+        raise HTTPException(status_code=403, detail="Pilot organization is not authorized")
+    evaluated = apply_candidate_completeness(candidate)
+    readiness = evaluate_candidate_readiness(evaluated)
+    return CandidateEvaluationResponse(
+        candidate=evaluated,
+        confirmation_ready=readiness.confirmation_ready,
+        readiness_issues=readiness.issues,
+        recommended_questions=evaluated.recommended_questions,
+    )
+
+
 @router.post("/process-audio", response_model=CandidateExtractionResponse)
 async def process_audio(
     request: Request,
@@ -359,6 +397,7 @@ async def process_audio(
 
 __all__ = [
     "APPROVED_AUDIO_MEDIA_TYPES",
+    "CandidateEvaluationResponse",
     "CandidateExtractionResponse",
     "ExtractTextRequest",
     "LocalAIPreflightResponse",

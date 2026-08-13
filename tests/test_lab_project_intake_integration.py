@@ -208,6 +208,7 @@ def test_real_app_registers_pilot_and_existing_routes(integrated_client: Any) ->
         "/api/v2/lab-capture/preflight": ("get",),
         "/api/v2/lab-capture/process-audio": ("post",),
         "/api/v2/lab-capture/extract-text": ("post",),
+        "/api/v2/lab-capture/evaluate-candidate": ("post",),
         "/api/v2/lab-capture/assets": ("post",),
         "/api/v2/lab-capture/import-excel": ("post",),
         "/api/v2/lab-project-captures": ("get", "post"),

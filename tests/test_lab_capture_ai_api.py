@@ -20,6 +20,7 @@ from smartcoat.core.config import Settings
 from smartcoat.domain.lab_project_capture import (
     CaptureSourceKind,
     LabProjectCaptureCandidate,
+    MaterialRecord,
     ProjectIdentity,
 )
 from smartcoat.services.lab_project_extraction import (
@@ -121,6 +122,8 @@ def test_successful_text_extraction_returns_unconfirmed_candidate() -> None:
     assert body["completeness_score"] == body["candidate"]["completeness_score"]
     assert body["missing_fields"]
     assert body["follow_up_questions"]
+    assert body["confirmation_ready"] is True
+    assert body["readiness_issues"] == []
     assert body["transcription"] is None
     assert provider.calls[0].actor_metadata is not None
     assert provider.calls[0].actor_metadata.actor_id == "synthetic-engineer"
@@ -295,6 +298,79 @@ def test_text_extraction_rejects_wrong_pilot_organization() -> None:
     )
 
     assert response.status_code == 403
+    assert provider.calls == []
+
+
+def test_reviewable_ai_candidate_returns_200_with_blocking_issues() -> None:
+    reviewable = _candidate().model_copy(
+        update={
+            "materials": (
+                MaterialRecord(
+                    material_id="C-M-001",
+                    material_name="Synthetic magnesium hydroxide",
+                    amount=5,
+                ),
+            )
+        }
+    )
+    provider = DeterministicFakeExtractionProvider(reviewable)
+
+    response = _client(provider).post(
+        "/api/v2/lab-capture/extract-text",
+        headers=_text_headers(),
+        json={
+            "transcript": "Synthetic transcript with an amount but no unit.",
+            "actor_metadata": {
+                "actor_id": "synthetic-engineer",
+                "actor_role": "lab_engineer",
+            },
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["candidate"]["materials"][0]["amount"] == 5
+    assert body["candidate"]["materials"][0]["unit"] is None
+    assert body["confirmation_ready"] is False
+    assert body["readiness_issues"][0]["code"] == "material_amount_missing_unit"
+
+
+def test_evaluate_candidate_is_deterministic_and_never_calls_ai() -> None:
+    provider = DeterministicFakeExtractionProvider(_candidate())
+    payload = _candidate().model_dump(mode="json")
+    payload["materials"] = [
+        {
+            "material_id": "C-M-001",
+            "material_name": "Synthetic magnesium hydroxide",
+            "amount": 5,
+        }
+    ]
+    client = _client(provider)
+
+    first = client.post(
+        "/api/v2/lab-capture/evaluate-candidate",
+        headers=_text_headers(),
+        json=payload,
+    )
+    second = client.post(
+        "/api/v2/lab-capture/evaluate-candidate",
+        headers=_text_headers(),
+        json=payload,
+    )
+    wrong_organization = client.post(
+        "/api/v2/lab-capture/evaluate-candidate",
+        headers=_text_headers("other-organization"),
+        json=payload,
+    )
+
+    assert first.status_code == 200
+    assert second.json() == first.json()
+    assert first.json()["confirmation_ready"] is False
+    assert first.json()["readiness_issues"][0]["code"] == "material_amount_missing_unit"
+    assert (
+        first.json()["recommended_questions"] == first.json()["candidate"]["recommended_questions"]
+    )
+    assert wrong_organization.status_code == 403
     assert provider.calls == []
 
 

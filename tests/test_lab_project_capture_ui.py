@@ -70,6 +70,10 @@ def test_page_contains_workspace_voice_review_and_save_controls() -> None:
         "candidate-form",
         "candidate-sections",
         "completeness-score",
+        "candidate-readiness-status",
+        "candidate-readiness-issues",
+        "candidate-readiness-message",
+        "evaluate-candidate",
         "critical-missing-fields",
         "recommended-questions",
         "evidence-files",
@@ -157,6 +161,7 @@ def test_page_uses_media_recorder_capability_detection_and_review() -> None:
 
 def test_page_integrates_extract_reextract_save_and_recent_capture_endpoints() -> None:
     assert 'extractText: "/api/v2/lab-capture/extract-text"' in PAGE_TEXT
+    assert 'evaluateCandidate: "/api/v2/lab-capture/evaluate-candidate"' in PAGE_TEXT
     assert 'processAudio: "/api/v2/lab-capture/process-audio"' in PAGE_TEXT
     assert 'preflight: "/api/v2/lab-capture/preflight"' in PAGE_TEXT
     assert 'importExcel: "/api/v2/lab-capture/import-excel"' in PAGE_TEXT
@@ -191,13 +196,29 @@ def test_human_confirmation_gates_canonical_save() -> None:
     assert 'getElement("save-candidate").disabled = !(' in PAGE_TEXT
     assert 'if (!candidate || !getElement("human-confirmed").checked)' in PAGE_TEXT
     assert "Human confirmation and an actor ID are required." in PAGE_TEXT
-    assert (
-        "confirmed && hasCandidate && hasActor && voiceEvidenceReady && !candidateSaved"
-        in PAGE_TEXT
+    assert "confirmed && readinessReady && hasActor && voiceEvidenceReady && !candidateSaved" in (
+        PAGE_TEXT
     )
+    assert 'getElement("human-confirmed").disabled = !readinessReady' in PAGE_TEXT
+    assert "hasCandidate && readinessEvaluated && confirmationReady" in PAGE_TEXT
+    assert "Resolve blocking review issues before confirmation." in PAGE_TEXT
     assert 'candidate.source_kind !== "voice"' in PAGE_TEXT
     assert 'evidenceTypes.has("audio") && evidenceTypes.has("transcript")' in PAGE_TEXT
     assert "Voice captures require registered audio and transcript evidence." in PAGE_TEXT
+
+
+def test_page_renders_and_rechecks_candidate_readiness_safely() -> None:
+    assert "async function evaluateCandidate()" in PAGE_TEXT
+    assert "await fetch(endpoints.evaluateCandidate" in PAGE_TEXT
+    assert '"X-SmartCoat-Organization-ID": organizationId()' in PAGE_TEXT
+    assert "readinessIssues.forEach" in PAGE_TEXT
+    assert 'item.dataset.severity = String(issue.severity || "blocking")' in PAGE_TEXT
+    assert 'question.textContent = "Question: "' in PAGE_TEXT
+    assert 'path.textContent = "Path: "' in PAGE_TEXT
+    assert 'status.textContent = ready ? "Ready for confirmation" : "Needs review"' in PAGE_TEXT
+    assert "Candidate changed. Re-check readiness before confirmation." in PAGE_TEXT
+    assert "if (!readinessEvaluated)" in PAGE_TEXT
+    assert "void evaluateCandidate()" in PAGE_TEXT
 
 
 def test_page_has_evidence_upload_and_integrity_hooks() -> None:

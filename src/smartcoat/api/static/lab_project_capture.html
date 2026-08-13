@@ -500,6 +500,52 @@
       font-size: 0.84rem;
     }
 
+    .candidate-readiness {
+      display: grid;
+      gap: 10px;
+    }
+
+    .candidate-readiness-status {
+      margin: 0;
+      padding: 9px 10px;
+      border-left: 4px solid var(--danger);
+      background: var(--danger-bg);
+      color: var(--danger);
+      font-weight: 720;
+    }
+
+    .candidate-readiness-status[data-ready='true'] {
+      border-left-color: var(--success);
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .readiness-issue-list {
+      display: grid;
+      margin: 0;
+      padding: 0;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .readiness-issue {
+      display: grid;
+      gap: 4px;
+      padding: 9px 10px;
+      border-left: 3px solid var(--danger);
+      background: var(--danger-bg);
+      overflow-wrap: anywhere;
+    }
+
+    .readiness-issue strong,
+    .readiness-issue span {
+      font-size: 0.82rem;
+    }
+
+    .readiness-issue span {
+      color: var(--muted);
+    }
+
     .question-list {
       display: grid;
       gap: 10px;
@@ -1083,6 +1129,16 @@
               </div>
               <progress id='completeness-progress' max='100' value='0'>0%</progress>
             </div>
+            <div class='quality-block candidate-readiness'>
+              <h3>Human review issues</h3>
+              <p id='candidate-readiness-status' class='candidate-readiness-status'
+                 data-ready='false'>Needs review</p>
+              <ul id='candidate-readiness-issues' class='readiness-issue-list'>
+                <li class='empty-note'>Extract or enter a Candidate, then check readiness.</li>
+              </ul>
+              <button id='evaluate-candidate' type='button' disabled>Re-check readiness</button>
+              <p id='candidate-readiness-message' class='message' aria-live='polite'></p>
+            </div>
             <div class='quality-block'>
               <h3>Critical missing fields</h3>
               <ul id='missing-fields' class='compact-list'>
@@ -1144,6 +1200,7 @@
       preflight: "/api/v2/lab-capture/preflight",
       processAudio: "/api/v2/lab-capture/process-audio",
       extractText: "/api/v2/lab-capture/extract-text",
+      evaluateCandidate: "/api/v2/lab-capture/evaluate-candidate",
       assets: "/api/v2/lab-capture/assets",
       importExcel: "/api/v2/lab-capture/import-excel",
       captures: "/api/v2/lab-project-captures"
@@ -1383,6 +1440,9 @@
     let followUpAnswers = new Map();
     let localAIReady = false;
     let selectedExcelFile = null;
+    let confirmationReady = false;
+    let readinessEvaluated = false;
+    let readinessIssues = [];
 
     function getElement(id) {
       return document.getElementById(id);
@@ -1655,6 +1715,13 @@
       value.extraction_warnings = Array.isArray(value.extraction_warnings)
         ? value.extraction_warnings
         : [];
+      readinessEvaluated = Boolean(
+        payload && typeof payload.confirmation_ready === "boolean"
+      );
+      confirmationReady = readinessEvaluated && payload.confirmation_ready === true;
+      readinessIssues = payload && Array.isArray(payload.readiness_issues)
+        ? payload.readiness_issues
+        : [];
       return value;
     }
 
@@ -1691,6 +1758,9 @@
       setProgress(2);
       setMessage("extraction-message", "Candidate extracted. Review every section.", "success");
       getElement("review-section").scrollIntoView({behavior: "smooth", block: "start"});
+      if (!readinessEvaluated) {
+        void evaluateCandidate();
+      }
     }
 
     async function processAudio() {
@@ -2236,6 +2306,96 @@
       });
     }
 
+    function renderCandidateReadiness() {
+      const status = getElement("candidate-readiness-status");
+      const list = getElement("candidate-readiness-issues");
+      const button = getElement("evaluate-candidate");
+      list.replaceChildren();
+      button.disabled = !candidate;
+
+      const ready = Boolean(candidate && readinessEvaluated && confirmationReady);
+      status.dataset.ready = String(ready);
+      status.textContent = ready ? "Ready for confirmation" : "Needs review";
+
+      if (!candidate) {
+        const empty = document.createElement("li");
+        empty.className = "empty-note";
+        empty.textContent = "Extract or enter a Candidate, then check readiness.";
+        list.append(empty);
+        return;
+      }
+      if (!readinessEvaluated) {
+        const empty = document.createElement("li");
+        empty.className = "empty-note";
+        empty.textContent = "Candidate changed. Re-check readiness before confirmation.";
+        list.append(empty);
+        return;
+      }
+      if (!readinessIssues.length) {
+        const empty = document.createElement("li");
+        empty.className = "empty-note";
+        empty.textContent = "No blocking review issues.";
+        list.append(empty);
+        return;
+      }
+      readinessIssues.forEach(function (issue) {
+        const item = document.createElement("li");
+        item.className = "readiness-issue";
+        item.dataset.severity = String(issue.severity || "blocking");
+        const title = document.createElement("strong");
+        title.textContent = String(issue.severity || "blocking").toUpperCase() +
+          ": " + String(issue.message || issue.code);
+        const question = document.createElement("span");
+        question.textContent = "Question: " + String(issue.question || "Review this value.");
+        const path = document.createElement("span");
+        path.textContent = "Path: " + String(issue.path || "Candidate");
+        item.append(title, question, path);
+        list.append(item);
+      });
+    }
+
+    async function evaluateCandidate() {
+      if (!candidate) {
+        return;
+      }
+      const button = getElement("evaluate-candidate");
+      button.disabled = true;
+      setMessage("candidate-readiness-message", "Checking Candidate readiness.", "busy");
+      try {
+        const response = await fetch(endpoints.evaluateCandidate, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-SmartCoat-Organization-ID": organizationId()
+          },
+          body: JSON.stringify(candidate)
+        });
+        const payload = await responsePayload(response, "Candidate readiness check");
+        candidate = normalizeCandidate(payload);
+        renderCandidate();
+        setMessage(
+          "candidate-readiness-message",
+          confirmationReady
+            ? "Candidate is ready for human confirmation."
+            : "Resolve the blocking issues, then re-check readiness.",
+          confirmationReady ? "success" : "error"
+        );
+      } catch (error) {
+        readinessEvaluated = false;
+        confirmationReady = false;
+        renderCandidateReadiness();
+        setMessage(
+          "candidate-readiness-message",
+          safeError(error, "Candidate readiness check failed."),
+          "error"
+        );
+      } finally {
+        button.disabled = !candidate;
+        updateSaveGate();
+      }
+    }
+
     function renderCandidate() {
       const container = getElement("candidate-sections");
       container.replaceChildren();
@@ -2257,6 +2417,7 @@
         "No extraction warnings."
       );
       renderQuestions(candidate.recommended_questions);
+      renderCandidateReadiness();
       renderEvidence();
       updateAttentionStates();
       updateSaveGate();
@@ -2569,8 +2730,13 @@
     }
 
     function updateSaveGate() {
-      const confirmed = getElement("human-confirmed").checked;
       const hasCandidate = Boolean(candidate);
+      const readinessReady = hasCandidate && readinessEvaluated && confirmationReady;
+      getElement("human-confirmed").disabled = !readinessReady;
+      if (!readinessReady) {
+        getElement("human-confirmed").checked = false;
+      }
+      const confirmed = getElement("human-confirmed").checked;
       const hasActor = Boolean(getElement("actor-id").value.trim());
       const evidenceTypes = hasCandidate
         ? new Set(candidate.evidence.map(function (item) { return item.evidence_type; }))
@@ -2579,7 +2745,7 @@
         evidenceTypes.has("audio") && evidenceTypes.has("transcript")
       );
       getElement("save-candidate").disabled = !(
-        confirmed && hasCandidate && hasActor && voiceEvidenceReady && !candidateSaved
+        confirmed && readinessReady && hasActor && voiceEvidenceReady && !candidateSaved
       );
       if (candidateSaved) {
         setMessage("save-message", "Draft saved. Edit the candidate before creating another draft.", "success");
@@ -2587,6 +2753,10 @@
         setMessage("save-message", "Extract or enter a candidate before saving.", "error");
       } else if (!voiceEvidenceReady) {
         setMessage("save-message", "Voice captures require registered audio and transcript evidence.", "error");
+      } else if (!readinessEvaluated) {
+        setMessage("save-message", "Re-check Candidate readiness before confirmation.", "error");
+      } else if (!confirmationReady) {
+        setMessage("save-message", "Resolve blocking review issues before confirmation.", "error");
       } else if (!confirmed) {
         setMessage("save-message", "Human confirmation and an actor ID are required.", "");
       } else if (!hasActor) {
@@ -2597,14 +2767,19 @@
       }
     }
 
-    function invalidateConfirmation() {
+    function invalidateConfirmation(invalidateReadiness) {
       candidateSaved = false;
       getElement("human-confirmed").checked = false;
+      if (invalidateReadiness !== false) {
+        readinessEvaluated = false;
+        confirmationReady = false;
+      }
       if (candidate) {
         candidate.human_confirmed = false;
         candidate.human_confirmed_by = null;
         candidate.human_confirmed_at = null;
       }
+      renderCandidateReadiness();
       updateSaveGate();
     }
 
@@ -2735,9 +2910,14 @@
     });
     getElement("evidence-files").addEventListener("change", handleEvidenceFiles);
     getElement("analyze-excel").addEventListener("click", analyzeExcel);
+    getElement("evaluate-candidate").addEventListener("click", evaluateCandidate);
     getElement("human-confirmed").addEventListener("change", updateSaveGate);
-    getElement("organization-id").addEventListener("input", invalidateConfirmation);
-    getElement("actor-id").addEventListener("input", invalidateConfirmation);
+    getElement("organization-id").addEventListener("input", function () {
+      invalidateConfirmation(false);
+    });
+    getElement("actor-id").addEventListener("input", function () {
+      invalidateConfirmation(false);
+    });
     getElement("save-candidate").addEventListener("click", saveCandidate);
     getElement("refresh-captures").addEventListener("click", loadRecentCaptures);
     getElement("expand-sections").addEventListener("click", function () {
