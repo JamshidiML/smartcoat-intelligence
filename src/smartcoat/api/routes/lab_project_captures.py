@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Annotated, Any
+from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
@@ -27,6 +29,8 @@ LAB_PROJECT_CAPTURE_TAG = "lab-project-capture-v1"
 LAB_PROJECT_CAPTURE_ROLE = "project"
 LAB_PROJECT_CAPTURE_ACTOR_ROLE = "lab_project_reviewer"
 CREATE_REASON = "Human-confirmed voice/import project capture"
+LOCAL_EVIDENCE_SCHEME = "smartcoat-asset"
+LOCAL_EVIDENCE_DIGEST_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 class LabProjectCaptureView(BaseModel):
@@ -95,6 +99,79 @@ def _normalize_organization_id(organization_id: str) -> str:
 
 def _capture_source_reference(candidate: LabProjectCaptureCandidate) -> str:
     return f"lab-project-capture://{candidate.capture_session_id}"
+
+
+def _validate_local_evidence_ownership(
+    evidence: Sequence[EvidenceDescriptor],
+    organization_id: str,
+) -> None:
+    from smartcoat.services.local_evidence_registry import (
+        EvidenceRegistryError,
+        normalize_organization_id,
+    )
+
+    normalized_request_organization: str | None = None
+    for descriptor in evidence:
+        source_reference = descriptor.source_reference
+        scheme, separator, _remainder = source_reference.partition(":")
+        if not separator or scheme.casefold() != LOCAL_EVIDENCE_SCHEME:
+            continue
+
+        try:
+            parsed = urlsplit(source_reference)
+            path_parts = parsed.path.split("/")
+            reference_organization = normalize_organization_id(parsed.netloc)
+        except (EvidenceRegistryError, ValueError):
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_local_evidence_reference",
+                    "message": "Local SmartCoat evidence reference is invalid",
+                },
+            ) from None
+
+        if (
+            len(path_parts) != 2
+            or path_parts[0]
+            or not LOCAL_EVIDENCE_DIGEST_PATTERN.fullmatch(path_parts[1])
+            or source_reference
+            != f"{LOCAL_EVIDENCE_SCHEME}://{reference_organization}/{path_parts[1]}"
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_local_evidence_reference",
+                    "message": "Local SmartCoat evidence reference is invalid",
+                },
+            )
+
+        if normalized_request_organization is None:
+            try:
+                normalized_request_organization = normalize_organization_id(organization_id)
+            except EvidenceRegistryError:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "code": "invalid_local_evidence_reference",
+                        "message": "Local SmartCoat evidence reference is invalid",
+                    },
+                ) from None
+        if reference_organization != normalized_request_organization:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "evidence_organization_mismatch",
+                    "message": "Local SmartCoat evidence belongs to another organization",
+                },
+            )
+        if path_parts[1] != descriptor.sha256:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_local_evidence_reference",
+                    "message": "Local SmartCoat evidence reference is invalid",
+                },
+            )
 
 
 def _observed_at(candidate: LabProjectCaptureCandidate) -> datetime:
@@ -241,6 +318,7 @@ def _build_create_command(
             status_code=422,
             detail="A human-confirmed candidate is required",
         )
+    _validate_local_evidence_ownership(candidate.evidence, organization_id)
     if candidate.source_kind is CaptureSourceKind.VOICE:
         evidence_types = {descriptor.evidence_type for descriptor in candidate.evidence}
         missing = [

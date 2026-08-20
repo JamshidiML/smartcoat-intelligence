@@ -65,7 +65,6 @@ def test_page_contains_workspace_voice_review_and_save_controls() -> None:
         "process-audio",
         "transcript",
         "extract-text",
-        "reextract-text",
         "review-section",
         "candidate-form",
         "candidate-sections",
@@ -161,7 +160,7 @@ def test_page_uses_media_recorder_capability_detection_and_review() -> None:
     assert "This browser does not support microphone recording." in PAGE_TEXT
 
 
-def test_page_integrates_extract_reextract_save_and_recent_capture_endpoints() -> None:
+def test_page_integrates_extract_review_save_and_recent_capture_endpoints() -> None:
     assert 'extractText: "/api/v2/lab-capture/extract-text"' in PAGE_TEXT
     assert 'evaluateCandidate: "/api/v2/lab-capture/evaluate-candidate"' in PAGE_TEXT
     assert 'processAudio: "/api/v2/lab-capture/process-audio"' in PAGE_TEXT
@@ -169,9 +168,10 @@ def test_page_integrates_extract_reextract_save_and_recent_capture_endpoints() -
     assert 'importExcel: "/api/v2/lab-capture/import-excel"' in PAGE_TEXT
     assert 'captures: "/api/v2/lab-project-captures"' in PAGE_TEXT
     assert "transcript: transcript" in PAGE_TEXT
-    assert "supplemental_context: useAnswers ? supplementalContext() : null" in PAGE_TEXT
-    assert 'const answerLines = ["Follow-up answers supplied by the human reviewer:"]' in PAGE_TEXT
-    assert "transcript: extractionText(transcript, useAnswers)" not in PAGE_TEXT
+    assert "supplemental_context" not in PAGE_TEXT
+    assert "followUpAnswers" not in PAGE_TEXT
+    assert "Re-extract with answers" not in PAGE_TEXT
+    assert "reextract-text" not in PAGE_TEXT
     assert "let originalVoiceTranscript = null" in PAGE_TEXT
     assert (
         "originalVoiceTranscript = originalVoiceTranscript || extractedCandidate.transcript"
@@ -193,6 +193,7 @@ def test_page_integrates_extract_reextract_save_and_recent_capture_endpoints() -
 
 
 def test_human_confirmation_gates_canonical_save() -> None:
+    assert "<input id='human-confirmed' type='checkbox' disabled>" in PAGE_TEXT
     assert 'const confirmed = getElement("human-confirmed").checked;' in PAGE_TEXT
     assert "const hasCandidate = Boolean(candidate);" in PAGE_TEXT
     assert 'getElement("save-candidate").disabled = !(' in PAGE_TEXT
@@ -221,6 +222,9 @@ def test_page_renders_and_rechecks_candidate_readiness_safely() -> None:
     assert "Candidate changed. Re-check readiness before confirmation." in PAGE_TEXT
     assert "if (!readinessEvaluated)" in PAGE_TEXT
     assert "void evaluateCandidate()" in PAGE_TEXT
+    assert "function setValueAt(path, value)" in PAGE_TEXT
+    assert "setValueAt(path, parsedValue(input, type))" in PAGE_TEXT
+    assert "invalidateConfirmation();" in PAGE_TEXT
 
 
 def test_page_keeps_unsupported_ai_claims_separate_from_candidate_facts() -> None:
@@ -287,7 +291,9 @@ def test_page_uses_candidate_local_structural_ids() -> None:
 def test_missing_fields_and_questions_are_rendered_with_safe_dom_apis() -> None:
     assert 'replaceList("missing-fields"' in PAGE_TEXT or '"missing-fields",' in PAGE_TEXT
     assert "renderQuestions(candidate.recommended_questions)" in PAGE_TEXT
-    assert "followUpAnswers.set" in PAGE_TEXT
+    assert "wrapper.append(question)" in PAGE_TEXT
+    assert 'answer.setAttribute("aria-label", "Answer: "' not in PAGE_TEXT
+    assert "Add an answer for re-extraction" not in PAGE_TEXT
     assert "textContent" in PAGE_TEXT
     assert "replaceChildren" in PAGE_TEXT
     assert "innerHTML" not in PAGE_TEXT

@@ -13,8 +13,10 @@ voice or text plus evidence
 -> local voice transcription or immutable text capture
 -> two bounded local grounded-claim passes
 -> deterministic quote/offset verification and Candidate assembly
--> Candidate completeness and readiness
--> human correction and confirmation
+-> grounded Candidate
+-> human correction
+-> deterministic readiness re-check
+-> human confirmation
 -> governed Knowledge Object v2 draft
 -> evidence/provenance-backed list and detail review
 ```
@@ -24,8 +26,10 @@ Excel remains a separate deterministic path:
 ```text
 Excel plus evidence
 -> cell-provenance dry-run import
--> Candidate completeness and readiness
--> human correction and confirmation
+-> grounded Candidate
+-> human correction
+-> deterministic readiness re-check
+-> human confirmation
 -> governed Knowledge Object v2 draft
 -> evidence/provenance-backed list and detail review
 ```
@@ -136,8 +140,8 @@ The deterministic completeness result must include at least:
 5. Review the transcript, Candidate sections, completeness score, and questions.
 6. Correct values and explicitly mark unknown, not measured, or not applicable fields.
 7. Optionally upload a synthetic XLSX, PDF, or image evidence file.
-8. Re-extract after adding answers if needed.
-9. Verify voice re-extraction preserves the original transcript and `source_kind=voice`.
+8. Re-check readiness after directly correcting the Candidate fields.
+9. Verify voice correction preserves the original transcript and `source_kind=voice`.
 10. Verify original audio and transcript evidence are registered locally.
 11. Verify the Candidate remains unconfirmed until the confirmation control is selected.
 12. Confirm and submit to `/api/v2/lab-project-captures`.

@@ -6,7 +6,7 @@ from typing import Any, cast
 from uuid import UUID
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from smartcoat.api.routes.lab_observations import router as lab_observation_router
@@ -16,6 +16,7 @@ from smartcoat.api.routes.lab_project_captures import (
     LAB_PROJECT_CAPTURE_ROLE,
     LAB_PROJECT_CAPTURE_SOURCE_SYSTEM,
     LAB_PROJECT_CAPTURE_TAG,
+    _build_create_command,
     get_lab_project_capture_audit_service,
     get_lab_project_capture_repository,
     router,
@@ -38,6 +39,7 @@ from smartcoat.domain.knowledge_objects_v2 import (
     KnowledgeObjectV2CoreRecord,
     KnowledgeObjectV2PersistedStateSnapshot,
 )
+from smartcoat.domain.lab_project_capture import LabProjectCaptureCandidate
 
 NOW = datetime(2026, 8, 6, 9, 0, tzinfo=UTC)
 OBSERVED_AT = datetime(2026, 8, 6, 8, 0, tzinfo=UTC)
@@ -45,6 +47,7 @@ OBJECT_ID = UUID("0a13d814-5b80-46f1-9f49-6dcd486c8349")
 AUDIT_EVENT_ID = UUID("3c2666ee-9304-4bb6-a977-6855da760fa1")
 SESSION_ID = UUID("72d399c6-5fdf-4897-a4ab-126739220028")
 ORGANIZATION_ID = "synthetic-project-org"
+LOCAL_EVIDENCE_SHA = "e" * 64
 
 
 def _payload(*, confirmed: bool = True) -> dict[str, Any]:
@@ -334,6 +337,145 @@ def test_blocking_readiness_issue_rejects_before_audit_then_saves_after_edit(
     assert len(service.commands) == 1
 
 
+def test_same_organization_local_evidence_is_accepted(api: FastAPI) -> None:
+    service = FakeAuditService()
+    api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
+    payload = _payload()
+    payload["evidence"][0].update(
+        {
+            "source_reference": (f"smartcoat-asset://{ORGANIZATION_ID}/{LOCAL_EVIDENCE_SHA}"),
+            "sha256": LOCAL_EVIDENCE_SHA,
+        }
+    )
+
+    response = TestClient(api).post(
+        "/api/v2/lab-project-captures",
+        json=payload,
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert response.status_code == 201, response.text
+    assert len(service.commands) == 1
+
+
+def test_cross_organization_local_evidence_is_rejected_before_service(
+    api: FastAPI,
+) -> None:
+    service = FakeAuditService()
+    api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
+    payload = _payload()
+    payload["evidence"][0].update(
+        {
+            "source_reference": (f"smartcoat-asset://synthetic-org-a/{LOCAL_EVIDENCE_SHA}"),
+            "sha256": LOCAL_EVIDENCE_SHA,
+        }
+    )
+
+    response = TestClient(api).post(
+        "/api/v2/lab-project-captures",
+        json=payload,
+        headers={"X-SmartCoat-Organization-ID": "synthetic-org-b"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == {
+        "code": "evidence_organization_mismatch",
+        "message": "Local SmartCoat evidence belongs to another organization",
+    }
+    assert service.commands == []
+
+
+def test_cross_organization_local_evidence_is_rejected_before_command_creation() -> None:
+    payload = _payload()
+    payload["evidence"][0].update(
+        {
+            "source_reference": (f"smartcoat-asset://synthetic-org-a/{LOCAL_EVIDENCE_SHA}"),
+            "sha256": LOCAL_EVIDENCE_SHA,
+        }
+    )
+
+    with pytest.raises(HTTPException) as captured:
+        _build_create_command(
+            LabProjectCaptureCandidate.model_validate(payload),
+            "synthetic-org-b",
+        )
+
+    assert captured.value.status_code == 422
+    assert captured.value.detail["code"] == "evidence_organization_mismatch"
+
+
+def test_local_evidence_digest_mismatch_is_rejected_before_service(
+    api: FastAPI,
+) -> None:
+    service = FakeAuditService()
+    api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
+    payload = _payload()
+    payload["evidence"][0].update(
+        {
+            "source_reference": f"smartcoat-asset://{ORGANIZATION_ID}/{'f' * 64}",
+            "sha256": LOCAL_EVIDENCE_SHA,
+        }
+    )
+
+    response = TestClient(api).post(
+        "/api/v2/lab-project-captures",
+        json=payload,
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "invalid_local_evidence_reference"
+    assert service.commands == []
+
+
+@pytest.mark.parametrize(
+    "source_reference",
+    [
+        "smartcoat-asset://",
+        f"smartcoat-asset:///{LOCAL_EVIDENCE_SHA}",
+        f"smartcoat-asset://{ORGANIZATION_ID}/not-a-sha",
+        f"smartcoat-asset://{ORGANIZATION_ID}/{LOCAL_EVIDENCE_SHA}/extra",
+    ],
+)
+def test_malformed_local_evidence_reference_is_rejected_before_service(
+    api: FastAPI,
+    source_reference: str,
+) -> None:
+    service = FakeAuditService()
+    api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
+    payload = _payload()
+    payload["evidence"][0].update(
+        {
+            "source_reference": source_reference,
+            "sha256": LOCAL_EVIDENCE_SHA,
+        }
+    )
+
+    response = TestClient(api).post(
+        "/api/v2/lab-project-captures",
+        json=payload,
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "invalid_local_evidence_reference"
+    assert service.commands == []
+
+
+def test_non_local_evidence_reference_preserves_existing_behavior(api: FastAPI) -> None:
+    service = FakeAuditService()
+    api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
+
+    response = TestClient(api).post(
+        "/api/v2/lab-project-captures",
+        json=_payload(),
+        headers={"X-SmartCoat-Organization-ID": ORGANIZATION_ID},
+    )
+
+    assert response.status_code == 201, response.text
+    assert service.commands[0].evidence[0].source_reference == "asset://synthetic/EV-SYN-001"
+
+
 def test_orphan_process_references_are_reviewable_but_not_canonical(api: FastAPI) -> None:
     service = FakeAuditService()
     api.dependency_overrides[get_lab_project_capture_audit_service] = lambda: service
@@ -377,7 +519,7 @@ def test_voice_candidate_requires_audio_and_transcript_evidence(
             "evidence_type": "audio",
             "filename": "synthetic.webm",
             "media_type": "audio/webm",
-            "source_reference": "smartcoat-asset://synthetic/audio",
+            "source_reference": f"smartcoat-asset://{ORGANIZATION_ID}/{'b' * 64}",
             "sha256": "b" * 64,
             "captured_at": OBSERVED_AT.isoformat(),
         },
@@ -386,7 +528,7 @@ def test_voice_candidate_requires_audio_and_transcript_evidence(
             "evidence_type": "transcript",
             "filename": "capture-transcript.txt",
             "media_type": "text/plain",
-            "source_reference": "smartcoat-asset://synthetic/transcript",
+            "source_reference": f"smartcoat-asset://{ORGANIZATION_ID}/{'c' * 64}",
             "sha256": "c" * 64,
             "captured_at": OBSERVED_AT.isoformat(),
         },

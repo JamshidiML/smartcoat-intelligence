@@ -576,14 +576,9 @@
     }
 
     .question p {
-      margin-bottom: 7px;
+      margin: 0;
       font-size: 0.84rem;
       font-weight: 650;
-    }
-
-    .question textarea {
-      min-height: 66px;
-      background: var(--surface);
     }
 
     .empty-note {
@@ -1027,7 +1022,6 @@
               ></textarea>
               <div class='button-row'>
                 <button id='extract-text' type='button' class='button-primary'>Extract project</button>
-                <button id='reextract-text' type='button' disabled>Re-extract with answers</button>
               </div>
               <p id='extraction-message' class='message' aria-live='polite'></p>
             </div>
@@ -1111,7 +1105,7 @@
           </div>
           <div class='section-body'>
             <div class='confirm-box'>
-              <input id='human-confirmed' type='checkbox'>
+              <input id='human-confirmed' type='checkbox' disabled>
               <label for='human-confirmed'>
                 I reviewed the transcript, structured fields, explicit unknown states, and
                 evidence references. Create a governed Knowledge Object in draft lifecycle.
@@ -1462,7 +1456,6 @@
     let candidate = null;
     let candidateSaved = false;
     let originalVoiceTranscript = null;
-    let followUpAnswers = new Map();
     let localAIReady = false;
     let selectedExcelFile = null;
     let confirmationReady = false;
@@ -1793,7 +1786,6 @@
       }
       renderCandidate();
       getElement("review-section").hidden = false;
-      getElement("reextract-text").disabled = false;
       setProgress(2);
       setMessage("extraction-message", "Candidate extracted. Review every section.", "success");
       getElement("review-section").scrollIntoView({behavior: "smooth", block: "start"});
@@ -1854,35 +1846,6 @@
       }
     }
 
-    function answerPayload() {
-      const answers = [];
-      followUpAnswers.forEach(function (answer, question) {
-        if (answer.trim()) {
-          answers.push({question: question, answer: answer.trim()});
-        }
-      });
-      return answers;
-    }
-
-    function supplementalContext() {
-      const answers = answerPayload();
-      if (!answers.length) {
-        return null;
-      }
-      const answerLines = ["Follow-up answers supplied by the human reviewer:"];
-      answers.forEach(function (item) {
-        answerLines.push("Question: " + item.question);
-        answerLines.push("Answer: " + item.answer);
-      });
-      const supplement = answerLines.join("\n");
-      if (supplement.length > 4096) {
-        throw new Error(
-          "Follow-up answers exceed 4096 characters. Shorten them before re-extraction."
-        );
-      }
-      return supplement;
-    }
-
     function currentProjectHints() {
       if (!candidate || !candidate.project) {
         return null;
@@ -1903,7 +1866,7 @@
       return Object.keys(hints).length ? hints : null;
     }
 
-    async function extractText(useAnswers) {
+    async function extractText() {
       const enteredTranscript = getElement("transcript").value.trim();
       const transcript = candidate && candidate.source_kind === "voice"
         ? originalVoiceTranscript
@@ -1921,21 +1884,16 @@
         setMessage("extraction-message", safeError(error, "Workspace details are required."), "error");
         return;
       }
-      const button = getElement(useAnswers ? "reextract-text" : "extract-text");
+      const button = getElement("extract-text");
       button.disabled = true;
       setProgress(1);
-      setMessage(
-        "extraction-message",
-        useAnswers ? "Re-extracting with review answers." : "Extracting a structured candidate.",
-        "busy"
-      );
+      setMessage("extraction-message", "Extracting a structured candidate.", "busy");
       try {
         const payload = {
           transcript: transcript,
           source_kind: candidate && ["voice", "text"].includes(candidate.source_kind)
             ? candidate.source_kind
             : "text",
-          supplemental_context: useAnswers ? supplementalContext() : null,
           project_hints: currentProjectHints(),
           actor_metadata: {
             actor_id: actor,
@@ -2333,14 +2291,7 @@
         wrapper.className = "question";
         const question = document.createElement("p");
         question.textContent = String(questionText);
-        const answer = document.createElement("textarea");
-        answer.setAttribute("aria-label", "Answer: " + String(questionText));
-        answer.placeholder = "Add an answer for re-extraction";
-        answer.value = followUpAnswers.get(String(questionText)) || "";
-        answer.addEventListener("input", function () {
-          followUpAnswers.set(String(questionText), answer.value);
-        });
-        wrapper.append(question, answer);
+        wrapper.append(question);
         container.append(wrapper);
       });
     }
@@ -2992,12 +2943,7 @@
     getElement("discard-recording").addEventListener("click", discardRecording);
     getElement("process-audio").addEventListener("click", processAudio);
     getElement("check-local-ai").addEventListener("click", checkLocalAI);
-    getElement("extract-text").addEventListener("click", function () {
-      extractText(false);
-    });
-    getElement("reextract-text").addEventListener("click", function () {
-      extractText(true);
-    });
+    getElement("extract-text").addEventListener("click", extractText);
     getElement("evidence-files").addEventListener("change", handleEvidenceFiles);
     getElement("analyze-excel").addEventListener("click", analyzeExcel);
     getElement("evaluate-candidate").addEventListener("click", evaluateCandidate);

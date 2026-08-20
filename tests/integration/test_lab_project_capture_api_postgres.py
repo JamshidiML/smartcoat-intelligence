@@ -445,6 +445,67 @@ def test_postgres_voice_capture_persists_audio_transcript_provenance_and_audit(
     assert audit_count == 1
 
 
+def test_postgres_rejects_cross_organization_local_evidence_before_persistence(
+    migrated_store: sessionmaker[Session],
+) -> None:
+    application = _application(migrated_store)
+    client = TestClient(application)
+    digest = "e" * 64
+
+    with migrated_store() as session:
+        knowledge_before = session.scalar(select(func.count()).select_from(KnowledgeObjectV2Record))
+        audit_before = session.scalar(select(func.count()).select_from(KnowledgeAuditEventRecord))
+
+    cross_organization = _payload(suffix="CROSS-ORG")
+    cross_organization["evidence"][0].update(
+        {
+            "source_reference": f"smartcoat-asset://synthetic-org-a/{digest}",
+            "sha256": digest,
+        }
+    )
+    rejected = client.post(
+        "/api/v2/lab-project-captures",
+        json=cross_organization,
+        headers={"X-SmartCoat-Organization-ID": "synthetic-org-b"},
+    )
+
+    assert rejected.status_code == 422
+    assert rejected.json()["detail"]["code"] == "evidence_organization_mismatch"
+    with migrated_store() as session:
+        knowledge_after_rejection = session.scalar(
+            select(func.count()).select_from(KnowledgeObjectV2Record)
+        )
+        audit_after_rejection = session.scalar(
+            select(func.count()).select_from(KnowledgeAuditEventRecord)
+        )
+    assert knowledge_after_rejection == knowledge_before
+    assert audit_after_rejection == audit_before
+
+    same_organization = _payload(suffix="SAME-ORG")
+    same_organization["evidence"][0].update(
+        {
+            "source_reference": f"smartcoat-asset://synthetic-org-a/{digest}",
+            "sha256": digest,
+        }
+    )
+    created = client.post(
+        "/api/v2/lab-project-captures",
+        json=same_organization,
+        headers={"X-SmartCoat-Organization-ID": "synthetic-org-a"},
+    )
+
+    assert created.status_code == 201, created.text
+    with migrated_store() as session:
+        knowledge_after_create = session.scalar(
+            select(func.count()).select_from(KnowledgeObjectV2Record)
+        )
+        audit_after_create = session.scalar(
+            select(func.count()).select_from(KnowledgeAuditEventRecord)
+        )
+    assert knowledge_after_create == knowledge_before + 1
+    assert audit_after_create == audit_before + 1
+
+
 class FailingAuditParticipant(KnowledgeAuditParticipant):
     def flush(self, session: Session) -> None:
         raise RuntimeError("synthetic audit persistence failure")
