@@ -8,7 +8,7 @@ canonical Knowledge Object v2 record.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated, Any, cast
+from typing import TYPE_CHECKING, Annotated, Any, cast
 from uuid import UUID
 
 from pydantic import (
@@ -22,14 +22,23 @@ from pydantic import (
 )
 
 from smartcoat.domain.knowledge_objects import KnowledgeObjectType
-from smartcoat.domain.knowledge_objects_v2 import (
-    ConfidentialityLevel,
-    JsonValue,
-    KnowledgeObjectV2MutableState,
-    OwnerReference,
-)
+
+if TYPE_CHECKING:
+    from smartcoat.domain.knowledge_objects_v2 import JsonValue
 
 Identifier = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=256)]
+CandidateMaterialId = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, pattern=r"^C-M-[0-9]{3}$"),
+]
+CandidateApproachId = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, pattern=r"^C-A-[0-9]{3}$"),
+]
+CandidateSampleId = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, pattern=r"^C-S-[0-9]{3}$"),
+]
 ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=512)]
 LongText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4096)]
 LanguageCode = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=35)]
@@ -150,6 +159,51 @@ class EvidenceType(StrEnum):
     OTHER = "other"
 
 
+class CandidateIssueSeverity(StrEnum):
+    WARNING = "warning"
+    BLOCKING = "blocking"
+
+
+class CandidateReadinessIssue(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        str_strip_whitespace=True,
+        validate_default=True,
+    )
+
+    code: Annotated[
+        str,
+        StringConstraints(
+            strip_whitespace=True,
+            min_length=1,
+            max_length=128,
+            pattern=r"^[a-z][a-z0-9_]*$",
+        ),
+    ]
+    path: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1024)]
+    severity: CandidateIssueSeverity
+    message: LongText
+    question: LongText
+
+
+class CandidateReadinessReport(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    confirmation_ready: bool
+    blocking_issue_count: int = Field(ge=0)
+    warning_issue_count: int = Field(ge=0)
+    issues: tuple[CandidateReadinessIssue, ...]
+
+
+class CandidateNotReadyError(ValueError):
+    """Raised when canonical mapping is attempted for an unsafe Candidate."""
+
+    def __init__(self, report: CandidateReadinessReport) -> None:
+        self.report = report
+        super().__init__("candidate_has_blocking_readiness_issues")
+
+
 class ProjectIdentity(StrictCaptureModel):
     project_id: Identifier | None = None
     project_name: ShortText | None = None
@@ -164,12 +218,6 @@ class ProjectIdentity(StrictCaptureModel):
     target_due_at: AwareDatetime | None = None
     project_status: ProjectStatus | None = None
 
-    @model_validator(mode="after")
-    def validate_dates(self) -> ProjectIdentity:
-        if self.opened_at and self.target_due_at and self.target_due_at < self.opened_at:
-            raise ValueError("target_due_at must not precede opened_at")
-        return self
-
 
 class BaseSubstrate(StrictCaptureModel):
     substrate_id: Identifier | None = None
@@ -183,7 +231,9 @@ class BaseSubstrate(StrictCaptureModel):
 
 
 class MaterialRecord(StrictCaptureModel):
-    material_id: Identifier
+    # Correlation IDs connect Candidate sections; they are not source-system facts.
+    material_id: CandidateMaterialId
+    source_material_id: Identifier | None = None
     material_name: ShortText | None = None
     supplier: ShortText | None = None
     commercial_grade: ShortText | None = None
@@ -207,17 +257,11 @@ class MaterialRecord(StrictCaptureModel):
             raise ValueError("price_currency must be a three-letter alphabetic code")
         return value.upper()
 
-    @model_validator(mode="after")
-    def validate_quantity_and_price(self) -> MaterialRecord:
-        if (self.amount is None) != (self.unit is None):
-            raise ValueError("amount and unit must be supplied together")
-        if (self.price_value is None) != (self.price_currency is None):
-            raise ValueError("price_value and price_currency must be supplied together")
-        return self
-
 
 class ExperimentalApproach(StrictCaptureModel):
-    approach_id: Identifier
+    # Correlation IDs connect Candidate sections; they are not source-system facts.
+    approach_id: CandidateApproachId
+    source_approach_id: Identifier | None = None
     title: ShortText | None = None
     description: LongText | None = None
     technical_rationale: LongText | None = None
@@ -239,7 +283,7 @@ class ExperimentalApproach(StrictCaptureModel):
 
 
 class ProcessParameter(StrictCaptureModel):
-    approach_id: Identifier
+    approach_id: CandidateApproachId
     process_stage: ShortText
     equipment_name: ShortText | None = None
     parameter_name: ShortText
@@ -250,30 +294,10 @@ class ProcessParameter(StrictCaptureModel):
     measurement_state: MeasurementState
     source_note: LongText | None = None
 
-    @model_validator(mode="after")
-    def validate_measurement(self) -> ProcessParameter:
-        has_numeric = self.numeric_value is not None
-        has_text = self.text_value is not None
-        if self.measurement_state is MeasurementState.KNOWN:
-            if has_numeric == has_text:
-                raise ValueError("known parameters require exactly one numeric_value or text_value")
-            if has_numeric and self.unit is None:
-                raise ValueError("known numeric parameters require a unit")
-        elif self.measurement_state in {
-            MeasurementState.UNKNOWN,
-            MeasurementState.NOT_MEASURED,
-            MeasurementState.NOT_APPLICABLE,
-        }:
-            if has_numeric or has_text:
-                raise ValueError("non-known parameters must not carry a value")
-        elif not (has_numeric or has_text or self.source_note):
-            raise ValueError("conflicting parameters require a value or source_note")
-        return self
-
 
 class TestRecord(StrictCaptureModel):
-    approach_id: Identifier
-    sample_id: Identifier | None = None
+    approach_id: CandidateApproachId
+    sample_id: CandidateSampleId | None = None
     test_name: ShortText
     method: ShortText | None = None
     standard: ShortText | None = None
@@ -288,19 +312,12 @@ class TestRecord(StrictCaptureModel):
     evidence_references: tuple[Identifier, ...] = Field(default_factory=tuple, max_length=64)
     notes: LongText | None = None
 
-    @model_validator(mode="after")
-    def validate_result(self) -> TestRecord:
-        if self.outcome is TestOutcome.NOT_MEASURED:
-            if self.numeric_result is not None or self.text_result is not None:
-                raise ValueError("not_measured tests must not carry a result")
-        elif self.numeric_result is not None and self.unit is None:
-            raise ValueError("numeric test results require a unit")
-        return self
-
 
 class SampleRecord(StrictCaptureModel):
-    sample_id: Identifier
-    approach_id: Identifier
+    # Correlation IDs connect Candidate sections; they are not source-system facts.
+    sample_id: CandidateSampleId
+    source_sample_id: Identifier | None = None
+    approach_id: CandidateApproachId
     sample_description: LongText | None = None
     physical_archive_status: PhysicalArchiveStatus | None = None
     archive_location: ShortText | None = None
@@ -312,25 +329,9 @@ class SampleRecord(StrictCaptureModel):
     follow_up_status: FollowUpStatus | None = None
     follow_up_due_at: AwareDatetime | None = None
 
-    @model_validator(mode="after")
-    def validate_archive(self) -> SampleRecord:
-        if self.physical_archive_status is PhysicalArchiveStatus.ARCHIVED:
-            if self.archive_location is None:
-                raise ValueError("archived samples require archive_location")
-        if (
-            self.physical_archive_status
-            in {
-                PhysicalArchiveStatus.NOT_ARCHIVED,
-                PhysicalArchiveStatus.LOST,
-            }
-            and self.archive_reason_if_missing is None
-        ):
-            raise ValueError("missing physical samples require archive_reason_if_missing")
-        return self
-
 
 class CustomerFeedbackRecord(StrictCaptureModel):
-    sample_id: Identifier
+    sample_id: CandidateSampleId
     received_at: AwareDatetime
     received_from: ShortText
     feedback_summary: LongText
@@ -348,8 +349,8 @@ class EvidenceDescriptor(StrictCaptureModel):
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     captured_at: AwareDatetime
     description: LongText | None = None
-    approach_id: Identifier | None = None
-    sample_id: Identifier | None = None
+    approach_id: CandidateApproachId | None = None
+    sample_id: CandidateSampleId | None = None
 
     @field_validator("sha256", mode="before")
     @classmethod
@@ -407,6 +408,8 @@ class LabProjectCaptureCandidate(StrictCaptureModel):
     unresolved_questions: tuple[LongText, ...] = Field(
         default_factory=tuple, max_length=MAX_QUESTIONS
     )
+    formulation_source_text: LongText | None = None
+    source_cell_references: tuple[LongText, ...] = Field(default_factory=tuple, max_length=256)
 
     field_states: dict[str, FieldState] = Field(default_factory=dict, max_length=256)
     completeness_score: int = Field(default=0, ge=0, le=100)
@@ -455,15 +458,6 @@ class LabProjectCaptureCandidate(StrictCaptureModel):
         self._validate_unique_ids("samples", [item.sample_id for item in self.samples])
         self._validate_unique_ids("evidence", [item.evidence_id for item in self.evidence])
 
-        approach_ids = {item.approach_id for item in self.approaches}
-        for section, references in {
-            "process_parameters": [item.approach_id for item in self.process_parameters],
-            "tests": [item.approach_id for item in self.tests],
-            "samples": [item.approach_id for item in self.samples],
-        }.items():
-            unknown = sorted(set(references) - approach_ids)
-            if unknown:
-                raise ValueError(f"{section} reference unknown approach IDs: {unknown}")
         return self
 
     @staticmethod
@@ -473,6 +467,225 @@ class LabProjectCaptureCandidate(StrictCaptureModel):
 
     def state_for(self, field_path: str) -> FieldState:
         return self.field_states.get(field_path, FieldState.MISSING)
+
+
+def evaluate_candidate_readiness(
+    candidate: LabProjectCaptureCandidate,
+) -> CandidateReadinessReport:
+    """Report reviewable semantic issues without changing the Candidate."""
+
+    issues: list[CandidateReadinessIssue] = []
+
+    def add(code: str, path: str, message: str, question: str) -> None:
+        issues.append(
+            CandidateReadinessIssue(
+                code=code,
+                path=path,
+                severity=CandidateIssueSeverity.BLOCKING,
+                message=message,
+                question=question,
+            )
+        )
+
+    if (
+        candidate.project.opened_at is not None
+        and candidate.project.target_due_at is not None
+        and candidate.project.target_due_at < candidate.project.opened_at
+    ):
+        add(
+            "project_date_order_invalid",
+            "project.target_due_at",
+            "The target due date precedes the project opened date.",
+            "What are the correct project opened and target due dates?",
+        )
+
+    for index, material in enumerate(candidate.materials):
+        prefix = f"materials.{index}"
+        label = material.material_name or material.source_material_id or material.material_id
+        if material.amount is not None and material.unit is None:
+            add(
+                "material_amount_missing_unit",
+                f"{prefix}.unit",
+                f"Material {label} has an amount but no unit.",
+                f"What unit belongs to the {label} amount?",
+            )
+        if material.amount is None and material.unit is not None:
+            add(
+                "material_unit_missing_amount",
+                f"{prefix}.amount",
+                f"Material {label} has a unit but no amount.",
+                f"What amount belongs to the {label} unit?",
+            )
+        if material.price_value is not None and material.price_currency is None:
+            add(
+                "material_price_missing_currency",
+                f"{prefix}.price_currency",
+                f"Material {label} has a price but no currency.",
+                f"What currency belongs to the {label} price?",
+            )
+        if material.price_value is None and material.price_currency is not None:
+            add(
+                "material_currency_missing_price",
+                f"{prefix}.price_value",
+                f"Material {label} has a currency but no price value.",
+                f"What price value belongs to the {label} currency?",
+            )
+
+    approach_ids = {item.approach_id for item in candidate.approaches}
+    sample_ids = {item.sample_id for item in candidate.samples}
+    for index, parameter in enumerate(candidate.process_parameters):
+        prefix = f"process_parameters.{index}"
+        label = parameter.parameter_name
+        has_numeric = parameter.numeric_value is not None
+        has_text = parameter.text_value is not None
+        if parameter.approach_id not in approach_ids:
+            add(
+                "process_parameter_unknown_approach",
+                f"{prefix}.approach_id",
+                f"Process parameter {label} references an unknown approach.",
+                f"Which approach does the {label} belong to?",
+            )
+        if parameter.measurement_state is MeasurementState.KNOWN and not (has_numeric or has_text):
+            add(
+                "process_parameter_known_without_value",
+                prefix,
+                f"Known process parameter {label} has no value.",
+                f"What value was recorded for {label}?",
+            )
+        if parameter.measurement_state is MeasurementState.KNOWN and has_numeric and has_text:
+            add(
+                "process_parameter_known_with_multiple_values",
+                prefix,
+                f"Known process parameter {label} has both numeric and text values.",
+                f"Which recorded value should be used for {label}?",
+            )
+        if has_numeric and parameter.unit is None:
+            add(
+                "process_parameter_numeric_missing_unit",
+                f"{prefix}.unit",
+                f"Numeric process parameter {label} has no unit.",
+                f"What was the unit for the {parameter.numeric_value:g} process value?",
+            )
+        if parameter.measurement_state in {
+            MeasurementState.UNKNOWN,
+            MeasurementState.NOT_MEASURED,
+            MeasurementState.NOT_APPLICABLE,
+        } and (has_numeric or has_text):
+            add(
+                "process_parameter_state_value_conflict",
+                prefix,
+                f"Process parameter {label} has a value that conflicts with its state.",
+                f"What is the correct measurement state for {label}?",
+            )
+        if parameter.measurement_state is MeasurementState.CONFLICTING and not (
+            has_numeric or has_text or parameter.source_note
+        ):
+            add(
+                "process_parameter_empty_conflict",
+                prefix,
+                f"Conflicting process parameter {label} has no supporting detail.",
+                f"What conflicting information was recorded for {label}?",
+            )
+
+    for index, test in enumerate(candidate.tests):
+        prefix = f"tests.{index}"
+        if test.approach_id not in approach_ids:
+            add(
+                "test_unknown_approach",
+                f"{prefix}.approach_id",
+                f"Test {test.test_name} references an unknown approach.",
+                f"Which approach does the {test.test_name} test belong to?",
+            )
+        if test.sample_id is not None and test.sample_id not in sample_ids:
+            add(
+                "test_unknown_sample",
+                f"{prefix}.sample_id",
+                f"Test {test.test_name} references an unknown sample.",
+                f"Which sample does the {test.test_name} test belong to?",
+            )
+        if test.numeric_result is not None and test.unit is None:
+            add(
+                "test_numeric_result_missing_unit",
+                f"{prefix}.unit",
+                f"Test {test.test_name} has a numeric result but no unit.",
+                f"What unit belongs to the {test.test_name} result?",
+            )
+        if test.outcome is TestOutcome.NOT_MEASURED and (
+            test.numeric_result is not None or test.text_result is not None
+        ):
+            add(
+                "test_not_measured_with_result",
+                prefix,
+                f"Test {test.test_name} is not measured but contains a result.",
+                f"Was {test.test_name} measured, and should its result be retained?",
+            )
+
+    for index, sample in enumerate(candidate.samples):
+        prefix = f"samples.{index}"
+        label = sample.source_sample_id or sample.sample_id
+        if sample.approach_id not in approach_ids:
+            add(
+                "sample_unknown_approach",
+                f"{prefix}.approach_id",
+                f"Sample {label} references an unknown approach.",
+                f"Which approach produced sample {label}?",
+            )
+        if (
+            sample.physical_archive_status is PhysicalArchiveStatus.ARCHIVED
+            and sample.archive_location is None
+        ):
+            add(
+                "sample_archive_location_missing",
+                f"{prefix}.archive_location",
+                f"Archived sample {label} has no archive location.",
+                f"Where is sample {label} physically archived?",
+            )
+        if (
+            sample.physical_archive_status
+            in {PhysicalArchiveStatus.NOT_ARCHIVED, PhysicalArchiveStatus.LOST}
+            and sample.archive_reason_if_missing is None
+        ):
+            add(
+                "sample_archive_reason_missing",
+                f"{prefix}.archive_reason_if_missing",
+                f"Sample {label} has no explanation for its missing archive.",
+                f"Why is sample {label} not physically archived?",
+            )
+
+    for index, feedback in enumerate(candidate.customer_feedback):
+        if feedback.sample_id not in sample_ids:
+            add(
+                "feedback_unknown_sample",
+                f"customer_feedback.{index}.sample_id",
+                "Customer feedback references an unknown sample.",
+                "Which sample does this customer feedback describe?",
+            )
+
+    for index, evidence in enumerate(candidate.evidence):
+        prefix = f"evidence.{index}"
+        if evidence.approach_id is not None and evidence.approach_id not in approach_ids:
+            add(
+                "evidence_unknown_approach",
+                f"{prefix}.approach_id",
+                f"Evidence {evidence.evidence_id} references an unknown approach.",
+                f"Which approach does evidence {evidence.evidence_id} support?",
+            )
+        if evidence.sample_id is not None and evidence.sample_id not in sample_ids:
+            add(
+                "evidence_unknown_sample",
+                f"{prefix}.sample_id",
+                f"Evidence {evidence.evidence_id} references an unknown sample.",
+                f"Which sample does evidence {evidence.evidence_id} support?",
+            )
+
+    blocking_count = sum(issue.severity is CandidateIssueSeverity.BLOCKING for issue in issues)
+    warning_count = sum(issue.severity is CandidateIssueSeverity.WARNING for issue in issues)
+    return CandidateReadinessReport(
+        confirmation_ready=blocking_count == 0,
+        blocking_issue_count=blocking_count,
+        warning_issue_count=warning_count,
+        issues=tuple(issues),
+    )
 
 
 _NUMERIC_PARAMETER_TERMS = {
@@ -546,13 +759,14 @@ def evaluate_candidate_completeness(
 
     for approach in candidate.approaches:
         prefix = f"approaches.{approach.approach_id}"
+        approach_label = approach.source_approach_id or approach.approach_id
         if approach.outcome is ApproachOutcome.FAILED:
             if approach.failure_reason is None:
-                add(f"{prefix}.failure_reason", f"Why did approach {approach.approach_id} fail?")
+                add(f"{prefix}.failure_reason", f"Why did approach {approach_label} fail?")
             if approach.lesson_learned is None:
                 add(
                     f"{prefix}.lesson_learned",
-                    f"What lesson was learned from approach {approach.approach_id}?",
+                    f"What lesson was learned from approach {approach_label}?",
                 )
             if (
                 approach.approach_id not in image_approach_ids
@@ -561,7 +775,7 @@ def evaluate_candidate_completeness(
                 add(
                     f"{prefix}.photograph",
                     "Attach a photograph for approach "
-                    f"{approach.approach_id}, or explain why none exists.",
+                    f"{approach_label}, or explain why none exists.",
                 )
 
         approach_tests = tests_by_approach.get(approach.approach_id, [])
@@ -570,7 +784,7 @@ def evaluate_candidate_completeness(
             add(
                 f"{prefix}.tests",
                 "Which test method and acceptance criteria were used for approach "
-                f"{approach.approach_id}?",
+                f"{approach_label}?",
             )
 
         if approach.production_feasibility_status in {None, AssessmentStatus.NOT_ASSESSED}:
@@ -621,10 +835,11 @@ def evaluate_candidate_completeness(
     sent_samples: list[SampleRecord] = []
     for sample in candidate.samples:
         prefix = f"samples.{sample.sample_id}"
+        sample_label = sample.source_sample_id or sample.sample_id
         if sample.physical_archive_status in {None, PhysicalArchiveStatus.UNKNOWN}:
             add(
                 prefix + ".physical_archive_status",
-                f"Where is sample {sample.sample_id} physically archived?",
+                f"Where is sample {sample_label} physically archived?",
             )
         is_sent = any(
             (
@@ -638,17 +853,17 @@ def evaluate_candidate_completeness(
             continue
         sent_samples.append(sample)
         if sample.sent_at is None:
-            add(prefix + ".sent_at", f"When was sample {sample.sample_id} sent?")
+            add(prefix + ".sent_at", f"When was sample {sample_label} sent?")
         if sample.follow_up_status is None:
             add(
                 prefix + ".follow_up_status",
-                f"Was the customer contacted after shipment of sample {sample.sample_id}?",
+                f"Was the customer contacted after shipment of sample {sample_label}?",
             )
         if sample.follow_up_status not in {FollowUpStatus.NOT_REQUIRED, FollowUpStatus.CLOSED}:
             if sample.follow_up_due_at is None:
                 add(
                     prefix + ".follow_up_due_at",
-                    f"When is follow-up for sample {sample.sample_id} due?",
+                    f"When is follow-up for sample {sample_label} due?",
                 )
 
     feedback_sample_ids = {item.sample_id for item in candidate.customer_feedback}
@@ -671,17 +886,24 @@ def apply_candidate_completeness(
     candidate: LabProjectCaptureCandidate,
 ) -> LabProjectCaptureCandidate:
     evaluation = evaluate_candidate_completeness(candidate)
+    readiness = evaluate_candidate_readiness(candidate)
+    questions = list(evaluation.recommended_questions)
+    for issue in readiness.issues:
+        if issue.question not in questions and len(questions) < MAX_QUESTIONS:
+            questions.append(issue.question)
     return candidate.model_copy(
         update={
             "completeness_score": evaluation.completeness_score,
             "critical_missing_fields": evaluation.critical_missing_fields,
-            "recommended_questions": evaluation.recommended_questions,
+            "recommended_questions": tuple(questions),
             "extraction_warnings": evaluation.extraction_warnings,
         }
     )
 
 
 def _dump_records(records: tuple[StrictCaptureModel, ...]) -> JsonValue:
+    from smartcoat.domain.knowledge_objects_v2 import JsonValue
+
     dumped = [record.model_dump(mode="json", exclude_none=True) for record in records]
     return cast(JsonValue, dumped)
 
@@ -691,7 +913,17 @@ def to_knowledge_object_content(
 ) -> dict[str, JsonValue]:
     """Map a candidate to shallow content and validate Knowledge Object v2 bounds."""
 
+    from smartcoat.domain.knowledge_objects_v2 import (
+        ConfidentialityLevel,
+        JsonValue,
+        KnowledgeObjectV2MutableState,
+        OwnerReference,
+    )
+
     evaluated = apply_candidate_completeness(candidate)
+    readiness = evaluate_candidate_readiness(evaluated)
+    if not readiness.confirmation_ready:
+        raise CandidateNotReadyError(readiness)
     project = evaluated.project.model_dump(mode="json", exclude_none=True)
     substrates = (
         [evaluated.substrate.model_dump(mode="json", exclude_none=True)]
@@ -720,6 +952,8 @@ def to_knowledge_object_content(
         "critical_missing_fields": list(evaluated.critical_missing_fields),
         "recommended_questions": list(evaluated.recommended_questions),
         "extraction_warnings": list(evaluated.extraction_warnings),
+        "formulation_source_text": evaluated.formulation_source_text,
+        "source_cell_references": list(evaluated.source_cell_references),
         "field_states": evaluated.field_states,
         "human_confirmed": evaluated.human_confirmed,
         "human_confirmed_by": evaluated.human_confirmed_by,
@@ -758,6 +992,10 @@ __all__ = [
     "ApproachOutcome",
     "AssessmentStatus",
     "BaseSubstrate",
+    "CandidateIssueSeverity",
+    "CandidateNotReadyError",
+    "CandidateReadinessIssue",
+    "CandidateReadinessReport",
     "CaptureSourceKind",
     "CompletenessEvaluation",
     "CustomerFeedbackRecord",
@@ -780,5 +1018,6 @@ __all__ = [
     "TestRecord",
     "apply_candidate_completeness",
     "evaluate_candidate_completeness",
+    "evaluate_candidate_readiness",
     "to_knowledge_object_content",
 ]

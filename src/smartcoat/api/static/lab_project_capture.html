@@ -1,0 +1,2977 @@
+<!doctype html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>SmartCoat Project Intake</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --canvas: #f2f4f3;
+      --surface: #ffffff;
+      --surface-muted: #f7f8f7;
+      --ink: #18211f;
+      --muted: #596762;
+      --line: #cbd3cf;
+      --line-strong: #9eaba5;
+      --primary: #12624f;
+      --primary-dark: #0b4b3c;
+      --blue: #245d83;
+      --amber: #9a5b0d;
+      --amber-bg: #fff6e8;
+      --danger: #9f342e;
+      --danger-bg: #fff0ee;
+      --success: #176247;
+      --success-bg: #ebf7f1;
+      --focus: #2375a3;
+      --radius: 6px;
+      --shadow: 0 1px 2px rgb(21 32 28 / 8%);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      border-radius: var(--radius);
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 34%, transparent);
+      outline-offset: 2px;
+    }
+
+    .app-header {
+      position: sticky;
+      z-index: 20;
+      top: 0;
+      border-bottom: 1px solid var(--line);
+      background: rgb(255 255 255 / 96%);
+      backdrop-filter: blur(8px);
+    }
+
+    .app-header__inner,
+    .workspace {
+      width: min(100% - 32px, 1440px);
+      margin-inline: auto;
+    }
+
+    .app-header__inner {
+      display: flex;
+      min-height: 68px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand-block {
+      display: flex;
+      min-width: 0;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .brand {
+      color: var(--primary);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 0;
+      font-size: 1.25rem;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin-bottom: 0;
+      font-size: 1.02rem;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      font-size: 0.94rem;
+      letter-spacing: 0;
+    }
+
+    .header-state {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .workspace {
+      padding-block: 20px 64px;
+    }
+
+    .progress-steps {
+      display: grid;
+      margin: 0 0 16px;
+      padding: 0;
+      grid-template-columns: repeat(4, 1fr);
+      list-style: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .progress-steps li {
+      min-width: 0;
+      padding: 9px 12px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .progress-steps li + li {
+      border-left: 1px solid var(--line);
+    }
+
+    .progress-steps li[data-state='active'] {
+      background: #eef6f3;
+      color: var(--primary);
+    }
+
+    .workspace-section {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .workspace-section + .workspace-section,
+    .workspace-layout + .workspace-section {
+      margin-top: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      min-height: 52px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-muted);
+    }
+
+    .section-body {
+      padding: 16px;
+    }
+
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .readiness-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .readiness-item {
+      padding: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface-muted);
+    }
+
+    .readiness-item strong,
+    .readiness-item span {
+      display: block;
+    }
+
+    .readiness-item span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      overflow-wrap: anywhere;
+    }
+
+    .readiness-item[data-ready='true'] strong {
+      color: var(--success);
+    }
+
+    .readiness-item[data-ready='false'] strong {
+      color: var(--danger);
+    }
+
+    .workspace-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 350px);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .capture-column,
+    .quality-column {
+      display: grid;
+      gap: 16px;
+    }
+
+    .quality-column {
+      position: sticky;
+      top: 86px;
+    }
+
+    .field {
+      display: grid;
+      min-width: 0;
+      gap: 5px;
+    }
+
+    .field--wide {
+      grid-column: 1 / -1;
+    }
+
+    label,
+    .field-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 690;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      color: var(--ink);
+      padding: 8px 9px;
+    }
+
+    input,
+    select {
+      min-height: 39px;
+    }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--focus);
+    }
+
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+      background: #eef0ef;
+      color: var(--muted);
+    }
+
+    .field-state {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 138px;
+      gap: 6px;
+    }
+
+    .field-state select {
+      font-size: 0.78rem;
+    }
+
+    .field[data-missing='true'] input,
+    .field[data-missing='true'] select,
+    .field[data-missing='true'] textarea {
+      border-color: var(--amber);
+      background: var(--amber-bg);
+    }
+
+    .capture-panel {
+      display: grid;
+      grid-template-columns: 1fr minmax(260px, 0.7fr);
+      gap: 16px;
+    }
+
+    .recorder {
+      display: grid;
+      min-height: 218px;
+      padding: 16px;
+      align-content: space-between;
+      border: 1px solid var(--line);
+      background: var(--surface-muted);
+    }
+
+    .recorder-display {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .record-indicator {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      border: 2px solid #b7c0bc;
+      border-radius: 50%;
+      background: #d7ddda;
+    }
+
+    .record-indicator[data-recording='true'] {
+      border-color: #dba7a2;
+      background: var(--danger);
+    }
+
+    .record-time {
+      font-size: 1.55rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 720;
+    }
+
+    .record-meta {
+      color: var(--muted);
+      font-size: 0.78rem;
+      overflow-wrap: anywhere;
+    }
+
+    .button-row,
+    .section-actions,
+    .review-actions,
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      color: var(--ink);
+      padding: 7px 12px;
+      font-weight: 680;
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .button-primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .button-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+      color: #ffffff;
+    }
+
+    .button-danger {
+      border-color: #d5a9a5;
+      color: var(--danger);
+    }
+
+    .button-small {
+      min-height: 32px;
+      padding: 4px 9px;
+      font-size: 0.78rem;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .message {
+      min-height: 1.5em;
+      margin: 8px 0 0;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .message[data-state='error'] {
+      color: var(--danger);
+    }
+
+    .message[data-state='success'] {
+      color: var(--success);
+    }
+
+    .message[data-state='busy'] {
+      color: var(--blue);
+    }
+
+    .transcript-area {
+      min-height: 150px;
+    }
+
+    .quality-score {
+      display: grid;
+      gap: 8px;
+    }
+
+    .score-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .score-value {
+      color: var(--primary);
+      font-size: 1.75rem;
+      font-weight: 760;
+      font-variant-numeric: tabular-nums;
+    }
+
+    progress {
+      width: 100%;
+      height: 12px;
+      accent-color: var(--primary);
+    }
+
+    .quality-block + .quality-block {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .compact-list {
+      display: grid;
+      margin: 0;
+      padding-left: 18px;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .candidate-readiness {
+      display: grid;
+      gap: 10px;
+    }
+
+    .candidate-readiness-status {
+      margin: 0;
+      padding: 9px 10px;
+      border-left: 4px solid var(--danger);
+      background: var(--danger-bg);
+      color: var(--danger);
+      font-weight: 720;
+    }
+
+    .candidate-readiness-status[data-ready='true'] {
+      border-left-color: var(--success);
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .readiness-issue-list {
+      display: grid;
+      margin: 0;
+      padding: 0;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .readiness-issue {
+      display: grid;
+      gap: 4px;
+      padding: 9px 10px;
+      border-left: 3px solid var(--danger);
+      background: var(--danger-bg);
+      overflow-wrap: anywhere;
+    }
+
+    .readiness-issue strong,
+    .readiness-issue span {
+      font-size: 0.82rem;
+    }
+
+    .readiness-issue span {
+      color: var(--muted);
+    }
+
+    .claim-review-item {
+      display: grid;
+      gap: 4px;
+      padding: 9px 10px;
+      border-left: 3px solid var(--amber);
+      background: var(--amber-bg);
+      overflow-wrap: anywhere;
+    }
+
+    .claim-review-item strong,
+    .claim-review-item span {
+      font-size: 0.82rem;
+    }
+
+    .claim-review-item span {
+      color: var(--muted);
+    }
+
+    .question-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .question {
+      padding: 10px;
+      border-left: 3px solid var(--amber);
+      background: var(--amber-bg);
+    }
+
+    .question p {
+      margin: 0;
+      font-size: 0.84rem;
+      font-weight: 650;
+    }
+
+    .empty-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .review-shell[hidden],
+    [hidden] {
+      display: none;
+    }
+
+    details.review-section {
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    details.review-section:last-child {
+      border-bottom: 0;
+    }
+
+    details.review-section > summary {
+      display: flex;
+      min-height: 50px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 16px;
+      cursor: pointer;
+      font-weight: 710;
+      list-style: none;
+    }
+
+    details.review-section > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.review-section > summary::after {
+      color: var(--muted);
+      content: '+';
+      font-size: 1.2rem;
+    }
+
+    details.review-section[open] > summary::after {
+      content: '-';
+    }
+
+    .section-count {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 620;
+    }
+
+    .review-section-body {
+      padding: 0 16px 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .record-list {
+      display: grid;
+      gap: 10px;
+      padding-top: 12px;
+    }
+
+    .record-card {
+      border: 1px solid var(--line);
+      background: var(--surface-muted);
+    }
+
+    .record-card__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .record-card__title {
+      margin: 0;
+      font-size: 0.82rem;
+      font-weight: 720;
+    }
+
+    .record-card__body,
+    .simple-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 11px 12px;
+      padding: 12px;
+    }
+
+    .record-card[data-attention='true'] {
+      border-color: var(--danger);
+    }
+
+    .record-card[data-attention='true'] .record-card__header {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .evidence-upload {
+      display: grid;
+      gap: 12px;
+      padding: 12px 0;
+    }
+
+    .drop-zone {
+      padding: 18px;
+      border: 1px dashed var(--line-strong);
+      background: var(--surface-muted);
+      text-align: center;
+    }
+
+    .drop-zone input {
+      max-width: 520px;
+      margin-inline: auto;
+      border: 0;
+      background: transparent;
+    }
+
+    .evidence-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .evidence-item {
+      display: grid;
+      grid-template-columns: minmax(130px, 1.1fr) minmax(100px, 0.7fr) 1.5fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 0.78rem;
+    }
+
+    .evidence-item span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .confirm-box {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      background: var(--surface-muted);
+    }
+
+    .confirm-box input {
+      width: 20px;
+      min-height: 20px;
+      margin-top: 2px;
+    }
+
+    .confirm-box label {
+      color: var(--ink);
+      font-size: 0.87rem;
+    }
+
+    .save-result {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #a9d4c1;
+      background: var(--success-bg);
+    }
+
+    .save-result strong,
+    .save-result span {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 900px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-muted);
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+
+    td {
+      max-width: 280px;
+      overflow-wrap: anywhere;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1040px) {
+      .workspace-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .quality-column {
+        position: static;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .workspace-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .readiness-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app-header__inner,
+      .workspace {
+        width: min(100% - 20px, 1440px);
+      }
+
+      .app-header__inner {
+        min-height: 74px;
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+      }
+
+      .brand-block {
+        display: block;
+      }
+
+      .brand {
+        display: block;
+      }
+
+      h1 {
+        font-size: 1.08rem;
+      }
+
+      .header-state {
+        display: none;
+      }
+
+      .workspace {
+        padding-top: 12px;
+      }
+
+      .progress-steps {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .progress-steps li:nth-child(3) {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .progress-steps li:nth-child(4) {
+        border-top: 1px solid var(--line);
+      }
+
+      .workspace-grid,
+      .readiness-grid,
+      .quality-column,
+      .capture-panel,
+      .record-card__body,
+      .simple-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .field--wide {
+        grid-column: auto;
+      }
+
+      .section-header,
+      .review-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .button-row button,
+      .review-actions button {
+        flex: 1 1 140px;
+      }
+
+      .field-state {
+        grid-template-columns: 1fr;
+      }
+
+      .evidence-item {
+        grid-template-columns: 1fr auto;
+      }
+
+      .evidence-item span:nth-child(2),
+      .evidence-item span:nth-child(3) {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class='app-header'>
+    <div class='app-header__inner'>
+      <div class='brand-block'>
+        <span class='brand'>SmartCoat</span>
+        <h1>Laboratory project intake</h1>
+      </div>
+      <div class='header-state' aria-label='Workspace status'>
+        <span class='status-dot' aria-hidden='true'></span>
+        <span id='header-status'>Local review workspace</span>
+      </div>
+    </div>
+  </header>
+
+  <main class='workspace'>
+    <ol class='progress-steps' aria-label='Capture progress'>
+      <li id='step-capture' data-state='active'>1. Capture</li>
+      <li id='step-extract'>2. Extract</li>
+      <li id='step-review'>3. Review</li>
+      <li id='step-confirm'>4. Confirm</li>
+    </ol>
+
+    <section id='workspace-section' class='workspace-section' aria-labelledby='workspace-title'>
+      <div class='section-header'>
+        <h2 id='workspace-title'>Workspace and actor</h2>
+        <p id='workspace-message' class='message' aria-live='polite'>Ready for local capture.</p>
+      </div>
+      <div class='section-body workspace-grid'>
+        <div class='field'>
+          <label for='organization-id'>Organization ID</label>
+          <input
+            id='organization-id'
+            type='text'
+            value='smartcoat-startup'
+            maxlength='256'
+            autocomplete='off'
+            required
+          >
+        </div>
+        <div class='field'>
+          <label for='actor-id'>Actor ID</label>
+          <input id='actor-id' type='text' maxlength='512' autocomplete='username' required>
+        </div>
+        <div class='field'>
+          <label for='actor-role'>Actor role</label>
+          <input id='actor-role' type='text' value='lab_engineer' maxlength='128' required>
+        </div>
+        <div class='field'>
+          <label for='source-language'>Source language</label>
+          <select id='source-language'>
+            <option value='en'>English</option>
+            <option value='de'>German</option>
+            <option value='auto'>Detect automatically</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section id='local-ai-readiness' class='workspace-section' aria-labelledby='readiness-title'>
+      <div class='section-header'>
+        <h2 id='readiness-title'>Local AI readiness</h2>
+        <button id='check-local-ai' type='button'>Check again</button>
+      </div>
+      <div class='section-body'>
+        <div id='readiness-grid' class='readiness-grid'></div>
+        <p id='readiness-message' class='message' aria-live='polite'>Checking local services.</p>
+      </div>
+    </section>
+
+    <div class='workspace-layout'>
+      <div class='capture-column'>
+        <section id='capture-section' class='workspace-section' aria-labelledby='capture-title'>
+          <div class='section-header'>
+            <h2 id='capture-title'>Voice and transcript</h2>
+            <span id='capture-state' class='record-meta'>No recording</span>
+          </div>
+          <div class='section-body capture-panel'>
+            <div class='recorder'>
+              <div>
+                <div class='recorder-display'>
+                  <span
+                    id='record-indicator'
+                    class='record-indicator'
+                    data-recording='false'
+                    aria-hidden='true'
+                  ></span>
+                  <div>
+                    <div id='recording-duration' class='record-time'>00:00</div>
+                    <div id='recording-format' class='record-meta'>Checking browser audio support</div>
+                  </div>
+                </div>
+                <audio id='audio-playback' controls hidden></audio>
+              </div>
+              <div>
+                <div class='button-row'>
+                  <button id='start-recording' type='button' class='button-primary'>Start recording</button>
+                  <button id='stop-recording' type='button' disabled>Stop</button>
+                  <button id='discard-recording' type='button' class='button-danger' disabled>
+                    Discard
+                  </button>
+                  <button id='process-audio' type='button' disabled>Process audio</button>
+                </div>
+                <p id='recorder-message' class='message' aria-live='polite'>
+                  Microphone audio stays in memory until you submit or discard it.
+                </p>
+              </div>
+            </div>
+
+            <div class='field'>
+              <label for='transcript'>Transcript or project notes</label>
+              <textarea
+                id='transcript'
+                class='transcript-area'
+                maxlength='4096'
+                placeholder='Record locally or enter project notes for structured extraction.'
+              ></textarea>
+              <div class='button-row'>
+                <button id='extract-text' type='button' class='button-primary'>Extract project</button>
+              </div>
+              <p id='extraction-message' class='message' aria-live='polite'></p>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id='review-section'
+          class='workspace-section review-shell'
+          aria-labelledby='review-title'
+          hidden
+        >
+          <div class='section-header'>
+            <div>
+              <h2 id='review-title'>Human review</h2>
+              <span class='record-meta'>Edit extracted values before confirmation.</span>
+            </div>
+            <div class='section-actions'>
+              <button id='expand-sections' type='button'>Expand all</button>
+              <button id='collapse-sections' type='button'>Collapse all</button>
+            </div>
+          </div>
+          <form id='candidate-form' novalidate>
+            <div id='candidate-sections'></div>
+          </form>
+        </section>
+
+        <section id='evidence-section' class='workspace-section' aria-labelledby='evidence-title'>
+          <div class='section-header'>
+            <h2 id='evidence-title'>Evidence</h2>
+            <span id='evidence-count' class='record-meta'>0 files registered</span>
+          </div>
+          <div class='section-body evidence-upload'>
+            <div class='drop-zone'>
+              <label for='evidence-files'>Upload Excel, PDF, or image evidence</label>
+              <input
+                id='evidence-files'
+                type='file'
+                accept='.xlsx,.pdf,image/png,image/jpeg,image/webp'
+                multiple
+              >
+            </div>
+            <p id='evidence-message' class='message' aria-live='polite'>
+              Files are hashed in the browser and sent only when selected.
+            </p>
+            <div id='evidence-list' class='evidence-list'></div>
+            <div class='button-row'>
+              <button id='analyze-excel' type='button' disabled>Analyze Excel</button>
+            </div>
+            <div id='excel-import-report' hidden>
+              <h3>Workbook analysis</h3>
+              <p id='excel-import-summary' class='message'></p>
+              <div class='table-wrap'>
+                <table id='excel-import-preview'>
+                  <thead>
+                    <tr>
+                      <th scope='col'>Source</th>
+                      <th scope='col'>Project</th>
+                      <th scope='col'>Customer</th>
+                      <th scope='col'>Outcome</th>
+                      <th scope='col'>Completeness</th>
+                      <th scope='col'>Missing</th>
+                      <th scope='col'>Warnings</th>
+                      <th scope='col'>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id='excel-import-preview-body'></tbody>
+                </table>
+              </div>
+              <h3>Unmapped columns</h3>
+              <ul id='excel-unmapped-columns' class='compact-list'></ul>
+              <h3>Row errors</h3>
+              <ul id='excel-row-errors' class='compact-list'></ul>
+            </div>
+          </div>
+        </section>
+
+        <section id='confirm-section' class='workspace-section' aria-labelledby='confirm-title'>
+          <div class='section-header'>
+            <h2 id='confirm-title'>Confirm and save draft</h2>
+          </div>
+          <div class='section-body'>
+            <div class='confirm-box'>
+              <input id='human-confirmed' type='checkbox' disabled>
+              <label for='human-confirmed'>
+                I reviewed the transcript, structured fields, explicit unknown states, and
+                evidence references. Create a governed Knowledge Object in draft lifecycle.
+              </label>
+            </div>
+            <div class='review-actions'>
+              <p id='save-message' class='message' aria-live='polite'>
+                Human confirmation and an actor ID are required.
+              </p>
+              <button id='save-candidate' type='button' class='button-primary' disabled>
+                Save confirmed draft
+              </button>
+            </div>
+            <div id='save-result' class='save-result' hidden>
+              <strong>Draft created</strong>
+              <span id='created-object-id'></span>
+              <span id='created-lifecycle'></span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class='quality-column' aria-label='Candidate quality'>
+        <section class='workspace-section' aria-labelledby='quality-title'>
+          <div class='section-header'>
+            <h2 id='quality-title'>Completeness</h2>
+          </div>
+          <div class='section-body'>
+            <div class='quality-score'>
+              <div class='score-line'>
+                <span class='field-label'>Candidate score</span>
+                <span id='completeness-score' class='score-value'>0%</span>
+              </div>
+              <progress id='completeness-progress' max='100' value='0'>0%</progress>
+            </div>
+            <div class='quality-block candidate-readiness'>
+              <h3>Human review issues</h3>
+              <p id='candidate-readiness-status' class='candidate-readiness-status'
+                 data-ready='false'>Needs review</p>
+              <ul id='candidate-readiness-issues' class='readiness-issue-list'>
+                <li class='empty-note'>Extract or enter a Candidate, then check readiness.</li>
+              </ul>
+              <button id='evaluate-candidate' type='button' disabled>Re-check readiness</button>
+              <p id='candidate-readiness-message' class='message' aria-live='polite'></p>
+            </div>
+            <div class='quality-block'>
+              <h3>AI claims requiring review</h3>
+              <p id='grounded-claim-summary' class='message'>No AI claim review items.</p>
+              <ul id='unsupported-claims' class='readiness-issue-list'>
+                <li class='empty-note'>No unsupported AI claims.</li>
+              </ul>
+            </div>
+            <div class='quality-block'>
+              <h3>Critical missing fields</h3>
+              <ul id='missing-fields' class='compact-list'>
+                <li>Extract a candidate to calculate completeness.</li>
+              </ul>
+            </div>
+            <div class='quality-block'>
+              <h3>Extraction warnings</h3>
+              <ul id='extraction-warnings' class='compact-list'>
+                <li>No warnings.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class='workspace-section' aria-labelledby='questions-title'>
+          <div class='section-header'>
+            <h2 id='questions-title'>Unresolved questions</h2>
+          </div>
+          <div class='section-body'>
+            <div id='recommended-questions' class='question-list'>
+              <p class='empty-note'>Questions appear after extraction.</p>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section id='recent-section' class='workspace-section' aria-labelledby='recent-title'>
+      <div class='section-header'>
+        <h2 id='recent-title'>Recent project captures</h2>
+        <button id='refresh-captures' type='button'>Refresh</button>
+      </div>
+      <p id='recent-message' class='message section-body' aria-live='polite'></p>
+      <div class='table-wrap'>
+        <table id='recent-captures'>
+          <thead>
+            <tr>
+              <th scope='col'>Project</th>
+              <th scope='col'>Customer</th>
+              <th scope='col'>Status</th>
+              <th scope='col'>Completeness</th>
+              <th scope='col'>Lifecycle</th>
+              <th scope='col'>Next action</th>
+              <th scope='col'>Object ID</th>
+            </tr>
+          </thead>
+          <tbody id='recent-captures-body'></tbody>
+        </table>
+        <p id='recent-empty' class='empty-note section-body'>No captures loaded.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const endpoints = Object.freeze({
+      preflight: "/api/v2/lab-capture/preflight",
+      processAudio: "/api/v2/lab-capture/process-audio",
+      extractText: "/api/v2/lab-capture/extract-text",
+      evaluateCandidate: "/api/v2/lab-capture/evaluate-candidate",
+      assets: "/api/v2/lab-capture/assets",
+      importExcel: "/api/v2/lab-capture/import-excel",
+      captures: "/api/v2/lab-project-captures"
+    });
+
+    const preferredAudioTypes = Object.freeze([
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+      "audio/ogg;codecs=opus"
+    ]);
+
+    const explicitStates = Object.freeze([
+      ["known", "Known"],
+      ["unknown", "Unknown"],
+      ["not_measured", "Not measured"],
+      ["not_applicable", "Not applicable"],
+      ["conflicting", "Conflicting"],
+      ["missing", "Missing"]
+    ]);
+
+    const sectionSchemas = Object.freeze([
+      {
+        key: "project",
+        title: "Project and customer",
+        kind: "object",
+        fields: [
+          ["project_id", "Project ID", "text", true],
+          ["project_name", "Project name", "text", true],
+          ["customer_company", "Customer company", "text", true],
+          ["customer_contact", "Customer contact", "text", true],
+          ["request_summary", "Customer request", "textarea", true],
+          ["target_application", "Target application", "text", true],
+          ["intended_industrial_function", "Industrial function", "text", true],
+          ["customer_requirements", "Customer requirements (one per line)", "lines", true],
+          ["success_criteria", "Success criteria (one per line)", "lines", true],
+          ["opened_at", "Opened at", "datetime", true],
+          ["target_due_at", "Target due at", "datetime", true],
+          ["project_status", "Project status", "select", false, [
+            "proposed", "open", "in_progress", "on_hold", "completed", "cancelled", "unknown"
+          ]]
+        ]
+      },
+      {
+        key: "substrate",
+        title: "Substrate and reason selected",
+        kind: "object",
+        nullable: true,
+        fields: [
+          ["substrate_id", "Substrate ID", "text", true],
+          ["substrate_name", "Substrate name", "text", true],
+          ["substrate_type", "Substrate type", "text", true],
+          ["supplier", "Supplier", "text", true],
+          ["construction", "Construction", "text", true],
+          ["basis_weight", "Basis weight", "number", true],
+          ["relevant_specification", "Relevant specification", "textarea", true],
+          ["reason_selected", "Reason selected", "textarea", true]
+        ]
+      },
+      {
+        key: "materials",
+        title: "Materials and formulation",
+        kind: "array",
+        itemLabel: "Material",
+        fields: [
+          ["material_id", "Material ID", "text", false],
+          ["source_material_id", "Source material ID", "text", true],
+          ["material_name", "Material name", "text", true],
+          ["supplier", "Supplier", "text", true],
+          ["commercial_grade", "Commercial grade", "text", true],
+          ["function_in_formulation", "Function in formulation", "text", true],
+          ["amount", "Amount", "number", true],
+          ["unit", "Unit", "text", true],
+          ["batch_or_lot", "Batch or lot", "text", true],
+          ["price_value", "Price", "number", true],
+          ["price_currency", "Currency", "text", true],
+          ["price_basis", "Price basis", "text", true],
+          ["tds_reference", "TDS reference", "text", true],
+          ["sds_reference", "SDS reference", "text", true],
+          ["safety_notes", "Safety notes", "textarea", true]
+        ]
+      },
+      {
+        key: "approaches",
+        title: "Experimental approaches",
+        kind: "array",
+        itemLabel: "Approach",
+        fields: [
+          ["approach_id", "Approach ID", "text", false],
+          ["source_approach_id", "Source approach ID", "text", true],
+          ["title", "Title", "text", true],
+          ["description", "Description", "textarea", true],
+          ["technical_rationale", "Technical rationale", "textarea", true],
+          ["hypothesis", "Hypothesis", "textarea", true],
+          ["outcome", "Outcome", "select", false, [
+            "planned", "in_progress", "successful", "partially_successful", "failed",
+            "inconclusive"
+          ]],
+          ["outcome_summary", "Outcome summary", "textarea", true],
+          ["failure_reason", "Failure reason", "textarea", true],
+          ["root_cause_status", "Root cause status", "select", true, [
+            "not_assessed", "hypothesis", "confirmed", "not_applicable", "unknown"
+          ]],
+          ["lesson_learned", "Lesson learned", "textarea", true],
+          ["laboratory_challenges", "Laboratory challenges (one per line)", "lines", true],
+          ["improvement_possible", "Improvement possible", "boolean", true],
+          ["improvement_idea", "Improvement idea", "textarea", true],
+          ["price_optimization_status", "Price optimization", "select", true, [
+            "assessed", "not_assessed", "not_applicable", "unknown"
+          ]],
+          ["production_feasibility_status", "Production feasibility", "select", true, [
+            "assessed", "not_assessed", "not_applicable", "unknown"
+          ]],
+          ["production_feasibility_notes", "Production feasibility notes", "textarea", true],
+          ["reuse_potential", "Reuse potential", "textarea", true],
+          ["innovation_potential", "Innovation potential", "textarea", true],
+          ["photograph_missing_reason", "Reason photograph is missing", "textarea", true]
+        ]
+      },
+      {
+        key: "process_parameters",
+        title: "Process parameters",
+        kind: "array",
+        itemLabel: "Parameter",
+        fields: [
+          ["approach_id", "Approach ID", "text", false],
+          ["process_stage", "Process stage", "text", false],
+          ["equipment_name", "Equipment", "text", true],
+          ["parameter_name", "Parameter", "text", false],
+          ["numeric_value", "Numeric value", "number", false],
+          ["text_value", "Text value", "text", false],
+          ["unit", "Unit", "text", true],
+          ["setpoint_or_actual", "Value type", "select", true, [
+            "setpoint", "actual", "both", "not_applicable"
+          ]],
+          ["measurement_state", "Measurement state", "select", false, [
+            "known", "unknown", "not_measured", "not_applicable", "conflicting"
+          ]],
+          ["source_note", "Source note", "textarea", true]
+        ]
+      },
+      {
+        key: "tests",
+        title: "Tests and evaluations",
+        kind: "array",
+        itemLabel: "Test",
+        fields: [
+          ["approach_id", "Approach ID", "text", false],
+          ["sample_id", "Sample ID", "text", true],
+          ["test_name", "Test name", "text", false],
+          ["method", "Method", "text", true],
+          ["standard", "Standard", "text", true],
+          ["evaluation_type", "Evaluation type", "text", true],
+          ["acceptance_criteria", "Acceptance criteria", "textarea", true],
+          ["numeric_result", "Numeric result", "number", true],
+          ["text_result", "Text result", "textarea", true],
+          ["unit", "Unit", "text", true],
+          ["outcome", "Outcome", "select", false, [
+            "passed", "failed", "partially_passed", "not_measured", "inconclusive"
+          ]],
+          ["performed_at", "Performed at", "datetime", true],
+          ["performed_by", "Performed by", "text", true],
+          ["evidence_references", "Evidence references (one per line)", "lines", true],
+          ["notes", "Notes", "textarea", true]
+        ]
+      },
+      {
+        key: "samples",
+        title: "Samples, archive, shipment and follow-up",
+        kind: "array",
+        itemLabel: "Sample",
+        fields: [
+          ["sample_id", "Sample ID", "text", false],
+          ["source_sample_id", "Source sample ID", "text", true],
+          ["approach_id", "Approach ID", "text", false],
+          ["sample_description", "Sample description", "textarea", true],
+          ["physical_archive_status", "Archive status", "select", true, [
+            "archived", "not_archived", "lost", "consumed", "unknown"
+          ]],
+          ["archive_location", "Archive location", "text", true],
+          ["archive_reason_if_missing", "Reason archive is missing", "textarea", true],
+          ["created_at", "Created at", "datetime", true],
+          ["sent_at", "Sent at", "datetime", true],
+          ["recipient", "Recipient", "text", true],
+          ["shipment_reference", "Shipment reference", "text", true],
+          ["follow_up_status", "Follow-up status", "select", true, [
+            "not_required", "pending", "contacted", "feedback_received", "closed", "overdue"
+          ]],
+          ["follow_up_due_at", "Follow-up due", "datetime", true]
+        ]
+      },
+      {
+        key: "customer_feedback",
+        title: "Customer feedback",
+        kind: "array",
+        itemLabel: "Feedback",
+        fields: [
+          ["sample_id", "Sample ID", "text", false],
+          ["received_at", "Received at", "datetime", false],
+          ["received_from", "Received from", "text", false],
+          ["feedback_summary", "Feedback summary", "textarea", false],
+          ["result", "Result", "text", true],
+          ["requested_changes", "Requested changes", "textarea", true],
+          ["next_action", "Next action", "textarea", true]
+        ]
+      },
+      {
+        key: "follow_up",
+        title: "Business value and unresolved questions",
+        kind: "mapped",
+        fields: [
+          ["current_next_action", "Current next action", "textarea", true],
+          ["responsible_person", "Responsible person", "text", true],
+          ["next_action_due_at", "Next action due", "datetime", true],
+          ["commercial_potential", "Commercial potential", "textarea", true],
+          ["potential_other_customers", "Potential other customers (one per line)", "lines", true],
+          ["estimated_cost_status", "Estimated cost status", "select", true, [
+            "assessed", "not_assessed", "not_applicable", "unknown"
+          ]],
+          ["production_trial_required", "Production trial required", "boolean", true],
+          ["unresolved_questions", "Unresolved questions (one per line)", "lines", true]
+        ]
+      }
+    ]);
+
+    let mediaRecorder = null;
+    let mediaStream = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = null;
+    let recordingStartedAt = 0;
+    let recordingTimer = null;
+    let selectedMimeType = "";
+    let candidate = null;
+    let candidateSaved = false;
+    let originalVoiceTranscript = null;
+    let localAIReady = false;
+    let selectedExcelFile = null;
+    let confirmationReady = false;
+    let readinessEvaluated = false;
+    let readinessIssues = [];
+    let groundedClaimReview = {
+      verifiedCount: 0,
+      unsupportedCount: 0,
+      ambiguousCount: 0,
+      claims: []
+    };
+
+    function getElement(id) {
+      return document.getElementById(id);
+    }
+
+    function organizationId() {
+      const value = getElement("organization-id").value.trim();
+      if (!value) {
+        throw new Error("Organization ID is required.");
+      }
+      return value;
+    }
+
+    function actorId() {
+      const value = getElement("actor-id").value.trim();
+      if (!value) {
+        throw new Error("Actor ID is required.");
+      }
+      return value;
+    }
+
+    function setMessage(id, message, state) {
+      const element = getElement(id);
+      element.textContent = message;
+      element.dataset.state = state || "";
+    }
+
+    function setProgress(step) {
+      const ids = ["step-capture", "step-extract", "step-review", "step-confirm"];
+      ids.forEach(function (id, index) {
+        getElement(id).dataset.state = index === step ? "active" : "";
+      });
+    }
+
+    function safeError(error, fallback) {
+      return error instanceof Error ? error.message : fallback;
+    }
+
+    function renderReadiness(payload) {
+      const checks = [
+        ["MLX Whisper", payload.mlx_whisper_import],
+        ["Whisper model", payload.whisper_model],
+        ["Ollama", payload.ollama_reachability],
+        ["Ollama model", payload.ollama_model],
+        ["Asset directory", payload.asset_directory]
+      ];
+      const grid = getElement("readiness-grid");
+      grid.replaceChildren();
+      checks.forEach(function (entry) {
+        const item = document.createElement("div");
+        item.className = "readiness-item";
+        item.dataset.ready = String(entry[1].ready === true);
+        const title = document.createElement("strong");
+        title.textContent = entry[0] + ": " + (entry[1].ready ? "Ready" : "Not ready");
+        const detail = document.createElement("span");
+        detail.textContent = entry[1].detail;
+        item.append(title, detail);
+        grid.append(item);
+      });
+      localAIReady = payload.ready === true;
+      setMessage(
+        "readiness-message",
+        localAIReady
+          ? "Local voice transcription and extraction are ready."
+          : "Voice processing remains disabled until every local dependency is ready.",
+        localAIReady ? "success" : "error"
+      );
+      updateRecorderControls(Boolean(mediaRecorder && mediaRecorder.state === "recording"));
+    }
+
+    async function checkLocalAI() {
+      const button = getElement("check-local-ai");
+      button.disabled = true;
+      setMessage("readiness-message", "Checking local services.", "busy");
+      try {
+        const response = await fetch(endpoints.preflight, {headers: {Accept: "application/json"}});
+        renderReadiness(await responsePayload(response, "Local AI preflight"));
+      } catch (error) {
+        localAIReady = false;
+        getElement("readiness-grid").replaceChildren();
+        setMessage("readiness-message", safeError(error, "Local readiness check failed."), "error");
+        updateRecorderControls(Boolean(mediaRecorder && mediaRecorder.state === "recording"));
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function responsePayload(response, action) {
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const errorPayload = await response.json();
+          detail = typeof errorPayload.detail === "string" ? " " + errorPayload.detail : "";
+        } catch (_error) {
+          detail = "";
+        }
+        throw new Error(action + " failed (" + response.status + ")." + detail);
+      }
+      return response.json();
+    }
+
+    function selectedAudioMimeType() {
+      if (!window.MediaRecorder) {
+        return "";
+      }
+      for (const mimeType of preferredAudioTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          return mimeType;
+        }
+      }
+      return "";
+    }
+
+    function formatDuration(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+    }
+
+    function updateRecordingDuration() {
+      const elapsed = Math.floor((Date.now() - recordingStartedAt) / 1000);
+      getElement("recording-duration").textContent = formatDuration(elapsed);
+    }
+
+    function stopTracks() {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(function (track) {
+          track.stop();
+        });
+      }
+      mediaStream = null;
+    }
+
+    function stopTimer() {
+      if (recordingTimer !== null) {
+        window.clearInterval(recordingTimer);
+        recordingTimer = null;
+      }
+    }
+
+    function updateRecorderControls(isRecording) {
+      getElement("start-recording").disabled = isRecording;
+      getElement("stop-recording").disabled = !isRecording;
+      getElement("discard-recording").disabled = isRecording || !audioBlob;
+      getElement("process-audio").disabled = isRecording || !audioBlob || !localAIReady;
+      getElement("record-indicator").dataset.recording = String(isRecording);
+      getElement("capture-state").textContent = isRecording
+        ? "Recording in progress"
+        : audioBlob
+          ? "Recording ready for review"
+          : "No recording";
+    }
+
+    async function startRecording() {
+      if (!window.MediaRecorder || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setMessage("recorder-message", "This browser does not support microphone recording.", "error");
+        return;
+      }
+      try {
+        selectedMimeType = selectedAudioMimeType();
+        mediaStream = await navigator.mediaDevices.getUserMedia({audio: true});
+        audioChunks = [];
+        audioBlob = null;
+        revokeAudioUrl();
+        const options = selectedMimeType ? {mimeType: selectedMimeType} : undefined;
+        mediaRecorder = new MediaRecorder(mediaStream, options);
+        mediaRecorder.addEventListener("dataavailable", function (event) {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        });
+        mediaRecorder.addEventListener("stop", finishRecording);
+        mediaRecorder.addEventListener("error", function () {
+          setMessage("recorder-message", "The browser could not complete the recording.", "error");
+          stopTracks();
+          stopTimer();
+          updateRecorderControls(false);
+        });
+        mediaRecorder.start();
+        recordingStartedAt = Date.now();
+        getElement("recording-duration").textContent = "00:00";
+        recordingTimer = window.setInterval(updateRecordingDuration, 250);
+        updateRecorderControls(true);
+        setProgress(0);
+        setMessage("recorder-message", "Recording locally. Stop before processing.", "busy");
+      } catch (error) {
+        stopTracks();
+        const name = error && typeof error === "object" && "name" in error ? error.name : "";
+        const message = name === "NotAllowedError"
+          ? "Microphone permission was denied. You can enter a transcript instead."
+          : "Microphone access failed. Check browser and device settings.";
+        setMessage("recorder-message", message, "error");
+        updateRecorderControls(false);
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        getElement("stop-recording").disabled = true;
+        setMessage("recorder-message", "Finalizing audio for playback.", "busy");
+      }
+    }
+
+    function finishRecording() {
+      stopTimer();
+      stopTracks();
+      const mimeType = mediaRecorder && mediaRecorder.mimeType
+        ? mediaRecorder.mimeType
+        : selectedMimeType || "audio/webm";
+      audioBlob = new Blob(audioChunks, {type: mimeType});
+      audioUrl = URL.createObjectURL(audioBlob);
+      const playback = getElement("audio-playback");
+      playback.src = audioUrl;
+      playback.hidden = false;
+      getElement("recording-format").textContent =
+        mimeType + " | " + Math.ceil(audioBlob.size / 1024) + " KiB";
+      updateRecorderControls(false);
+      setMessage("recorder-message", "Review playback, then process or discard the recording.", "success");
+    }
+
+    function revokeAudioUrl() {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        audioUrl = null;
+      }
+    }
+
+    function discardRecording() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        return;
+      }
+      revokeAudioUrl();
+      audioBlob = null;
+      audioChunks = [];
+      const playback = getElement("audio-playback");
+      playback.removeAttribute("src");
+      playback.load();
+      playback.hidden = true;
+      getElement("recording-duration").textContent = "00:00";
+      getElement("recording-format").textContent =
+        selectedMimeType || "No retained recording";
+      updateRecorderControls(false);
+      setMessage("recorder-message", "Recording discarded. No audio is retained by this page.", "success");
+    }
+
+    function normalizeCandidate(payload) {
+      const value = payload && payload.candidate ? payload.candidate : payload;
+      if (!value || typeof value !== "object" || !value.project) {
+        throw new Error("The extraction response did not contain a valid project candidate.");
+      }
+      value.materials = Array.isArray(value.materials) ? value.materials : [];
+      value.approaches = Array.isArray(value.approaches) ? value.approaches : [];
+      value.process_parameters = Array.isArray(value.process_parameters)
+        ? value.process_parameters
+        : [];
+      value.tests = Array.isArray(value.tests) ? value.tests : [];
+      value.samples = Array.isArray(value.samples) ? value.samples : [];
+      value.customer_feedback = Array.isArray(value.customer_feedback)
+        ? value.customer_feedback
+        : [];
+      value.evidence = Array.isArray(value.evidence) ? value.evidence : [];
+      value.field_states = value.field_states || {};
+      value.critical_missing_fields = Array.isArray(value.critical_missing_fields)
+        ? value.critical_missing_fields
+        : [];
+      value.recommended_questions = Array.isArray(value.recommended_questions)
+        ? value.recommended_questions
+        : [];
+      value.extraction_warnings = Array.isArray(value.extraction_warnings)
+        ? value.extraction_warnings
+        : [];
+      readinessEvaluated = Boolean(
+        payload && typeof payload.confirmation_ready === "boolean"
+      );
+      confirmationReady = readinessEvaluated && payload.confirmation_ready === true;
+      readinessIssues = payload && Array.isArray(payload.readiness_issues)
+        ? payload.readiness_issues
+        : [];
+      groundedClaimReview = {
+        verifiedCount: Number(payload && payload.verified_claim_count) || 0,
+        unsupportedCount: Number(payload && payload.unsupported_claim_count) || 0,
+        ambiguousCount: Number(payload && payload.ambiguous_claim_count) || 0,
+        claims: payload && Array.isArray(payload.unsupported_claims)
+          ? payload.unsupported_claims
+          : []
+      };
+      return value;
+    }
+
+    function acceptCandidate(payload) {
+      const retainedEvidence = candidate && Array.isArray(candidate.evidence)
+        ? candidate.evidence
+        : [];
+      const extractedCandidate = normalizeCandidate(payload);
+      if (extractedCandidate.source_kind === "voice") {
+        originalVoiceTranscript = originalVoiceTranscript || extractedCandidate.transcript;
+        extractedCandidate.transcript = originalVoiceTranscript;
+      } else {
+        originalVoiceTranscript = null;
+      }
+      retainedEvidence.forEach(function (descriptor) {
+        const isDuplicate = extractedCandidate.evidence.some(function (item) {
+          return item.sha256 === descriptor.sha256;
+        });
+        if (!isDuplicate) {
+          extractedCandidate.evidence.push(descriptor);
+        }
+      });
+      candidate = extractedCandidate;
+      candidateSaved = false;
+      getElement("human-confirmed").checked = false;
+      const transcript = candidate.transcript;
+      getElement("transcript").readOnly = candidate.source_kind === "voice";
+      if (typeof transcript === "string") {
+        getElement("transcript").value = transcript;
+      }
+      renderCandidate();
+      getElement("review-section").hidden = false;
+      setProgress(2);
+      setMessage("extraction-message", "Candidate extracted. Review every section.", "success");
+      getElement("review-section").scrollIntoView({behavior: "smooth", block: "start"});
+      if (!readinessEvaluated) {
+        void evaluateCandidate();
+      }
+    }
+
+    async function processAudio() {
+      if (!audioBlob || (mediaRecorder && mediaRecorder.state === "recording")) {
+        setMessage("recorder-message", "Stop and review a recording before processing.", "error");
+        return;
+      }
+      const button = getElement("process-audio");
+      button.disabled = true;
+      setProgress(1);
+      setMessage("recorder-message", "Transcribing and extracting with local providers.", "busy");
+      try {
+        const extension = audioBlob.type.includes("mp4")
+          ? "m4a"
+          : audioBlob.type.includes("ogg")
+            ? "ogg"
+            : "webm";
+        const audioFilename = "project-intake." + extension;
+        const response = await fetch(endpoints.processAudio, {
+          method: "POST",
+          headers: {
+            "Content-Type": audioBlob.type || "application/octet-stream",
+            "X-SmartCoat-Filename": audioFilename,
+            "X-SmartCoat-Organization-ID": organizationId(),
+            "X-SmartCoat-Actor-ID": actorId(),
+            "X-SmartCoat-Source-Language": getElement("source-language").value
+          },
+          body: audioBlob
+        });
+        acceptCandidate(await responsePayload(response, "Audio processing"));
+        const originalTranscript = candidate.transcript;
+        if (typeof originalTranscript !== "string" || !originalTranscript.trim()) {
+          throw new Error("Voice processing returned no source transcript for evidence.");
+        }
+        appendEvidenceDescriptor(await uploadEvidenceBlob(audioBlob, audioFilename));
+        appendEvidenceDescriptor(await uploadEvidenceBlob(
+          new Blob([originalTranscript], {type: "text/plain"}),
+          "capture-transcript.txt"
+        ));
+        renderEvidence();
+        updateSaveGate();
+        setMessage(
+          "recorder-message",
+          "Local extraction completed and original audio/transcript evidence was registered.",
+          "success"
+        );
+      } catch (error) {
+        setProgress(0);
+        setMessage("recorder-message", safeError(error, "Audio processing failed."), "error");
+      } finally {
+        button.disabled = !audioBlob || !localAIReady;
+      }
+    }
+
+    function currentProjectHints() {
+      if (!candidate || !candidate.project) {
+        return null;
+      }
+      const hints = {};
+      [
+        "project_id",
+        "project_name",
+        "customer_company",
+        "request_summary",
+        "target_application"
+      ].forEach(function (key) {
+        const value = candidate.project[key];
+        if (typeof value === "string" && value.trim()) {
+          hints[key] = value.trim();
+        }
+      });
+      return Object.keys(hints).length ? hints : null;
+    }
+
+    async function extractText() {
+      const enteredTranscript = getElement("transcript").value.trim();
+      const transcript = candidate && candidate.source_kind === "voice"
+        ? originalVoiceTranscript
+        : enteredTranscript;
+      if (!transcript) {
+        setMessage("extraction-message", "Enter or record a transcript before extraction.", "error");
+        return;
+      }
+      let actor;
+      let organization;
+      try {
+        actor = actorId();
+        organization = organizationId();
+      } catch (error) {
+        setMessage("extraction-message", safeError(error, "Workspace details are required."), "error");
+        return;
+      }
+      const button = getElement("extract-text");
+      button.disabled = true;
+      setProgress(1);
+      setMessage("extraction-message", "Extracting a structured candidate.", "busy");
+      try {
+        const payload = {
+          transcript: transcript,
+          source_kind: candidate && ["voice", "text"].includes(candidate.source_kind)
+            ? candidate.source_kind
+            : "text",
+          project_hints: currentProjectHints(),
+          actor_metadata: {
+            actor_id: actor,
+            actor_role: getElement("actor-role").value.trim()
+          },
+          source_language: getElement("source-language").value
+        };
+        const response = await fetch(endpoints.extractText, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-SmartCoat-Organization-ID": organization
+          },
+          body: JSON.stringify(payload)
+        });
+        acceptCandidate(await responsePayload(response, "Text extraction"));
+      } catch (error) {
+        setProgress(0);
+        setMessage("extraction-message", safeError(error, "Text extraction failed."), "error");
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function valueAt(path) {
+      const parts = path.split(".");
+      let value = candidate;
+      for (const part of parts) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        value = value[part];
+      }
+      return value;
+    }
+
+    function setValueAt(path, value) {
+      const parts = path.split(".");
+      let target = candidate;
+      for (let index = 0; index < parts.length - 1; index += 1) {
+        const part = parts[index];
+        if (target[part] === null || target[part] === undefined) {
+          target[part] = Number.isInteger(Number(parts[index + 1])) ? [] : {};
+        }
+        target = target[part];
+      }
+      target[parts[parts.length - 1]] = value;
+    }
+
+    function inputValue(value, type) {
+      if (value === null || value === undefined) {
+        return "";
+      }
+      if (type === "lines" && Array.isArray(value)) {
+        return value.join("\n");
+      }
+      if (type === "datetime") {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return "";
+        }
+        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 16);
+      }
+      return String(value);
+    }
+
+    function parsedValue(input, type) {
+      if (type === "boolean") {
+        return input.value === "" ? null : input.value === "true";
+      }
+      const value = input.value.trim();
+      if (!value) {
+        return type === "lines" ? [] : null;
+      }
+      if (type === "number") {
+        return Number(value);
+      }
+      if (type === "lines") {
+        return value.split("\n").map(function (item) {
+          return item.trim();
+        }).filter(Boolean);
+      }
+      if (type === "datetime") {
+        return new Date(input.value).toISOString();
+      }
+      return value;
+    }
+
+    function appendOption(select, value, label) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      select.append(option);
+    }
+
+    function createValueControl(type, options, value) {
+      let input;
+      if (type === "textarea" || type === "lines") {
+        input = document.createElement("textarea");
+      } else if (type === "select" || type === "boolean") {
+        input = document.createElement("select");
+        appendOption(input, "", "Select");
+        const entries = type === "boolean" ? ["true", "false"] : options || [];
+        entries.forEach(function (entry) {
+          const label = entry === "true"
+            ? "Yes"
+            : entry === "false"
+              ? "No"
+              : entry.replaceAll("_", " ");
+          appendOption(input, entry, label);
+        });
+      } else {
+        input = document.createElement("input");
+        input.type = type === "datetime" ? "datetime-local" : type;
+        if (type === "number") {
+          input.step = "any";
+        }
+      }
+      input.value = inputValue(value, type);
+      return input;
+    }
+
+    function deriveState(path, value) {
+      if (candidate.field_states && candidate.field_states[path]) {
+        return candidate.field_states[path];
+      }
+      if (value !== null && value !== undefined && value !== "") {
+        return "known";
+      }
+      return "missing";
+    }
+
+    function createField(path, labelText, type, stateful, options) {
+      const field = document.createElement("div");
+      field.className = "field";
+      if (type === "textarea" || type === "lines") {
+        field.classList.add("field--wide");
+      }
+      const label = document.createElement("label");
+      const inputId = "candidate-" + path.replaceAll(".", "-").replaceAll("_", "-");
+      label.htmlFor = inputId;
+      label.textContent = labelText;
+      field.append(label);
+
+      const currentValue = valueAt(path);
+      const input = createValueControl(type, options, currentValue);
+      input.id = inputId;
+      input.dataset.path = path;
+      input.addEventListener("change", function () {
+        try {
+          setValueAt(path, parsedValue(input, type));
+          field.dataset.missing = String(!input.value);
+          invalidateConfirmation();
+          updateAttentionStates();
+        } catch (_error) {
+          field.dataset.missing = "true";
+        }
+      });
+
+      if (!stateful) {
+        field.append(input);
+        field.dataset.missing = String(currentValue === null || currentValue === undefined);
+        return field;
+      }
+
+      const stateRow = document.createElement("div");
+      stateRow.className = "field-state";
+      const stateSelect = document.createElement("select");
+      stateSelect.setAttribute("aria-label", labelText + " information state");
+      explicitStates.forEach(function (entry) {
+        appendOption(stateSelect, entry[0], entry[1]);
+      });
+      const selectedState = deriveState(path, currentValue);
+      stateSelect.value = selectedState;
+      input.disabled = selectedState !== "known" && selectedState !== "conflicting";
+      field.dataset.missing = String(selectedState === "missing");
+      stateSelect.addEventListener("change", function () {
+        const state = stateSelect.value;
+        candidate.field_states[path] = state;
+        input.disabled = state !== "known" && state !== "conflicting";
+        if (input.disabled) {
+          setValueAt(path, type === "lines" ? [] : null);
+          input.value = "";
+        }
+        field.dataset.missing = String(state === "missing");
+        invalidateConfirmation();
+      });
+      stateRow.append(input, stateSelect);
+      field.append(stateRow);
+      return field;
+    }
+
+    function objectForSchema(schema) {
+      if (schema.key === "follow_up") {
+        return candidate;
+      }
+      return candidate[schema.key];
+    }
+
+    function nextCorrelationId(prefix, records, key) {
+      const numbers = records.map(function (item) {
+        const match = typeof item[key] === "string"
+          ? item[key].match(new RegExp("^" + prefix + "-(\\d{3})$"))
+          : null;
+        return match ? Number(match[1]) : 0;
+      });
+      const next = Math.max(0, ...numbers) + 1;
+      return prefix + "-" + String(next).padStart(3, "0");
+    }
+
+    function structuralIdDefault(schema, key) {
+      if (key === "material_id" && schema.key === "materials") {
+        return nextCorrelationId("C-M", candidate.materials, "material_id");
+      }
+      if (key === "approach_id") {
+        if (schema.key === "approaches") {
+          return nextCorrelationId("C-A", candidate.approaches, "approach_id");
+        }
+        return candidate.approaches.length ? candidate.approaches[0].approach_id : "C-A-001";
+      }
+      if (key === "sample_id") {
+        if (schema.key === "samples") {
+          return nextCorrelationId("C-S", candidate.samples, "sample_id");
+        }
+        return candidate.samples.length ? candidate.samples[0].sample_id : "C-S-001";
+      }
+      return null;
+    }
+
+    function addNewRecord(schema) {
+      const record = {};
+      schema.fields.forEach(function (field) {
+        const key = field[0];
+        const type = field[2];
+        const options = field[4] || [];
+        const structuralId = structuralIdDefault(schema, key);
+        if (structuralId !== null) {
+          record[key] = structuralId;
+        } else if (type === "lines") {
+          record[key] = [];
+        } else if (!field[3] && type === "select" && options.length > 0) {
+          record[key] = options[0];
+        } else {
+          record[key] = null;
+        }
+      });
+      candidate[schema.key].push(record);
+      invalidateConfirmation();
+      renderCandidate();
+    }
+
+    function removeRecord(schema, index) {
+      candidate[schema.key].splice(index, 1);
+      invalidateConfirmation();
+      renderCandidate();
+    }
+
+    function renderRecord(schema, index) {
+      const record = document.createElement("article");
+      record.className = "record-card";
+      record.dataset.section = schema.key;
+      record.dataset.index = String(index);
+
+      const header = document.createElement("div");
+      header.className = "record-card__header";
+      const title = document.createElement("p");
+      title.className = "record-card__title";
+      const item = candidate[schema.key][index];
+      const identity = item.material_id || item.approach_id || item.sample_id ||
+        item.test_name || item.parameter_name || "";
+      title.textContent = schema.itemLabel + " " + (identity || String(index + 1));
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "button-small button-danger";
+      remove.textContent = "Remove";
+      remove.setAttribute("aria-label", "Remove " + schema.itemLabel + " " + (index + 1));
+      remove.addEventListener("click", function () {
+        removeRecord(schema, index);
+      });
+      header.append(title, remove);
+
+      const body = document.createElement("div");
+      body.className = "record-card__body";
+      schema.fields.forEach(function (definition) {
+        body.append(createField(
+          schema.key + "." + index + "." + definition[0],
+          definition[1],
+          definition[2],
+          definition[3],
+          definition[4]
+        ));
+      });
+      record.append(header, body);
+      return record;
+    }
+
+    function renderSection(schema, index) {
+      const details = document.createElement("details");
+      details.className = "review-section";
+      details.open = index < 2;
+
+      const summary = document.createElement("summary");
+      const title = document.createElement("span");
+      title.textContent = schema.title;
+      const count = document.createElement("span");
+      count.className = "section-count";
+      if (schema.kind === "array") {
+        const quantity = candidate[schema.key].length;
+        count.textContent = quantity + (quantity === 1 ? " record" : " records");
+      } else {
+        count.textContent = "Editable";
+      }
+      summary.append(title, count);
+
+      const body = document.createElement("div");
+      body.className = "review-section-body";
+      if (schema.kind === "array") {
+        const list = document.createElement("div");
+        list.className = "record-list";
+        candidate[schema.key].forEach(function (_record, recordIndex) {
+          list.append(renderRecord(schema, recordIndex));
+        });
+        if (!candidate[schema.key].length) {
+          const empty = document.createElement("p");
+          empty.className = "empty-note";
+          empty.textContent = "No " + schema.itemLabel.toLowerCase() + " records extracted.";
+          list.append(empty);
+        }
+        const add = document.createElement("button");
+        add.type = "button";
+        add.className = "button-small";
+        add.textContent = "Add " + schema.itemLabel.toLowerCase();
+        add.addEventListener("click", function () {
+          addNewRecord(schema);
+        });
+        body.append(list, add);
+      } else {
+        if (schema.nullable && objectForSchema(schema) === null) {
+          candidate[schema.key] = {};
+        }
+        const grid = document.createElement("div");
+        grid.className = "simple-grid";
+        schema.fields.forEach(function (definition) {
+          const path = schema.kind === "mapped"
+            ? definition[0]
+            : schema.key + "." + definition[0];
+          grid.append(createField(
+            path,
+            definition[1],
+            definition[2],
+            definition[3],
+            definition[4]
+          ));
+        });
+        body.append(grid);
+      }
+      details.append(summary, body);
+      return details;
+    }
+
+    function replaceList(id, values, emptyText) {
+      const list = getElement(id);
+      list.replaceChildren();
+      if (!values.length) {
+        const item = document.createElement("li");
+        item.textContent = emptyText;
+        list.append(item);
+        return;
+      }
+      values.forEach(function (value) {
+        const item = document.createElement("li");
+        item.textContent = String(value);
+        list.append(item);
+      });
+    }
+
+    function renderQuestions(questions) {
+      const container = getElement("recommended-questions");
+      container.replaceChildren();
+      const combined = Array.from(new Set([].concat(
+        questions || [],
+        candidate.unresolved_questions || []
+      )));
+      if (!combined.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty-note";
+        empty.textContent = "No unresolved questions.";
+        container.append(empty);
+        return;
+      }
+      combined.forEach(function (questionText) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "question";
+        const question = document.createElement("p");
+        question.textContent = String(questionText);
+        wrapper.append(question);
+        container.append(wrapper);
+      });
+    }
+
+    function renderCandidateReadiness() {
+      const status = getElement("candidate-readiness-status");
+      const list = getElement("candidate-readiness-issues");
+      const button = getElement("evaluate-candidate");
+      list.replaceChildren();
+      button.disabled = !candidate;
+
+      const ready = Boolean(candidate && readinessEvaluated && confirmationReady);
+      status.dataset.ready = String(ready);
+      status.textContent = ready ? "Ready for confirmation" : "Needs review";
+
+      if (!candidate) {
+        const empty = document.createElement("li");
+        empty.className = "empty-note";
+        empty.textContent = "Extract or enter a Candidate, then check readiness.";
+        list.append(empty);
+        return;
+      }
+      if (!readinessEvaluated) {
+        const empty = document.createElement("li");
+        empty.className = "empty-note";
+        empty.textContent = "Candidate changed. Re-check readiness before confirmation.";
+        list.append(empty);
+        return;
+      }
+      if (!readinessIssues.length) {
+        const empty = document.createElement("li");
+        empty.className = "empty-note";
+        empty.textContent = "No blocking review issues.";
+        list.append(empty);
+        return;
+      }
+      readinessIssues.forEach(function (issue) {
+        const item = document.createElement("li");
+        item.className = "readiness-issue";
+        item.dataset.severity = String(issue.severity || "blocking");
+        const title = document.createElement("strong");
+        title.textContent = String(issue.severity || "blocking").toUpperCase() +
+          ": " + String(issue.message || issue.code);
+        const question = document.createElement("span");
+        question.textContent = "Question: " + String(issue.question || "Review this value.");
+        const path = document.createElement("span");
+        path.textContent = "Path: " + String(issue.path || "Candidate");
+        item.append(title, question, path);
+        list.append(item);
+      });
+    }
+
+    async function evaluateCandidate() {
+      if (!candidate) {
+        return;
+      }
+      const button = getElement("evaluate-candidate");
+      button.disabled = true;
+      setMessage("candidate-readiness-message", "Checking Candidate readiness.", "busy");
+      const retainedGroundedClaimReview = groundedClaimReview;
+      try {
+        const response = await fetch(endpoints.evaluateCandidate, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-SmartCoat-Organization-ID": organizationId()
+          },
+          body: JSON.stringify(candidate)
+        });
+        const payload = await responsePayload(response, "Candidate readiness check");
+        candidate = normalizeCandidate(payload);
+        groundedClaimReview = retainedGroundedClaimReview;
+        renderCandidate();
+        setMessage(
+          "candidate-readiness-message",
+          confirmationReady
+            ? "Candidate is ready for human confirmation."
+            : "Resolve the blocking issues, then re-check readiness.",
+          confirmationReady ? "success" : "error"
+        );
+      } catch (error) {
+        readinessEvaluated = false;
+        confirmationReady = false;
+        renderCandidateReadiness();
+        setMessage(
+          "candidate-readiness-message",
+          safeError(error, "Candidate readiness check failed."),
+          "error"
+        );
+      } finally {
+        button.disabled = !candidate;
+        updateSaveGate();
+      }
+    }
+
+    function renderGroundedClaimReview() {
+      const summary = getElement("grounded-claim-summary");
+      const list = getElement("unsupported-claims");
+      list.replaceChildren();
+      summary.textContent = groundedClaimReview.verifiedCount + " verified, " +
+        groundedClaimReview.unsupportedCount + " unsupported, " +
+        groundedClaimReview.ambiguousCount + " ambiguous.";
+      if (!groundedClaimReview.claims.length) {
+        const empty = document.createElement("li");
+        empty.className = "empty-note";
+        empty.textContent = "No unsupported AI claims.";
+        list.append(empty);
+        return;
+      }
+      groundedClaimReview.claims.forEach(function (verification) {
+        const claim = verification && verification.claim ? verification.claim : {};
+        const item = document.createElement("li");
+        item.className = "claim-review-item";
+        const title = document.createElement("strong");
+        title.textContent = "Unsupported AI suggestion: " +
+          String(claim.text_value || claim.numeric_value || claim.claim_type || "Unknown claim");
+        const reason = document.createElement("span");
+        const reasonMessages = {
+          invalid_source_range: "The proposed source range is invalid.",
+          source_quote_mismatch: "No matching source evidence was found.",
+          unsupported_claim_type: "The claim type does not match the selected evidence.",
+          unsupported_subject_label: "The subject is not supported by the selected evidence.",
+          unsupported_text_value: "The proposed value is absent from the selected evidence.",
+          unsupported_numeric_value: "The number is absent from the selected evidence.",
+          unsupported_unit: "The unit is absent from the selected evidence.",
+          unsupported_state: "The proposed state conflicts with the selected evidence.",
+          unsupported_timestamp: "The date or timestamp is absent from the selected evidence.",
+          unsupported_customer_feedback: "Customer feedback is not supported by the evidence.",
+          unsupported_production_feasibility:
+            "Production feasibility is not supported by the evidence.",
+          conflicting_claim: "The source-grounded claim is explicitly conflicting.",
+          conflicting_supported_claims: "Supported source claims conflict with each other."
+        };
+        reason.textContent = "Reason: " + String(
+          reasonMessages[verification.reason_code] || "No matching source evidence was found."
+        );
+        const quote = document.createElement("span");
+        quote.textContent = "Proposed evidence: " + String(claim.source_quote || "None");
+        item.append(title, reason, quote);
+        list.append(item);
+      });
+    }
+
+    function renderCandidate() {
+      const container = getElement("candidate-sections");
+      container.replaceChildren();
+      sectionSchemas.forEach(function (schema, index) {
+        container.append(renderSection(schema, index));
+      });
+      const score = Number(candidate.completeness_score) || 0;
+      getElement("completeness-score").textContent = score + "%";
+      getElement("completeness-progress").value = score;
+      getElement("completeness-progress").textContent = score + "%";
+      replaceList(
+        "missing-fields",
+        candidate.critical_missing_fields,
+        "No critical missing fields reported."
+      );
+      replaceList(
+        "extraction-warnings",
+        candidate.extraction_warnings,
+        "No extraction warnings."
+      );
+      renderQuestions(candidate.recommended_questions);
+      renderCandidateReadiness();
+      renderGroundedClaimReview();
+      renderEvidence();
+      updateAttentionStates();
+      updateSaveGate();
+    }
+
+    function updateAttentionStates() {
+      if (!candidate) {
+        return;
+      }
+      document.querySelectorAll(".record-card").forEach(function (card) {
+        const section = card.dataset.section;
+        const index = Number(card.dataset.index);
+        const item = candidate[section][index];
+        let needsAttention = false;
+        if (section === "approaches" && item.outcome === "failed") {
+          needsAttention = !item.failure_reason || !item.lesson_learned;
+        }
+        if (section === "samples") {
+          const sent = Boolean(
+            item.sent_at || item.recipient || item.shipment_reference || item.follow_up_status
+          );
+          needsAttention = sent && (
+            !item.sent_at ||
+            !item.follow_up_status ||
+            (!["not_required", "closed"].includes(item.follow_up_status) && !item.follow_up_due_at)
+          );
+        }
+        card.dataset.attention = String(needsAttention);
+      });
+    }
+
+    function evidenceType(blob, filename) {
+      if (blob.type === "text/plain") {
+        return "transcript";
+      }
+      if (blob.type.startsWith("audio/")) {
+        return "audio";
+      }
+      if (blob.type === "application/pdf") {
+        return "pdf";
+      }
+      if (blob.type.startsWith("image/")) {
+        return "image";
+      }
+      if (
+        blob.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+        filename.toLowerCase().endsWith(".xlsx")
+      ) {
+        return "excel";
+      }
+      return "other";
+    }
+
+    async function sha256(blob) {
+      const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+      return Array.from(new Uint8Array(digest)).map(function (byte) {
+        return byte.toString(16).padStart(2, "0");
+      }).join("");
+    }
+
+    async function uploadEvidenceBlob(blob, filename) {
+      const browserHash = await sha256(blob);
+      const response = await fetch(endpoints.assets, {
+        method: "POST",
+        headers: {
+          "Content-Type": blob.type || "application/octet-stream",
+          "X-SmartCoat-Filename": filename,
+          "X-SmartCoat-Organization-ID": organizationId()
+        },
+        body: blob
+      });
+      const payload = await responsePayload(response, "Evidence upload");
+      const descriptor = {
+        evidence_id: payload.evidence_id,
+        evidence_type: payload.evidence_type || evidenceType(blob, filename),
+        filename: payload.filename || payload.original_filename || filename,
+        media_type: payload.media_type || blob.type || "application/octet-stream",
+        source_reference: payload.source_reference,
+        sha256: payload.sha256 || browserHash,
+        captured_at: payload.captured_at || new Date().toISOString(),
+        description: payload.description || null
+      };
+      if (descriptor.sha256 !== browserHash) {
+        throw new Error("Evidence hash returned by the server does not match the browser hash.");
+      }
+      return descriptor;
+    }
+
+    async function uploadEvidence(file) {
+      return uploadEvidenceBlob(file, file.name);
+    }
+
+    function appendEvidenceDescriptor(descriptor) {
+      if (!candidate) {
+        candidate = emptyCandidate();
+        originalVoiceTranscript = null;
+      }
+      const duplicate = candidate.evidence.some(function (item) {
+        return item.sha256 === descriptor.sha256;
+      });
+      if (!duplicate) {
+        candidate.evidence.push(descriptor);
+        invalidateConfirmation();
+      }
+    }
+
+    async function handleEvidenceFiles(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) {
+        return;
+      }
+      setMessage("evidence-message", "Hashing and registering " + files.length + " file(s).", "busy");
+      let uploaded = 0;
+      const failures = [];
+      for (const file of files) {
+        try {
+          if (
+            file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+            file.name.toLowerCase().endsWith(".xlsx")
+          ) {
+            selectedExcelFile = file;
+            getElement("analyze-excel").disabled = false;
+          }
+          const descriptor = await uploadEvidence(file);
+          appendEvidenceDescriptor(descriptor);
+          uploaded += 1;
+          renderEvidence();
+        } catch (error) {
+          failures.push(file.name + ": " + safeError(error, "upload failed"));
+        }
+      }
+      event.target.value = "";
+      if (failures.length) {
+        setMessage(
+          "evidence-message",
+          uploaded + " file(s) registered. " + failures.join(" "),
+          "error"
+        );
+      } else {
+        setMessage("evidence-message", uploaded + " file(s) registered with SHA-256.", "success");
+      }
+      updateSaveGate();
+    }
+
+    function importCell(value) {
+      return tableCell(value === null || value === undefined ? "" : value);
+    }
+
+    function reviewImportedCandidate(imported) {
+      acceptCandidate({candidate: imported.candidate});
+      setMessage(
+        "evidence-message",
+        "Loaded unconfirmed Candidate from " + imported.sheet_name + " row " + imported.row_number +
+          " with " + imported.cell_provenance.length + " linked source cells.",
+        "success"
+      );
+    }
+
+    function renderWorkbookImportReport(report) {
+      getElement("excel-import-report").hidden = false;
+      getElement("excel-import-summary").textContent =
+        report.original_filename + " | SHA-256 " + report.sha256 + " | sheets: " +
+        report.sheet_names.join(", ") + " | candidates: " + report.candidates.length +
+        " | warnings: " + report.warnings.length + " | row errors: " +
+        report.row_errors.length + " | unmapped columns: " + report.unmapped_columns.length;
+
+      const body = getElement("excel-import-preview-body");
+      body.replaceChildren();
+      report.candidates.forEach(function (imported) {
+        const item = imported.candidate;
+        const outcomes = item.approaches.map(function (approach) {
+          return approach.outcome;
+        }).join(", ");
+        const row = document.createElement("tr");
+        row.append(
+          importCell(imported.sheet_name + " row " + imported.row_number),
+          importCell(item.project.project_name || item.project.project_id),
+          importCell(item.project.customer_company),
+          importCell(outcomes || "No approach"),
+          importCell(item.completeness_score + "%"),
+          importCell(item.critical_missing_fields.length),
+          importCell(item.extraction_warnings.length)
+        );
+        const action = document.createElement("td");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "button-small";
+        button.textContent = "Review Candidate";
+        button.addEventListener("click", function () {
+          reviewImportedCandidate(imported);
+        });
+        action.append(button);
+        row.append(action);
+        body.append(row);
+      });
+
+      replaceList(
+        "excel-unmapped-columns",
+        report.unmapped_columns.map(function (item) {
+          return item.sheet_name + "!" + item.cell_reference + " " + item.header +
+            " (" + item.reason + ")";
+        }),
+        "No unmapped columns."
+      );
+      replaceList(
+        "excel-row-errors",
+        report.row_errors.map(function (item) {
+          return item.sheet_name + " row " + item.row_number + ": " + item.message;
+        }),
+        "No row errors."
+      );
+    }
+
+    async function analyzeExcel() {
+      if (!selectedExcelFile) {
+        setMessage("evidence-message", "Select an XLSX workbook first.", "error");
+        return;
+      }
+      const button = getElement("analyze-excel");
+      button.disabled = true;
+      setMessage("evidence-message", "Analyzing workbook without canonical writes.", "busy");
+      try {
+        const response = await fetch(endpoints.importExcel, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "X-SmartCoat-Filename": selectedExcelFile.name,
+            "X-SmartCoat-Organization-ID": organizationId()
+          },
+          body: selectedExcelFile
+        });
+        const report = await responsePayload(response, "Excel analysis");
+        renderWorkbookImportReport(report);
+        setMessage("evidence-message", "Workbook analysis completed. Select one Candidate for review.", "success");
+      } catch (error) {
+        setMessage("evidence-message", safeError(error, "Excel analysis failed."), "error");
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function renderEvidence() {
+      const container = getElement("evidence-list");
+      container.replaceChildren();
+      const evidence = candidate && Array.isArray(candidate.evidence) ? candidate.evidence : [];
+      getElement("evidence-count").textContent =
+        evidence.length + (evidence.length === 1 ? " file registered" : " files registered");
+      evidence.forEach(function (item, index) {
+        const row = document.createElement("div");
+        row.className = "evidence-item";
+        const filename = document.createElement("span");
+        filename.textContent = item.filename || "Unnamed evidence";
+        const type = document.createElement("span");
+        type.textContent = item.evidence_type || item.media_type || "other";
+        const reference = document.createElement("span");
+        reference.textContent =
+          "SHA-256 " + (item.sha256 || "unavailable") + " | " +
+          (item.source_reference || "reference unavailable");
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "button-small button-danger";
+        remove.textContent = "Remove";
+        remove.addEventListener("click", function () {
+          candidate.evidence.splice(index, 1);
+          invalidateConfirmation();
+          renderEvidence();
+        });
+        row.append(filename, type, reference, remove);
+        container.append(row);
+      });
+    }
+
+    function emptyCandidate() {
+      return {
+        capture_session_id: crypto.randomUUID(),
+        source_kind: "manual",
+        source_language: getElement("source-language").value,
+        transcript: getElement("transcript").value.trim() || null,
+        extraction_model: null,
+        extraction_started_at: null,
+        extraction_completed_at: null,
+        project: {},
+        substrate: null,
+        materials: [],
+        approaches: [],
+        process_parameters: [],
+        tests: [],
+        samples: [],
+        customer_feedback: [],
+        evidence: [],
+        current_next_action: null,
+        responsible_person: null,
+        next_action_due_at: null,
+        commercial_potential: null,
+        potential_other_customers: [],
+        estimated_cost_status: null,
+        production_trial_required: null,
+        unresolved_questions: [],
+        formulation_source_text: null,
+        source_cell_references: [],
+        field_states: {},
+        completeness_score: 0,
+        critical_missing_fields: [],
+        recommended_questions: [],
+        extraction_warnings: [],
+        human_confirmed: false,
+        human_confirmed_by: null,
+        human_confirmed_at: null
+      };
+    }
+
+    function updateSaveGate() {
+      const hasCandidate = Boolean(candidate);
+      const readinessReady = hasCandidate && readinessEvaluated && confirmationReady;
+      getElement("human-confirmed").disabled = !readinessReady;
+      if (!readinessReady) {
+        getElement("human-confirmed").checked = false;
+      }
+      const confirmed = getElement("human-confirmed").checked;
+      const hasActor = Boolean(getElement("actor-id").value.trim());
+      const evidenceTypes = hasCandidate
+        ? new Set(candidate.evidence.map(function (item) { return item.evidence_type; }))
+        : new Set();
+      const voiceEvidenceReady = !hasCandidate || candidate.source_kind !== "voice" || (
+        evidenceTypes.has("audio") && evidenceTypes.has("transcript")
+      );
+      getElement("save-candidate").disabled = !(
+        confirmed && readinessReady && hasActor && voiceEvidenceReady && !candidateSaved
+      );
+      if (candidateSaved) {
+        setMessage("save-message", "Draft saved. Edit the candidate before creating another draft.", "success");
+      } else if (!hasCandidate) {
+        setMessage("save-message", "Extract or enter a candidate before saving.", "error");
+      } else if (!voiceEvidenceReady) {
+        setMessage("save-message", "Voice captures require registered audio and transcript evidence.", "error");
+      } else if (!readinessEvaluated) {
+        setMessage("save-message", "Re-check Candidate readiness before confirmation.", "error");
+      } else if (!confirmationReady) {
+        setMessage("save-message", "Resolve blocking review issues before confirmation.", "error");
+      } else if (!confirmed) {
+        setMessage("save-message", "Human confirmation and an actor ID are required.", "");
+      } else if (!hasActor) {
+        setMessage("save-message", "Enter the confirming actor ID.", "error");
+      } else {
+        setMessage("save-message", "Ready to create a governed draft.", "success");
+        setProgress(3);
+      }
+    }
+
+    function invalidateConfirmation(invalidateReadiness) {
+      candidateSaved = false;
+      getElement("human-confirmed").checked = false;
+      if (invalidateReadiness !== false) {
+        readinessEvaluated = false;
+        confirmationReady = false;
+      }
+      if (candidate) {
+        candidate.human_confirmed = false;
+        candidate.human_confirmed_by = null;
+        candidate.human_confirmed_at = null;
+      }
+      renderCandidateReadiness();
+      updateSaveGate();
+    }
+
+    async function saveCandidate() {
+      if (!candidate || !getElement("human-confirmed").checked) {
+        setMessage("save-message", "Review and confirm the candidate before saving.", "error");
+        return;
+      }
+      const button = getElement("save-candidate");
+      button.disabled = true;
+      getElement("save-result").hidden = true;
+      setMessage("save-message", "Creating a governed draft.", "busy");
+      try {
+        candidate.transcript = candidate.source_kind === "voice"
+          ? originalVoiceTranscript
+          : getElement("transcript").value.trim() || candidate.transcript;
+        candidate.human_confirmed = true;
+        candidate.human_confirmed_by = actorId();
+        candidate.human_confirmed_at = new Date().toISOString();
+        const response = await fetch(endpoints.captures, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-SmartCoat-Organization-ID": organizationId()
+          },
+          body: JSON.stringify(candidate)
+        });
+        const payload = await responsePayload(response, "Confirmed draft save");
+        const result = payload.capture || payload.knowledge_object || payload;
+        const objectId = result.object_id || result.id || "Created object ID unavailable";
+        const lifecycle = result.lifecycle_state || result.lifecycle || "draft";
+        getElement("created-object-id").textContent = "Object ID: " + objectId;
+        getElement("created-lifecycle").textContent = "Lifecycle: " + lifecycle;
+        getElement("save-result").hidden = false;
+        candidateSaved = true;
+        setMessage("save-message", "Confirmed draft saved.", "success");
+        await loadRecentCaptures();
+      } catch (error) {
+        candidate.human_confirmed = false;
+        candidate.human_confirmed_by = null;
+        candidate.human_confirmed_at = null;
+        setMessage("save-message", safeError(error, "Confirmed draft save failed."), "error");
+      } finally {
+        updateSaveGate();
+      }
+    }
+
+    function tableCell(value) {
+      const cell = document.createElement("td");
+      cell.textContent = value === null || value === undefined ? "" : String(value);
+      return cell;
+    }
+
+    function renderRecentCaptures(payload) {
+      const body = getElement("recent-captures-body");
+      body.replaceChildren();
+      const items = Array.isArray(payload) ? payload : payload.items || [];
+      items.forEach(function (item) {
+        const row = document.createElement("tr");
+        row.append(
+          tableCell(item.project_name || item.project_id),
+          tableCell(item.customer || item.customer_company),
+          tableCell(item.current_status || item.project_status),
+          tableCell(
+            item.completeness_score === null || item.completeness_score === undefined
+              ? ""
+              : item.completeness_score + "%"
+          ),
+          tableCell(item.lifecycle_state || item.lifecycle),
+          tableCell(item.current_next_action || item.next_action),
+          tableCell(item.object_id)
+        );
+        body.append(row);
+      });
+      getElement("recent-empty").hidden = items.length > 0;
+    }
+
+    async function loadRecentCaptures() {
+      try {
+        const response = await fetch(endpoints.captures + "?limit=20", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "X-SmartCoat-Organization-ID": organizationId()
+          }
+        });
+        renderRecentCaptures(await responsePayload(response, "Recent capture load"));
+        setMessage("recent-message", "Recent captures loaded.", "success");
+      } catch (error) {
+        renderRecentCaptures({items: []});
+        setMessage("recent-message", safeError(error, "Recent captures are unavailable."), "error");
+      }
+    }
+
+    function setAllSections(open) {
+      document.querySelectorAll("details.review-section").forEach(function (section) {
+        section.open = open;
+      });
+    }
+
+    function initializeRecorderSupport() {
+      selectedMimeType = selectedAudioMimeType();
+      if (!window.MediaRecorder) {
+        getElement("start-recording").disabled = true;
+        getElement("recording-format").textContent = "MediaRecorder unavailable";
+        setMessage(
+          "recorder-message",
+          "This browser cannot record audio. Enter a transcript instead.",
+          "error"
+        );
+        return;
+      }
+      getElement("recording-format").textContent =
+        selectedMimeType || "Browser default audio format";
+    }
+
+    getElement("start-recording").addEventListener("click", startRecording);
+    getElement("stop-recording").addEventListener("click", stopRecording);
+    getElement("discard-recording").addEventListener("click", discardRecording);
+    getElement("process-audio").addEventListener("click", processAudio);
+    getElement("check-local-ai").addEventListener("click", checkLocalAI);
+    getElement("extract-text").addEventListener("click", extractText);
+    getElement("evidence-files").addEventListener("change", handleEvidenceFiles);
+    getElement("analyze-excel").addEventListener("click", analyzeExcel);
+    getElement("evaluate-candidate").addEventListener("click", evaluateCandidate);
+    getElement("human-confirmed").addEventListener("change", updateSaveGate);
+    getElement("organization-id").addEventListener("input", function () {
+      invalidateConfirmation(false);
+    });
+    getElement("actor-id").addEventListener("input", function () {
+      invalidateConfirmation(false);
+    });
+    getElement("save-candidate").addEventListener("click", saveCandidate);
+    getElement("refresh-captures").addEventListener("click", loadRecentCaptures);
+    getElement("expand-sections").addEventListener("click", function () {
+      setAllSections(true);
+    });
+    getElement("collapse-sections").addEventListener("click", function () {
+      setAllSections(false);
+    });
+    window.addEventListener("beforeunload", function () {
+      stopTracks();
+      stopTimer();
+      revokeAudioUrl();
+    });
+    document.addEventListener("DOMContentLoaded", function () {
+      initializeRecorderSupport();
+      checkLocalAI();
+      loadRecentCaptures();
+    });
+  </script>
+</body>
+</html>
